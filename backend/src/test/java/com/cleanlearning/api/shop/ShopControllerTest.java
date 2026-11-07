@@ -52,11 +52,13 @@ class ShopControllerTest {
     }
 
     @Test
-    @Sql("agile-coaching-offering.sql")
+    @Sql("more-published-offerings.sql")
     @Sql(scripts = "delete-extra-offerings.sql", executionPhase = AFTER_TEST_METHOD)
-    void sortsOfferingsByName() {
+    void sortsOfferingsAlphabeticallyByName() {
+        // Alphabetically, regardless of umlauts: a byte-wise sort would put "Ärger-Coaching" last.
         assertThat(mockMvc.get().uri("/api/shop/offerings"))
                 .hasStatusOk()
-                .bodyJson().extractingPath("$[*].name").asArray().containsExactly("Agile Coaching", "Career Coaching");
+                .bodyJson().extractingPath("$[*].name").asArray()
+                .containsExactly("Agile Coaching", "Ärger-Coaching", "Career Coaching");
     }
 }

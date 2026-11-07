@@ -55,7 +55,7 @@ These major versions are new, and most examples online are for older ones. Check
 
 | Package | Classes in this increment |
 |---|---|
-| `config` | `SecurityConfig` |
+| `config` | `SecurityConfig`, `OpenApiConfig`, `RequiredResponseFieldsCustomizer` |
 | `api` | `ApiExceptionHandler` (central `ProblemDetail` mapping) |
 | `api.shop` | `ShopController`; responses `ShopOfferingResponse`, `ShopOfferingDetailResponse`, `ConsultationOfferingDetailResponse`, `ConsultationPackageResponse`, `EligibleExpertResponse`, `MoneyResponse` |
 | `application.offering` | `ListShopOfferingsService`, `GetShopOfferingService`, `LoadShopOfferingsPort`, `LoadShopOfferingPort` |
@@ -94,6 +94,7 @@ eligible_expert        consultation_offering_id → consultation_offering,
 - Every table also has `created_at` and `updated_at` (`timestamptz not null default now()`, D-20).
 - `offering.type` is checked against `CONSULTATION`; `TRAINING` is added with trainings. `offering.status` is checked against `DRAFT`, `PUBLISHED` and `ARCHIVED`. `user_role.role` is checked against `CUSTOMER`, `EXPERT` and `ADMIN`.
 - Type-specific data lives in a subtype table keyed by the offering id: `consultation_offering` now, `training_offering` later.
+- A name column the UI sorts by gets the ICU root collation, `collate "und-x-icu"`, so it sorts alphabetically regardless of case and umlauts, the same on every Postgres ([backend.md](../../architecture/backend.md#persistence)): `offering.name` in 06, `expert_profile.display_name` in 07.
 - Not yet: `offering.image_id` and `expert_profile.photo_image_id` (images), `expert_profile.teams_link` (UC-14), the OIDC columns on `app_user` (MVP). Each comes with its use case.
 
 ### Seed ids
@@ -116,7 +117,7 @@ Names, emails and roles follow the seed table in [UC-01](../../use-cases/uc-01-l
 |---|---|---|
 | `GET /api/shop/offerings` | 200 `ShopOfferingResponse[]`, sorted by name | 06 |
 | `GET /api/shop/offerings/{id}` | 200 `ShopOfferingDetailResponse`; 404 if unknown or not `PUBLISHED`; 400 if the id isn't a UUID | 07 |
-| `GET /v3/api-docs` | the OpenAPI document that `backend/openapi.json` is generated from; public | 06 |
+| `GET /v3/api-docs` | the OpenAPI document that `backend/openapi.json` is generated from; public (`/v3/api-docs/**` in `SecurityConfig`) | 06 |
 
 ```jsonc
 // ShopOfferingResponse

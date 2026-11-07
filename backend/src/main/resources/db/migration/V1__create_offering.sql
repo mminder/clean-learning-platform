@@ -3,7 +3,8 @@
 create table offering (
     id          uuid        primary key,
     type        text        not null check (type in ('CONSULTATION')),
-    name        text        not null,
+    -- The shop sorts by name: alphabetically, regardless of case and umlauts (ICU root collation).
+    name        text        not null collate "und-x-icu",
     description text        not null,
     status      text        not null check (status in ('DRAFT', 'PUBLISHED', 'ARCHIVED')),
     created_at  timestamptz not null default now(),

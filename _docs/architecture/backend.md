@@ -133,6 +133,7 @@ class BookConsultationAppointmentService {
 - **Ids:** UUIDs generated in the application. Seed rows use fixed, readable UUIDs that tests refer to.
 - **Tables:** singular snake_case names. The user table is `app_user`, because `user` is reserved in PostgreSQL.
 - **Columns:** points in time are `timestamptz`, local times are `time`, dates are `date`, money is `numeric(10,2)` (currency is always CHF). Every table has `created_at` and `updated_at` (D-20).
+- **Sorting text:** a name column the UI sorts by is declared `collate "und-x-icu"` (ICU root collation), so `order by` is alphabetical regardless of case and umlauts, and the same in dev, test and production; the database's default collation can sort byte-wise.
 - **Purchase terms** are columns on `consultation_case` and `enrollment` (D-08). A run's schedule is stored in `run_day` and `run_time_slot`.
 - **Images:** an `image` table with `bytea`, content type and size (D-21).
 
