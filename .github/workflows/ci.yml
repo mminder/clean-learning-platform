@@ -25,10 +25,6 @@ jobs:
           distribution: temurin
           java-version: 25
           cache: maven
-      - uses: actions/cache@v6
-        with:
-          path: ~/.m2/wrapper
-          key: maven-wrapper-${{ hashFiles('backend/.mvn/wrapper/maven-wrapper.properties') }}
       - run: ./mvnw -B verify
 
   frontend:
