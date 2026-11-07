@@ -45,7 +45,7 @@ Customer buys a Run     ──► Enrollment (purchase terms)
 | Offering | Something sold in the shop. Type is consultation or training. Has a name, description, image and status. |
 | Offering status | `DRAFT` (not visible) → `PUBLISHED` (in the shop) → `ARCHIVED` (not buyable; existing purchases keep working). |
 | Consultation offering | Offering with a session duration, a cancellation deadline, packages and eligible experts. |
-| Package | A purchasable variant of a consultation offering: a session count and a price, e.g. 3 sessions for CHF 450. |
+| Package | A purchasable variant of a consultation offering: a session count and a price, e.g. 3 sessions for CHF 450. Called `ConsultationPackage` in code and `consultation_package` in the database, because Java already has `java.lang.Package`. |
 | Eligible expert | An expert the admin assigned to a consultation offering. Customers pick their case's expert from this set. |
 | Training offering | Offering with a price, a cancellation deadline, default seats, a day template and runs. |
 | Day template | Ordered list of training days, each with time slots. Used to create runs. |

@@ -6,7 +6,7 @@ Instructions for coding agents working in this repository.
 
 A web platform where customers buy and book consultation packages and training runs, experts deliver them, and admins manage offerings and cases. We build a PoC first and refine it into an MVP.
 
-**Status:** documentation only. No code exists yet.
+**Status:** documentation only. No code exists yet. The first increment is planned: [01 Shop tracer bullet](_docs/specs/01-shop-tracer-bullet.md).
 
 ## Read first
 
@@ -14,10 +14,12 @@ A web platform where customers buy and book consultation packages and training r
 |---|---|
 | Domain terms (use them in code) | [_docs/glossary.md](_docs/glossary.md) |
 | Use cases (the functional spec) | [_docs/use-cases/README.md](_docs/use-cases/README.md) |
+| The current increment: what and why | [_docs/specs/](_docs/specs/README.md) |
+| The current increment: technical plan and tasks | [_docs/tasks/](_docs/tasks/README.md) |
 | Why things are the way they are | [_docs/decisions.md](_docs/decisions.md) |
 | Architecture | [_docs/architecture/overview.md](_docs/architecture/overview.md) |
 
-Before implementing a use case, read its file in `_docs/use-cases/` and the architecture doc for the side you touch ([backend](_docs/architecture/backend.md), [frontend](_docs/architecture/frontend.md), [security](_docs/architecture/security.md)).
+Work arrives as tasks. Follow [working on a task](_docs/tasks/README.md#working-on-a-task) and the [definition of done](_docs/tasks/README.md#definition-of-done). Before implementing, read the task, its increment's technical plan, the use case's file in `_docs/use-cases/`, and the architecture doc for the side you touch ([backend](_docs/architecture/backend.md), [frontend](_docs/architecture/frontend.md), [security](_docs/architecture/security.md)).
 
 ## Rules
 
@@ -33,9 +35,12 @@ Before implementing a use case, read its file in `_docs/use-cases/` and the arch
 .
 ├─ AGENTS.md
 ├─ _docs/              specification and architecture (source of truth)
+│  ├─ specs/           increment specs: what we build now, and why
+│  └─ tasks/           technical plans and tasks per increment
 ├─ backend/            Spring Boot, Maven           (not created yet)
 ├─ frontend/           React SPA, Vite              (not created yet)
-└─ docker-compose.yml  Postgres, Keycloak for local (not created yet)
+├─ docker-compose.yml  Postgres, Keycloak for local (not created yet)
+└─ .github/workflows/  CI on GitHub Actions          (not created yet)
 ```
 
 ## Backend conventions

@@ -37,7 +37,10 @@
 ```
 .
 ├─ AGENTS.md                 agent instructions
+├─ .github/workflows/        CI (GitHub Actions)
 ├─ _docs/                    this documentation (source of truth)
+│  ├─ specs/                 increment specs: what we build now, and why
+│  └─ tasks/                 technical plans and tasks per increment
 ├─ backend/                  Maven project, Spring Boot
 │  ├─ src/main/java/...      packages: see backend.md
 │  ├─ src/main/resources/db/migration   Flyway schema
@@ -63,7 +66,7 @@ backend (Spring Boot, poc|dev)    → :8080
 frontend (Vite dev server)        → :5173, proxies /api to :8080
 ```
 
-**Production:** the Maven build bundles the frontend's `dist/` into the Spring Boot jar, giving one container image. It needs Postgres and an OIDC IdP. Hosting and CI are open decisions.
+**Production:** the Maven build bundles the frontend's `dist/` into the Spring Boot jar, giving one container image. It needs Postgres and an OIDC IdP. Hosting is an open decision. CI runs on GitHub Actions (D-30).
 
 ## Time
 

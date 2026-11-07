@@ -10,6 +10,7 @@ This folder is the source of truth for what the platform does and how it is buil
 4. [architecture/overview.md](architecture/overview.md): system context, runtime and repository layout.
 5. [architecture/backend.md](architecture/backend.md), [architecture/security.md](architecture/security.md), [architecture/frontend.md](architecture/frontend.md).
 6. [decisions.md](decisions.md): every design decision, with its rationale.
+7. [specs/](specs/README.md) and [tasks/](tasks/README.md): the increments. What we build now and why, and the tasks that build it.
 
 ## Other
 

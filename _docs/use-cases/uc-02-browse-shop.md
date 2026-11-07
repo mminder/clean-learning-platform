@@ -18,7 +18,7 @@ None. No login is required.
 
 1. The visitor opens the shop. It's the start page for visitors.
 2. The system lists all published offerings as cards, sorted by name. Each card shows:
-   - image, name and short description;
+   - image, name and description, shortened to three lines;
    - a type badge: **Consultation** or **Training**;
    - the price: "from CHF x" (the cheapest package) for a consultation, the price for a training;
    - a **Buy** button.

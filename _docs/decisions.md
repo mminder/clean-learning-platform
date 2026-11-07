@@ -51,12 +51,13 @@ The design decisions agreed on 2026-11-07, when the [initial spec](archive/initi
 - **D-27 Concurrency.** The use-case transaction takes pessimistic row locks on the contended parent row, always in the order case → expert → run. *Why:* this covers every rule, including overlaps across tables, without retry logic.
 - **D-28 Backend tooling.** Java 25, Spring Boot 4.x, Maven, Spring Data JPA/Hibernate, hand-written mappers, records without Lombok, Flyway (schema plus seed for `poc`/`dev`), Bean Validation on request DTOs, `ProblemDetail` errors, JUnit 5, AssertJ, Testcontainers, ArchUnit, `MockMvcTester`, and an injected `Clock`.
 - **D-29 Frontend tooling and API contract.** Vite, React, TypeScript (strict), npm, React Router, TanStack Query, shadcn/ui, Tailwind, React Hook Form, and date-fns with `@date-fns/tz`. The API is code-first: springdoc generates `backend/openapi.json`, which is committed, and openapi-typescript plus openapi-fetch generate the frontend client. A test fails if the committed spec is stale. Frontend tests use Vitest only where there's logic; Playwright arrives in the MVP.
-- **D-30 Repository and runtime.** A monorepo with `backend/`, `frontend/`, `_docs/` and `docker-compose.yml` (Postgres, Keycloak). Production is one container: the Spring Boot jar serves the built SPA. Hosting and CI are decided at MVP time.
+- **D-30 Repository and runtime.** A monorepo with `backend/`, `frontend/`, `_docs/` and `docker-compose.yml` (Postgres, Keycloak). Production is one container: the Spring Boot jar serves the built SPA. Hosting is decided at MVP time. CI runs on GitHub Actions from the first increment (changed 2026-11-07; it was deferred to the MVP before). *Why:* agents deliver every task as a pull request and need automatic feedback from the start.
 
 ## Scope and docs
 
-- **D-31 PoC vs MVP.** The PoC covers UC-01 to UC-18 with the fake login and no money. The MVP adds OIDC login, user management (UC-19), payment and refunds, Playwright E2E, hosting and CI. Two pairs of spec use cases were merged: the customer and expert "takes part in call" became [UC-10](use-cases/uc-10-join-call.md), and "Admin views all trainings" became part of [UC-17](use-cases/uc-17-manage-training-offering.md).
+- **D-31 PoC vs MVP.** The PoC covers UC-01 to UC-18 with the fake login and no money. The MVP adds OIDC login, user management (UC-19), payment and refunds, Playwright E2E, and hosting. (CI moved into the PoC on 2026-11-07, see D-30.) Two pairs of spec use cases were merged: the customer and expert "takes part in call" became [UC-10](use-cases/uc-10-join-call.md), and "Admin views all trainings" became part of [UC-17](use-cases/uc-17-manage-training-offering.md).
 - **D-32 Docs and agent instructions.** The `_docs/` structure is shown in [README.md](README.md), with one file per use case and this single decision log. There is only an `AGENTS.md` and no `CLAUDE.md`, because Claude Code ≥ 2.1.277 reads `AGENTS.md` when no `CLAUDE.md` exists.
+- **D-33 Increments, specs and tasks.** Work is planned in increments. Each increment has a spec in [specs/](specs/README.md) (what and why, with WHEN/THEN scenarios) and a folder in [tasks/](tasks/README.md) (a technical plan, plus one file per task that fits one agent session and one pull request, marked AFK or HITL). The use cases keep describing the finished system; a spec only says which part is built now. The first increment is a tracer bullet through every layer, using the consultation part of UC-02. The format borrows from OpenSpec and from Matt Pocock's planning skills. *Why:* agents need small, checkable units of work, and a thin end-to-end path retires the integration risks before any business rule is built.
 
 ## Open decisions (before MVP)
 
@@ -65,4 +66,3 @@ The design decisions agreed on 2026-11-07, when the [initial spec](archive/initi
 | Payment provider | e.g. Stripe, or Datatrans for TWINT. Comes with the `order` feature. |
 | Production IdP | Any OIDC provider (Keycloak, Entra External ID, Auth0, …). Configuration only. |
 | Hosting | Must run one container plus Postgres. |
-| CI | Not chosen yet. |

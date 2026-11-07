@@ -13,7 +13,7 @@ There's no Lombok and no MapStruct. Value objects, commands and DTOs are Java `r
 The layers are the root packages (D-22), and the features are sub-packages within each layer (D-23).
 
 ```
-<base package>
+com.cleanlearning
 ├─ config                     Spring configuration (security, clock, web, openapi)
 ├─ api                        REST controllers + request/response DTOs
 │  ├─ shop                    public catalog endpoints
@@ -128,9 +128,10 @@ class BookConsultationAppointmentService {
 ## Persistence
 
 - **One PostgreSQL schema** for all features (D-23). JPA entities live only in `adapters.database` and are mapped to domain objects by hand-written mappers.
-- **Flyway:** the schema is in `db/migration`. Seed data in `db/seed` is only on the Flyway path in the `poc` and `dev` profiles. Seed dates are relative to the migration date (e.g. `current_date + 14`), so the demo data stays in the future.
+- **Flyway:** the schema is in `db/migration`. Seed data in `db/seed` is only on the Flyway path in the `poc` and `dev` profiles. Seed dates are relative to the migration date (e.g. `current_date + 14`), so the demo data stays in the future. A seed migration is numbered right after the schema migration it needs (`V2__create_user.sql` in `db/migration`, then `V2_1__seed_user.sql` in `db/seed`). Merged migrations, schema and seed alike, are never edited; a change is a new migration.
 - **Seed content:** the six users from [UC-01](../use-cases/uc-01-login.md); Career Coaching (packages 3 × CHF 450 and 5 × CHF 700, 60 min, 24 h deadline, both experts eligible); Software Architecture (2 days) and AI-Augmented Software Engineering (1 day), each with time slots 09:00–12:00 and 13:00–17:00, a 168 h deadline and two future runs; availability for both experts.
-- **Ids:** UUIDs generated in the application.
+- **Ids:** UUIDs generated in the application. Seed rows use fixed, readable UUIDs that tests refer to.
+- **Tables:** singular snake_case names. The user table is `app_user`, because `user` is reserved in PostgreSQL.
 - **Columns:** points in time are `timestamptz`, local times are `time`, dates are `date`, money is `numeric(10,2)` (currency is always CHF). Every table has `created_at` and `updated_at` (D-20).
 - **Purchase terms** are columns on `consultation_case` and `enrollment` (D-08). A run's schedule is stored in `run_day` and `run_time_slot`.
 - **Images:** an `image` table with `bytea`, content type and size (D-21).
