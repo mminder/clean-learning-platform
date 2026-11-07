@@ -39,9 +39,9 @@ class LayerRulesTest {
             .whereLayer("adapters.database").mayOnlyBeAccessedByLayers("config");
 
     @ArchTest
-    static final ArchRule domainIsFreeOfFrameworks = noClasses()
+    static final ArchRule domainDependsOnlyOnJavaAndDomain = classes()
             .that().resideInAPackage(DOMAIN)
-            .should().dependOnClassesThat().resideInAnyPackage("org.springframework..", "jakarta.persistence..", "org.hibernate..")
+            .should().onlyDependOnClassesThat().resideInAnyPackage("java..", DOMAIN)
             .allowEmptyShould(true);
 
     @ArchTest
