@@ -34,6 +34,7 @@ Work arrives as tasks. Follow [working on a task](_docs/tasks/README.md#working-
 ```
 .
 ├─ AGENTS.md
+├─ .claude/            SessionStart hook for cloud sessions
 ├─ _docs/              specification and architecture (source of truth)
 │  ├─ specs/           increment specs: what we build now, and why
 │  └─ tasks/           technical plans and tasks per increment
@@ -77,6 +78,10 @@ Details: [_docs/architecture/backend.md#testing](_docs/architecture/backend.md#t
 - Concurrency: one test per locked race (expert slot, case credits, run seats).
 - Use-case service tests only where they add real value.
 - The ArchUnit layer rules and the OpenAPI drift test must pass.
+
+## Cloud sessions
+
+In Claude Code cloud sessions, the environment's setup script installs JDK 25, and the SessionStart hook ([.claude/hooks/session-start.sh](.claude/hooks/session-start.sh)) starts Docker and sets `JAVA_HOME` to Java 25. Locally the hook does nothing.
 
 ## Commands
 

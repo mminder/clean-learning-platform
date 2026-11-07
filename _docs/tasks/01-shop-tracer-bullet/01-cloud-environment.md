@@ -5,7 +5,7 @@
 | Increment | [01 Shop tracer bullet](../../specs/01-shop-tracer-bullet.md) |
 | Type | HITL |
 | Blocked by | – |
-| Status | Todo |
+| Status | In progress |
 
 ## Goal
 
@@ -42,11 +42,11 @@ A human does this with Claude in a cloud session. Claude proposes each change; t
 
 ## Acceptance criteria
 
-- [ ] The cloud environment used for this repository installs JDK 25 in its setup script.
+- [x] The cloud environment used for this repository installs JDK 25 in its setup script.
 - [ ] In a fresh cloud session, `java -version` and `mvn -v` report Java 25.
 - [ ] In a fresh cloud session, `docker run --rm postgres:18-alpine postgres --version` works without starting anything by hand.
-- [ ] Without `CLAUDE_CODE_REMOTE`, the hook exits without doing anything.
-- [ ] AGENTS.md mentions the hook.
+- [x] Without `CLAUDE_CODE_REMOTE`, the hook exits without doing anything.
+- [x] AGENTS.md mentions the hook.
 
 ## Tests
 
@@ -57,3 +57,7 @@ None. The acceptance criteria are checked by hand in a fresh session.
 - The Maven project ([02](02-backend-skeleton.md)) and CI ([05](05-ci.md)).
 
 ## Notes
+
+- 2026-11-07: Created the personal cloud environment **clean-learning-platform** (repository `mminder/clean-learning-platform`, same network as Default: package registries and MCP servers, no extra hosts) with the setup script above. The Default environment stays unchanged, because it serves every repository.
+- Checked in the session that created it: the setup script installs 25.0.4, and `update-alternatives` makes `/usr/bin/java` Java 25, but `mvn` follows `JAVA_HOME`, so the hook is still needed. With the hook's env file sourced, `java -version` and `mvn -v` report 25. The hook starts `dockerd` in about a second, and `postgres:18-alpine` runs with a reachable mapped port. Run without `CLAUDE_CODE_REMOTE`, the hook writes nothing and starts nothing.
+- Still open: the two "fresh cloud session" criteria. Start a new session of this repository on the **clean-learning-platform** environment (not Default), check `java -version`, `mvn -v` and `docker run --rm postgres:18-alpine postgres --version`, then tick them and set the task to **Done**. The hook only runs from a branch that contains it, so merge this change first.
