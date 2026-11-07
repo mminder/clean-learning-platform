@@ -117,6 +117,18 @@ class ShopControllerTest {
     }
 
     @Test
+    @Sql("more-experts-and-packages.sql")
+    @Sql(scripts = "delete-more-experts-and-packages.sql", executionPhase = AFTER_TEST_METHOD)
+    void sortsPackagesBySessionCountAndExpertsAlphabeticallyByDisplayName() {
+        var body = assertThat(mockMvc.get().uri("/api/shop/offerings/{id}", SeedData.CAREER_COACHING))
+                .hasStatusOk()
+                .bodyJson();
+        body.extractingPath("$.consultation.packages[*].sessionCount").asArray().containsExactly(1, 3, 5);
+        body.extractingPath("$.consultation.eligibleExperts[*].displayName").asArray()
+                .containsExactly("Älma Muster", "anna Beispiel", "Expert 1", "Expert 2");
+    }
+
+    @Test
     void answersUnknownOfferingsWithNotFound() {
         assertThat(mockMvc.get().uri("/api/shop/offerings/{id}", "00000000-0000-0000-0000-000000000000"))
                 .hasStatus(HttpStatus.NOT_FOUND)
