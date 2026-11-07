@@ -1,0 +1,8 @@
+# Local PoC against the docker-compose Postgres. Dev-only credentials, see _docs/architecture/security.md.
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/cleanlearning
+    username: cleanlearning
+    password: cleanlearning
+  flyway:
+    locations: classpath:db/migration,classpath:db/seed
