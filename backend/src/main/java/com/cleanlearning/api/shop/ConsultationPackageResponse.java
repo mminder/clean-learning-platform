@@ -2,6 +2,7 @@ package com.cleanlearning.api.shop;
 
 import java.util.UUID;
 
+import com.cleanlearning.api.MoneyResponse;
 import com.cleanlearning.domain.offering.ConsultationPackage;
 
 public record ConsultationPackageResponse(UUID id, int sessionCount, MoneyResponse price) {

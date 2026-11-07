@@ -56,8 +56,8 @@ These major versions are new, and most examples online are for older ones. Check
 | Package | Classes in this increment |
 |---|---|
 | `config` | `SecurityConfig`, `OpenApiConfig`, `RequiredResponseFieldsCustomizer` |
-| `api` | `ApiExceptionHandler` (central `ProblemDetail` mapping) |
-| `api.shop` | `ShopController`; responses `ShopOfferingResponse`, `ShopOfferingDetailResponse`, `ConsultationOfferingDetailResponse`, `ConsultationPackageResponse`, `EligibleExpertResponse`, `MoneyResponse` |
+| `api` | `ApiExceptionHandler` (central `ProblemDetail` mapping); `MoneyResponse`, shared by every feature's responses (public `from(Money)`) |
+| `api.shop` | `ShopController`; responses `ShopOfferingResponse`, `ShopOfferingDetailResponse`, `ConsultationOfferingDetailResponse`, `ConsultationPackageResponse`, `EligibleExpertResponse` |
 | `application.offering` | `ListShopOfferingsService`, `GetShopOfferingService`, `LoadShopOfferingsPort`, `LoadShopOfferingPort` |
 | `domain.shared` | `Money`, `NotFoundException` |
 | `domain.offering` | `OfferingId`, `OfferingType`, `ShopOffering`, `ShopConsultationOffering`, `ConsultationPackage`, `ConsultationPackageId`, `EligibleExpert`, `SessionDuration`, `CancellationDeadline` |
@@ -146,6 +146,7 @@ Names, emails and roles follow the seed table in [UC-01](../../use-cases/uc-01-l
 ```
 
 - `MoneyResponse.amount` is a string with two decimals ([backend.md](../../architecture/backend.md#rest-conventions)).
+- Request and response records have names that are unique across `api`, because the OpenAPI schema name is the simple class name (`LayerRulesTest` checks this, [backend.md](../../architecture/backend.md#rest-conventions)).
 - Response fields are **required** in the OpenAPI document unless they're nullable, so the generated TypeScript types aren't all optional. Do this once, with a schema customizer, rather than annotating every field. `RequiredResponseFieldsCustomizer` (in `config`) does it for every schema named `*Response`; request schemas keep what Bean Validation says. A response field that may be null gets JSpecify's `@Nullable`, which springdoc marks nullable, so it stays optional.
 - `backend/openapi.json` is pretty-printed, with sorted keys and the fixed server `/`, and regenerated with `./mvnw test -Dtest=OpenApiContractTest -Dopenapi.write=true`.
 - **Errors** raised inside Spring MVC are `ProblemDetail` bodies (`application/problem+json`, [backend.md](../../architecture/backend.md#errors)). `ApiExceptionHandler` extends Spring's `ResponseEntityExceptionHandler`, so Spring MVC's own exceptions answer with `ProblemDetail` too: an unknown route 404, a malformed id or request 400. It maps `NotFoundException` (`domain.shared`) to 404. Spring Security's 401 (empty body) and 403 (Boot's error JSON, also for a CSRF rejection), and unexpected 500s (Boot's error JSON), aren't `ProblemDetail`; clients rely only on their status. The error responses aren't in `openapi.json`: springdoc leaves them out, and the frontend only needs the status.
@@ -180,7 +181,7 @@ frontend/src
 | Integration test setup | A meta-annotation `@IntegrationTest`: `@SpringBootTest`, MockMvc, the `poc` profile, and a Testcontainers Postgres through `@ServiceConnection`. One Spring context and one container for the whole run. |
 | REST tests | `MockMvcTester`, one happy-path test per route, plus the spec's error scenarios. Extra rows go in with `@Sql` and don't leak into other tests: a second `@Sql` with `executionPhase = AFTER_TEST_METHOD` deletes them (see `ShopControllerTest`). |
 | Role matrix | `RoleMatrixTest`: one parameterized test over a single route table (method, path, access). A new route is a new row. |
-| Layer rules | `LayerRulesTest` (ArchUnit), following [backend.md](../../architecture/backend.md#layer-rules) |
+| Layer rules | `LayerRulesTest` (ArchUnit), following [backend.md](../../architecture/backend.md#layer-rules), plus unique names for request and response records in `api` |
 | Contract | `OpenApiContractTest` compares the generated document with `backend/openapi.json`. On a mismatch it fails and names the regenerate command. |
 | Domain | Plain JUnit and AssertJ for `Money`, the "from" price and the value objects |
 | Frontend | Vitest for `lib/` logic only ([D-29](../../decisions.md#architecture)) |

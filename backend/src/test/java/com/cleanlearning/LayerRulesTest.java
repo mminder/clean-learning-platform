@@ -1,13 +1,22 @@
 package com.cleanlearning;
 
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.simpleNameEndingWith;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
 
+import java.util.Collection;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
+import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
+import com.tngtech.archunit.lang.ConditionEvents;
+import com.tngtech.archunit.lang.SimpleConditionEvent;
 import jakarta.persistence.Entity;
 import org.springframework.stereotype.Service;
 
@@ -63,4 +72,32 @@ class LayerRulesTest {
             .that().resideInAPackage(APPLICATION).and().areInterfaces()
             .and().doNotHaveSimpleName("package-info") // compiled as a synthetic interface
             .should().haveSimpleNameEndingWith("Port");
+
+    /** springdoc names an OpenAPI schema after the simple class name, so two records with one name share a schema. */
+    @ArchTest
+    static final ArchRule requestAndResponseNamesAreUnique = classes()
+            .that().resideInAPackage(API)
+            .and(simpleNameEndingWith("Response").or(simpleNameEndingWith("Request")))
+            .should(haveASimpleNameUniqueAmongThem());
+
+    private static ArchCondition<JavaClass> haveASimpleNameUniqueAmongThem() {
+        return new ArchCondition<>("have a simple name that no other of them has (it's the OpenAPI schema name)") {
+
+            private Map<String, Long> countBySimpleName = Map.of();
+
+            @Override
+            public void init(Collection<JavaClass> allObjectsToTest) {
+                countBySimpleName = allObjectsToTest.stream()
+                        .collect(Collectors.groupingBy(JavaClass::getSimpleName, Collectors.counting()));
+            }
+
+            @Override
+            public void check(JavaClass javaClass, ConditionEvents events) {
+                if (countBySimpleName.get(javaClass.getSimpleName()) > 1) {
+                    events.add(SimpleConditionEvent.violated(javaClass,
+                            javaClass.getName() + " shares its simple name with another class in api"));
+                }
+            }
+        };
+    }
 }
