@@ -5,7 +5,7 @@
 | Increment | [01 Shop tracer bullet](../../specs/01-shop-tracer-bullet.md) |
 | Type | AFK |
 | Blocked by | [06](06-shop-list.md) |
-| Status | In progress |
+| Status | Done |
 
 ## Goal
 
@@ -21,10 +21,10 @@
 
 ## Acceptance criteria
 
-- [ ] With the docker-compose Postgres, `java -jar target/clean-learning-platform-*.jar --spring.profiles.active=poc` serves the shop at `http://localhost:8080`, and demo step 5 of the [spec](../../specs/01-shop-tracer-bullet.md#demo) works, including a reload on a detail page.
+- [x] With the docker-compose Postgres, `java -jar target/clean-learning-platform-*.jar --spring.profiles.active=poc` serves the shop at `http://localhost:8080`, and demo step 5 of the [spec](../../specs/01-shop-tracer-bullet.md#demo) works, including a reload on a detail page.
 - [x] `./mvnw verify` without the profile runs no npm.
-- [ ] `GET /api/shop/nope` returns a `ProblemDetail` 404, not `index.html`, and `GET /assets/missing.js` returns 404.
-- [ ] CI builds the jar with the SPA.
+- [x] `GET /api/shop/nope` returns a `ProblemDetail` 404, not `index.html`, and `GET /assets/missing.js` returns 404.
+- [x] CI builds the jar with the SPA.
 - [x] AGENTS.md has the command.
 
 ## Tests
@@ -43,3 +43,4 @@
 - **Test stub:** `src/test/resources/static/index.html` (and `stub.js`) shadows nothing in the jar, because test resources aren't packaged. It doesn't change `RoleMatrixTest`.
 - **Left unticked, and the task stays In progress, until the merge with 07 and the first CI run:** the detail-page reload (needs 07's route), the `ProblemDetail` body of the API 404 (needs 07's `ApiExceptionHandler`), and the CI `package` job.
 - **Not checked locally:** the CI `package` job only ran through `actionlint`; it runs for real on the pull request. Demo step 5's reload on a detail page serves `index.html` here, but the detail route is [07](07-consultation-offering-detail.md), so the SPA shows its not-found page until it's merged.
+- 2026-11-07, after merging 07: checked on the merged branch. `./mvnw -Pfrontend package` built the jar (110 backend tests passed during the build). With the docker-compose Postgres, `java -jar target/clean-learning-platform-*.jar --spring.profiles.active=poc` served the shop at `http://localhost:8080`: the card shows "from CHF 450.00", a click opens `/offerings/00000000-0000-0000-0000-000000001001` with both packages and both experts, and a reload on that page answers 200 `text/html` and shows the detail again. An unknown id in the URL shows "Offering not found". With curl against the jar: `GET /api/shop/nope` answers 404 `application/problem+json` (the `ProblemDetail` from 07's `ApiExceptionHandler`, not `index.html`), `GET /assets/missing.js` answers 404 `application/problem+json`, `GET /v3/api-docs` answers 200 (identical to `backend/openapi.json`, apart from the file's trailing newline), and an anonymous `GET /api/admin/x` answers 401. "CI builds the jar with the SPA" is verified by the `package` job of [CI run 7](https://github.com/mminder/clean-learning-platform/actions/runs/42405417895) on pull request #2, which was green.

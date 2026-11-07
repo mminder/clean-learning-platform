@@ -6,7 +6,7 @@ Instructions for coding agents working in this repository.
 
 A web platform where customers buy and book consultation packages and training runs, experts deliver them, and admins manage offerings and cases. We build a PoC first and refine it into an MVP.
 
-**Status:** increment [01 Shop tracer bullet](_docs/specs/01-shop-tracer-bullet.md) is in progress. The shop list works end to end: the seeded Career Coaching offering travels from Postgres through every backend layer and the generated API client to a card in the React shop. That path ([task 06](_docs/tasks/01-shop-tracer-bullet/06-shop-list.md)) is the pattern to copy for a new use case. The offering detail page and the single jar are next.
+**Status:** increment [01 Shop tracer bullet](_docs/specs/01-shop-tracer-bullet.md) is complete. The shop list and the consultation offering detail work end to end: the seeded Career Coaching offering travels from Postgres through every backend layer and the generated API client to the React shop, served by the Vite dev server or by the single jar. That path ([task 06](_docs/tasks/01-shop-tracer-bullet/06-shop-list.md)) is the pattern to copy for a new use case. Error handling follows [task 07](_docs/tasks/01-shop-tracer-bullet/07-consultation-offering-detail.md): `ApiExceptionHandler` on the backend and `ApiError` on the frontend.
 
 ## Read first
 
