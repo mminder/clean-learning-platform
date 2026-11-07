@@ -6,7 +6,7 @@ Instructions for coding agents working in this repository.
 
 A web platform where customers buy and book consultation packages and training runs, experts deliver them, and admins manage offerings and cases. We build a PoC first and refine it into an MVP.
 
-**Status:** increment [01 Shop tracer bullet](_docs/specs/01-shop-tracer-bullet.md) is in progress. The backend skeleton (a Spring Boot application with the layer packages, Flyway, and the integration test and ArchUnit setup) and the frontend skeleton (a React SPA with layout, routing and tooling) exist. Neither has features yet.
+**Status:** increment [01 Shop tracer bullet](_docs/specs/01-shop-tracer-bullet.md) is in progress. The shop list works end to end: the seeded Career Coaching offering travels from Postgres through every backend layer and the generated API client to a card in the React shop. That path ([task 06](_docs/tasks/01-shop-tracer-bullet/06-shop-list.md)) is the pattern to copy for a new use case. The offering detail page and the single jar are next.
 
 ## Read first
 
@@ -93,7 +93,8 @@ CI (GitHub Actions, `.github/workflows/ci.yml`) runs the same commands on every 
 |---|---|---|
 | root | `docker compose up -d` | Postgres 18 on :5432 (`docker compose down -v` stops it and drops the data) |
 | `backend/` | `./mvnw verify` | all backend tests, including `LayerRulesTest` (needs Docker for Testcontainers) |
-| `backend/` | `./mvnw spring-boot:run -Dspring-boot.run.profiles=poc` | API on :8080 against the docker-compose Postgres, Flyway migrates on start |
+| `backend/` | `./mvnw spring-boot:run -Dspring-boot.run.profiles=poc` | API on :8080 against the docker-compose Postgres, Flyway migrates and seeds on start |
+| `backend/` | `./mvnw test -Dtest=OpenApiContractTest -Dopenapi.write=true` | regenerate the committed `openapi.json` after an API change (`./mvnw verify` fails while it's stale); then run `npm run generate:api` in `frontend/` |
 
 ### Frontend
 
@@ -109,3 +110,5 @@ Run in `frontend/`. Node 22 (`.nvmrc`) and npm.
 | `npm test` | Vitest, one run |
 | `npm run build` | type-check with `tsc -b`, then build into `dist/` |
 | `npm run preview` | serve `dist/` locally |
+| `npm run generate:api` | generate `src/api/schema.d.ts` from `../backend/openapi.json`; commit both together |
+| `npm run check:api` | fail if `src/api/schema.d.ts` doesn't match `../backend/openapi.json` |

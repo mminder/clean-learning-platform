@@ -145,8 +145,8 @@ Names, emails and roles follow the seed table in [UC-01](../../use-cases/uc-01-l
 ```
 
 - `MoneyResponse.amount` is a string with two decimals ([backend.md](../../architecture/backend.md#rest-conventions)).
-- Response fields are **required** in the OpenAPI document unless they're nullable, so the generated TypeScript types aren't all optional. Do this once, with a schema customizer, rather than annotating every field.
-- `backend/openapi.json` is pretty-printed and regenerated with `./mvnw test -Dtest=OpenApiContractTest -Dopenapi.write=true`.
+- Response fields are **required** in the OpenAPI document unless they're nullable, so the generated TypeScript types aren't all optional. Do this once, with a schema customizer, rather than annotating every field. `RequiredResponseFieldsCustomizer` (in `config`) does it for every schema named `*Response`; request schemas keep what Bean Validation says. A response field that may be null gets JSpecify's `@Nullable`, which springdoc marks nullable, so it stays optional.
+- `backend/openapi.json` is pretty-printed, with sorted keys and the fixed server `/`, and regenerated with `./mvnw test -Dtest=OpenApiContractTest -Dopenapi.write=true`.
 
 ## Frontend
 
@@ -154,7 +154,7 @@ Names, emails and roles follow the seed table in [UC-01](../../use-cases/uc-01-l
 frontend/src
 ├─ app/              router, QueryClient provider, layout with header (product name, "Shop")
 ├─ api/              schema.d.ts (generated, committed), client.ts (openapi-fetch, same origin)
-├─ components/ui/    shadcn/ui components, added when used
+├─ components/       ImagePlaceholder; ui/: shadcn/ui components, added when used
 ├─ lib/              money.ts (formatMoney), utils.ts (cn)
 └─ features/shop/    ShopPage, OfferingCard, OfferingDetailPage, queries.ts
 ```
@@ -165,17 +165,17 @@ frontend/src
 | `/offerings/:id` | `OfferingDetailPage` | 07 |
 | `*` | `NotFoundPage` | 03 |
 
-- **Scripts:** `dev`, `build`, `preview`, `lint`, `format`, `format:check`, `test` (`vitest run`), `generate:api` (`backend/openapi.json` → `src/api/schema.d.ts`), `check:api` (regenerate, then fail if `schema.d.ts` changed).
+- **Scripts:** `dev`, `build`, `preview`, `lint`, `format`, `format:check`, `test` (`vitest run`), `generate:api` (`backend/openapi.json` → `src/api/schema.d.ts`), `check:api` (`openapi-typescript --check`: fail if `schema.d.ts` differs from what `generate:api` would write). Prettier and ESLint skip the generated file, so it stays byte for byte what the generator writes.
 - **Query keys:** `['shop', 'offerings']` and `['shop', 'offerings', id]`.
 - **Money:** `formatMoney({ amount: '1800.00', currency: 'CHF' })` returns `CHF 1,800.00`.
-- **Images:** one placeholder component for offering images and expert photos.
+- **Images:** one placeholder component, `components/ImagePlaceholder.tsx`, for offering images and expert photos.
 
 ## Tests
 
 | What | How |
 |---|---|
 | Integration test setup | A meta-annotation `@IntegrationTest`: `@SpringBootTest`, MockMvc, the `poc` profile, and a Testcontainers Postgres through `@ServiceConnection`. One Spring context and one container for the whole run. |
-| REST tests | `MockMvcTester`, one happy-path test per route, plus the spec's error scenarios. Extra rows go in with `@Sql` and don't leak into other tests. |
+| REST tests | `MockMvcTester`, one happy-path test per route, plus the spec's error scenarios. Extra rows go in with `@Sql` and don't leak into other tests: a second `@Sql` with `executionPhase = AFTER_TEST_METHOD` deletes them (see `ShopControllerTest`). |
 | Role matrix | `RoleMatrixTest`: one parameterized test over a single route table (method, path, access). A new route is a new row. |
 | Layer rules | `LayerRulesTest` (ArchUnit), following [backend.md](../../architecture/backend.md#layer-rules) |
 | Contract | `OpenApiContractTest` compares the generated document with `backend/openapi.json`. On a mismatch it fails and names the regenerate command. |
