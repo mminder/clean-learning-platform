@@ -28,10 +28,96 @@
         },
         "tags" : [ "shop-controller" ]
       }
+    },
+    "/api/shop/offerings/{id}" : {
+      "get" : {
+        "operationId" : "getOffering",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ShopOfferingDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "shop-controller" ]
+      }
     }
   },
   "components" : {
     "schemas" : {
+      "ConsultationOfferingDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "cancellationDeadlineHours" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "eligibleExperts" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/EligibleExpertResponse"
+            }
+          },
+          "packages" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ConsultationPackageResponse"
+            }
+          },
+          "sessionDurationMinutes" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "cancellationDeadlineHours", "eligibleExperts", "packages", "sessionDurationMinutes" ]
+      },
+      "ConsultationPackageResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "price" : {
+            "$ref" : "#/components/schemas/MoneyResponse"
+          },
+          "sessionCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "id", "price", "sessionCount" ]
+      },
+      "EligibleExpertResponse" : {
+        "type" : "object",
+        "properties" : {
+          "bio" : {
+            "type" : "string"
+          },
+          "displayName" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "bio", "displayName", "id" ]
+      },
       "MoneyResponse" : {
         "type" : "object",
         "properties" : {
@@ -43,6 +129,29 @@
           }
         },
         "required" : [ "amount", "currency" ]
+      },
+      "ShopOfferingDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "consultation" : {
+            "$ref" : "#/components/schemas/ConsultationOfferingDetailResponse"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "CONSULTATION" ]
+          }
+        },
+        "required" : [ "consultation", "description", "id", "name", "type" ]
       },
       "ShopOfferingResponse" : {
         "type" : "object",

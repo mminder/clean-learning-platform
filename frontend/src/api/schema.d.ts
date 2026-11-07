@@ -20,13 +20,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/shop/offerings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getOffering"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        ConsultationOfferingDetailResponse: {
+            /** Format: int32 */
+            cancellationDeadlineHours: number;
+            eligibleExperts: components["schemas"]["EligibleExpertResponse"][];
+            packages: components["schemas"]["ConsultationPackageResponse"][];
+            /** Format: int32 */
+            sessionDurationMinutes: number;
+        };
+        ConsultationPackageResponse: {
+            /** Format: uuid */
+            id: string;
+            price: components["schemas"]["MoneyResponse"];
+            /** Format: int32 */
+            sessionCount: number;
+        };
+        EligibleExpertResponse: {
+            bio: string;
+            displayName: string;
+            /** Format: uuid */
+            id: string;
+        };
         MoneyResponse: {
             amount: string;
             currency: string;
+        };
+        ShopOfferingDetailResponse: {
+            consultation: components["schemas"]["ConsultationOfferingDetailResponse"];
+            description: string;
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** @enum {string} */
+            type: "CONSULTATION";
         };
         ShopOfferingResponse: {
             description: string;
@@ -62,6 +108,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ShopOfferingResponse"][];
+                };
+            };
+        };
+    };
+    getOffering: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopOfferingDetailResponse"];
                 };
             };
         };

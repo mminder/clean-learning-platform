@@ -148,6 +148,7 @@ Names, emails and roles follow the seed table in [UC-01](../../use-cases/uc-01-l
 - `MoneyResponse.amount` is a string with two decimals ([backend.md](../../architecture/backend.md#rest-conventions)).
 - Response fields are **required** in the OpenAPI document unless they're nullable, so the generated TypeScript types aren't all optional. Do this once, with a schema customizer, rather than annotating every field. `RequiredResponseFieldsCustomizer` (in `config`) does it for every schema named `*Response`; request schemas keep what Bean Validation says. A response field that may be null gets JSpecify's `@Nullable`, which springdoc marks nullable, so it stays optional.
 - `backend/openapi.json` is pretty-printed, with sorted keys and the fixed server `/`, and regenerated with `./mvnw test -Dtest=OpenApiContractTest -Dopenapi.write=true`.
+- **Errors** are `ProblemDetail` bodies (`application/problem+json`, [backend.md](../../architecture/backend.md#errors)). `ApiExceptionHandler` extends Spring's `ResponseEntityExceptionHandler`, so Spring MVC's own exceptions answer with `ProblemDetail` too: an unknown route 404, a malformed id or request 400. It maps `NotFoundException` (`domain.shared`) to 404. The error responses aren't in `openapi.json`: springdoc leaves them out, and the frontend only needs the status.
 
 ## Frontend
 
@@ -156,7 +157,7 @@ frontend/src
 ├─ app/              router, QueryClient provider, layout with header (product name, "Shop")
 ├─ api/              schema.d.ts (generated, committed), client.ts (openapi-fetch, same origin)
 ├─ components/       ImagePlaceholder; ui/: shadcn/ui components, added when used
-├─ lib/              money.ts (formatMoney), utils.ts (cn)
+├─ lib/              money.ts (formatMoney), api-error.ts (ApiError with the status), utils.ts (cn)
 └─ features/shop/    ShopPage, OfferingCard, OfferingDetailPage, queries.ts
 ```
 
@@ -168,6 +169,7 @@ frontend/src
 
 - **Scripts:** `dev`, `build`, `preview`, `lint`, `format`, `format:check`, `test` (`vitest run`), `generate:api` (`backend/openapi.json` → `src/api/schema.d.ts`), `check:api` (`openapi-typescript --check`: fail if `schema.d.ts` differs from what `generate:api` would write). Prettier and ESLint skip the generated file, so it stays byte for byte what the generator writes.
 - **Query keys:** `['shop', 'offerings']` and `['shop', 'offerings', id]`.
+- **API errors:** a query hook throws an `ApiError` that carries the response status, so a page tells a 404 ("not found") apart from other errors (a retry button). A detail page treats a 400 like a 404: a malformed id in the URL is a missing resource for the visitor. The `QueryClient`'s default `retry` is `retryUnlessClientError`: a 4xx won't change by asking again, so it shows at once; other errors are retried three times.
 - **Money:** `formatMoney({ amount: '1800.00', currency: 'CHF' })` returns `CHF 1,800.00`.
 - **Images:** one placeholder component, `components/ImagePlaceholder.tsx`, for offering images and expert photos.
 
