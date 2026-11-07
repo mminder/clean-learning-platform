@@ -5,7 +5,7 @@
 | Increment | [01 Shop tracer bullet](../../specs/01-shop-tracer-bullet.md) |
 | Type | AFK |
 | Blocked by | [06](06-shop-list.md) |
-| Status | Todo |
+| Status | In progress |
 
 ## Goal
 
