@@ -6,7 +6,7 @@ Instructions for coding agents working in this repository.
 
 A web platform where customers buy and book consultation packages and training runs, experts deliver them, and admins manage offerings and cases. We build a PoC first and refine it into an MVP.
 
-**Status:** documentation only. No code exists yet. The first increment is planned: [01 Shop tracer bullet](_docs/specs/01-shop-tracer-bullet.md).
+**Status:** increment [01 Shop tracer bullet](_docs/specs/01-shop-tracer-bullet.md) is in progress. The backend skeleton exists: a Spring Boot application with the layer packages, Flyway, and the integration test and ArchUnit setup. It has no features yet.
 
 ## Read first
 
@@ -38,9 +38,9 @@ Work arrives as tasks. Follow [working on a task](_docs/tasks/README.md#working-
 ├─ _docs/              specification and architecture (source of truth)
 │  ├─ specs/           increment specs: what we build now, and why
 │  └─ tasks/           technical plans and tasks per increment
-├─ backend/            Spring Boot, Maven           (not created yet)
+├─ backend/            Spring Boot, Maven
 ├─ frontend/           React SPA, Vite              (not created yet)
-├─ docker-compose.yml  Postgres, Keycloak for local (not created yet)
+├─ docker-compose.yml  Postgres for local development
 └─ .github/workflows/  CI on GitHub Actions          (not created yet)
 ```
 
@@ -85,4 +85,10 @@ In Claude Code cloud sessions, the environment's setup script installs JDK 25, a
 
 ## Commands
 
-None yet. Add build, test and run commands here once the code exists.
+### Backend
+
+| Where | Command | Does |
+|---|---|---|
+| root | `docker compose up -d` | Postgres 18 on :5432 (`docker compose down -v` stops it and drops the data) |
+| `backend/` | `./mvnw verify` | all backend tests, including `LayerRulesTest` (needs Docker for Testcontainers) |
+| `backend/` | `./mvnw spring-boot:run -Dspring-boot.run.profiles=poc` | API on :8080 against the docker-compose Postgres, Flyway migrates on start |
