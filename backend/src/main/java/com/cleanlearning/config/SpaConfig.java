@@ -24,7 +24,8 @@ class SpaConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/**")
                 .addResourceLocations(STATIC_LOCATION)
-                .resourceChain(true)
+                // No resource chain cache: it would keep an entry for every distinct client route a caller invents.
+                .resourceChain(false)
                 .addResolver(new SpaResourceResolver());
     }
 
@@ -42,7 +43,8 @@ class SpaConfig implements WebMvcConfigurer {
         }
 
         private static boolean isClientRoute(String resourcePath) {
-            if (resourcePath.startsWith("api/") || resourcePath.startsWith("v3/")) {
+            String firstSegment = resourcePath.split("/", 2)[0];
+            if (firstSegment.equals("api") || firstSegment.equals("v3")) {
                 return false;
             }
             String lastSegment = resourcePath.substring(resourcePath.lastIndexOf('/') + 1);

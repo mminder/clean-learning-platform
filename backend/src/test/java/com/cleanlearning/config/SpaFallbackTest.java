@@ -1,6 +1,7 @@
 package com.cleanlearning.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,11 +57,21 @@ class SpaFallbackTest {
     }
 
     @Test
-    void unknownOpenApiPathIsNotIndexHtml() {
-        MvcTestResult result = mockMvc.get().uri("/v3/nope").exchange();
+    void apiPrefixItselfIsNotIndexHtml() {
+        MvcTestResult result = mockMvc.get().uri("/api").with(user("customer").roles("CUSTOMER")).exchange();
 
         assertThat(result).hasStatus(404);
         assertNotIndexHtml(result);
+    }
+
+    @Test
+    void unknownOpenApiPathIsNotIndexHtml() {
+        for (String path : new String[] {"/v3/nope", "/v3", "/v3/"}) {
+            MvcTestResult result = mockMvc.get().uri(path).exchange();
+
+            assertThat(result).as(path).hasStatus(404);
+            assertNotIndexHtml(result);
+        }
     }
 
     private static void assertIndexHtml(MvcTestResult result) {
