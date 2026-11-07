@@ -55,7 +55,7 @@ These major versions are new, and most examples online are for older ones. Check
 
 | Package | Classes in this increment |
 |---|---|
-| `config` | `SecurityConfig`, `OpenApiConfig`, `RequiredResponseFieldsCustomizer` |
+| `config` | `SecurityConfig`, `OpenApiConfig`, `RequiredResponseFieldsCustomizer`, `SpaConfig` (the jar serves the SPA, `index.html` for client routes, task 08) |
 | `api` | `ApiExceptionHandler` (central `ProblemDetail` mapping); `MoneyResponse`, shared by every feature's responses (public `from(Money)`) |
 | `api.shop` | `ShopController`; responses `ShopOfferingResponse`, `ShopOfferingDetailResponse`, `ConsultationOfferingDetailResponse`, `ConsultationPackageResponse`, `EligibleExpertResponse` |
 | `application.offering` | `ListShopOfferingsService`, `GetShopOfferingService`, `LoadShopOfferingsPort`, `LoadShopOfferingPort` |
@@ -182,6 +182,8 @@ frontend/src
 | REST tests | `MockMvcTester`, one happy-path test per route, plus the spec's error scenarios. Extra rows go in with `@Sql` and don't leak into other tests: a second `@Sql` with `executionPhase = AFTER_TEST_METHOD` deletes them (see `ShopControllerTest`). |
 | Role matrix | `RoleMatrixTest`: one parameterized test over a single route table (method, path, access). A new route is a new row. |
 | Layer rules | `LayerRulesTest` (ArchUnit), following [backend.md](../../architecture/backend.md#layer-rules), plus unique names for request and response records in `api` |
+| Seed | `SeedDataTest` checks the six `poc` users and their roles against `SeedData`, since nothing reads users through the API yet |
+| SPA in the jar | `SpaFallbackTest`: a client route gets `index.html`, a missing file or API path a 404 (a stub `index.html` in the test resources) |
 | Contract | `OpenApiContractTest` compares the generated document with `backend/openapi.json`. On a mismatch it fails and names the regenerate command. |
 | Domain | Plain JUnit and AssertJ for `Money`, the "from" price and the value objects |
 | Frontend | Vitest for `lib/` logic only ([D-29](../../decisions.md#architecture)) |

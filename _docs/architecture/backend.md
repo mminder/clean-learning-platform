@@ -4,7 +4,7 @@ A Spring Boot modular monolith with a hexagonal architecture, kept pragmatic. Th
 
 ## Tooling
 
-Java 25 · Spring Boot 4.x · Maven (wrapper) · Spring Data JPA / Hibernate · Flyway · Bean Validation · springdoc-openapi · JUnit 5 · AssertJ · Testcontainers · ArchUnit · `MockMvcTester`.
+Java 25 · Spring Boot 4.x · Maven (wrapper) · Spring Data JPA / Hibernate · Flyway · Bean Validation · springdoc-openapi · JUnit Jupiter 6 · AssertJ · Testcontainers · ArchUnit · `MockMvcTester`.
 
 There's no Lombok and no MapStruct. Value objects, commands and DTOs are Java `record`s (D-28).
 

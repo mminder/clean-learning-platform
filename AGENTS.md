@@ -48,7 +48,7 @@ Work arrives as tasks. Follow [working on a task](_docs/tasks/README.md#working-
 
 Details: [_docs/architecture/backend.md](_docs/architecture/backend.md).
 
-- Root packages `api`, `application`, `domain`, `adapters.database` (plus `config`). Each has the feature sub-packages `user`, `offering`, `consultation`, `training`, `availability`, `image`. Shared value objects live in `domain.shared`.
+- Root packages `api`, `application`, `domain`, `adapters.database` (plus `config`). Each has the feature sub-packages `user`, `offering`, `consultation`, `training`, `availability`, `image`; `api` also has `shop`, the public catalog endpoints. Shared value objects live in `domain.shared`.
 - Each use case is one `@Service` class named `<Verb><Noun>Service` in `application.<feature>`. It has one public method, is `@Transactional`, and contains flow only.
 - Business rules live in `domain` POJOs and records. `domain` has no Spring or JPA imports.
 - Outgoing ports are interfaces named `<Purpose>Port` in `application.<feature>`. They are narrow and use-case specific, and implemented in `adapters.database.<feature>`. There are no incoming ports: controllers call use-case services directly.
