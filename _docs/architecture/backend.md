@@ -162,6 +162,16 @@ Domain and application exceptions are mapped centrally (`@RestControllerAdvice`)
 | Resource doesn't exist **or isn't yours** | 404 |
 | Business rule violated (slot taken, sold out, deadline passed, offering has purchases, …) | 409 (with a stable `code` property for the frontend) |
 
+Not every error body is a `ProblemDetail`:
+
+- **`ProblemDetail`** (`application/problem+json`): every error raised inside Spring MVC, through `ApiExceptionHandler` and its base class `ResponseEntityExceptionHandler`: 400, 404, 405, and later 409.
+- **Not `ProblemDetail`:** errors that never reach a controller or the advice.
+  - Spring Security's 401: an empty body.
+  - Spring Security's 403, including the CSRF rejection: Boot's error JSON.
+  - Unexpected 500s: Boot's error JSON.
+
+Clients rely only on the status for the second group, never on its body.
+
 ## REST conventions
 
 - Route prefixes by audience (D-26): `/api/shop`, `/api/customer`, `/api/expert`, `/api/admin`, plus `/api/me`, `/api/images`, `/api/poc` (`poc` profile only).

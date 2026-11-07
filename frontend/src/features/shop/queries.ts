@@ -7,6 +7,7 @@ export function useShopOfferings() {
     queryKey: ['shop', 'offerings'],
     queryFn: async () => {
       const { data, response } = await client.GET('/api/shop/offerings')
+      // not `error`: a 401 has an empty body, and openapi-fetch then returns `error: undefined`
       if (data === undefined) {
         throw new ApiError(
           `Loading the offerings failed: ${response.status}`,
@@ -25,6 +26,7 @@ export function useShopOffering(id: string) {
       const { data, response } = await client.GET('/api/shop/offerings/{id}', {
         params: { path: { id } },
       })
+      // not `error`: a 401 has an empty body, and openapi-fetch then returns `error: undefined`
       if (data === undefined) {
         throw new ApiError(
           `Loading the offering failed: ${response.status}`,
