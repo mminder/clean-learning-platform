@@ -20,6 +20,8 @@ class ConsultationPackageEntity {
     // consultation_offering shares its id with offering, so this is also the offering's id.
     private UUID consultationOfferingId;
 
+    private int sessionCount;
+
     private BigDecimal price;
 
     protected ConsultationPackageEntity() {

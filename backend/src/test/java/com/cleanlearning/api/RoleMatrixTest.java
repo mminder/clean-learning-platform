@@ -22,6 +22,7 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import com.cleanlearning.IntegrationTest;
+import com.cleanlearning.SeedData;
 
 /**
  * Every route, called by every kind of user: the route either passes security, or the caller gets 401 (anonymous)
@@ -34,6 +35,7 @@ class RoleMatrixTest {
     // decides before routing, so a probe that passes security ends in 404.
     private static final List<Route> ROUTES = List.of(
             new Route(GET, "/api/shop/offerings", Access.PUBLIC),
+            new Route(GET, "/api/shop/offerings/" + SeedData.CAREER_COACHING, Access.PUBLIC),
             new Route(GET, "/api/me", Access.AUTHENTICATED),
             new Route(GET, "/api/probe", Access.AUTHENTICATED), // any /api route without a rule of its own
             new Route(GET, "/api/customer/probe", Access.CUSTOMER),
