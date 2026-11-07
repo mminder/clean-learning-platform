@@ -39,7 +39,7 @@ Work arrives as tasks. Follow [working on a task](_docs/tasks/README.md#working-
 │  ├─ specs/           increment specs: what we build now, and why
 │  └─ tasks/           technical plans and tasks per increment
 ├─ backend/            Spring Boot, Maven           (not created yet)
-├─ frontend/           React SPA, Vite              (not created yet)
+├─ frontend/           React SPA, Vite
 ├─ docker-compose.yml  Postgres, Keycloak for local (not created yet)
 └─ .github/workflows/  CI on GitHub Actions          (not created yet)
 ```
@@ -85,4 +85,17 @@ In Claude Code cloud sessions, the environment's setup script installs JDK 25, a
 
 ## Commands
 
-None yet. Add build, test and run commands here once the code exists.
+### Frontend
+
+Run in `frontend/`. Node 22 (`.nvmrc`) and npm.
+
+| Command | Does |
+|---|---|
+| `npm ci` | install the locked dependencies |
+| `npm run dev` | Vite on http://localhost:5173, proxies `/api` to http://localhost:8080 |
+| `npm run lint` | ESLint |
+| `npm run format` | Prettier, writes changes |
+| `npm run format:check` | Prettier, fails on unformatted files |
+| `npm test` | Vitest, one run |
+| `npm run build` | type-check with `tsc -b`, then build into `dist/` |
+| `npm run preview` | serve `dist/` locally |
