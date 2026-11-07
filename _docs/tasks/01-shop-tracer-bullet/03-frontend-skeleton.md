@@ -5,7 +5,7 @@
 | Increment | [01 Shop tracer bullet](../../specs/01-shop-tracer-bullet.md) |
 | Type | AFK |
 | Blocked by | – |
-| Status | Todo |
+| Status | Done |
 
 ## Goal
 
@@ -24,11 +24,11 @@ Read first: [frontend.md](../../architecture/frontend.md), and the plan's [toolc
 
 ## Acceptance criteria
 
-- [ ] `npm ci && npm run lint && npm run format:check && npm test && npm run build` passes.
-- [ ] `npm run dev` serves the layout at `http://localhost:5173`. `/` shows the shop placeholder, and `/nope` shows the not-found page.
-- [ ] A request from the dev server to `/api/...` is forwarded to port 8080.
-- [ ] The folders match the plan: `app/`, `components/ui/`, `lib/`, `features/shop/`.
-- [ ] AGENTS.md has the frontend commands.
+- [x] `npm ci && npm run lint && npm run format:check && npm test && npm run build` passes.
+- [x] `npm run dev` serves the layout at `http://localhost:5173`. `/` shows the shop placeholder, and `/nope` shows the not-found page.
+- [x] A request from the dev server to `/api/...` is forwarded to port 8080.
+- [x] The folders match the plan: `app/`, `components/ui/`, `lib/`, `features/shop/`.
+- [x] AGENTS.md has the frontend commands.
 
 ## Tests
 
@@ -40,3 +40,9 @@ Read first: [frontend.md](../../architecture/frontend.md), and the plan's [toolc
 - Money and date formatting: added with the first page that needs them.
 
 ## Notes
+
+- **shadcn/ui was initialized by hand.** The `shadcn init` CLI needs `ui.shadcn.com`, which the cloud agent proxy blocks (403 on CONNECT). `components.json` (style `new-york`, base color `neutral`, CSS variables, `@/` aliases), `src/lib/utils.ts` (`cn`) and the neutral theme variables in `src/index.css` follow shadcn's manual installation guide for Tailwind 4. The `dark` variant is bound to a `.dark` class, so components' `dark:` classes stay off (Tailwind's default follows the OS setting); dark mode itself is not set up (YAGNI). No component is added yet. Without access to `ui.shadcn.com`, copy a component from `apps/v4/registry/new-york-v4/ui/<name>.tsx` in the `shadcn-ui/ui` repository (raw.githubusercontent.com) to `src/components/ui/<name>.tsx`. Change `from "cn"` to `from "@/lib/utils"`, `npm install` what it imports (for example `class-variance-authority` and `radix-ui`), and run `npm run format`.
+- **Versions.** `create vite` now scaffolds Vite 8, TypeScript 7 and oxlint. We use Vite 8 and ESLint 10 as the plan says, and TypeScript `~6.0`, because typescript-eslint 8 supports TypeScript below 6.1 only. Move to TypeScript 7 when typescript-eslint supports it. React Router is pinned to `^7` (the latest major is 8).
+- **Layout of `src/app/`.** `App` holds the routes and the layout; `Providers` holds the `QueryClientProvider`. `main.tsx` wraps them in `BrowserRouter`; the test wraps them in `MemoryRouter`. `NotFoundPage` lives in `app/`, next to the layout.
+- **Test setup.** `src/test-setup.ts` loads the `@testing-library/jest-dom` matchers. Vitest is configured in `vite.config.ts`.
+- **Checked in a browser** (Chromium, dev server): `/` shows the header (product name, **Shop** link) and the placeholder; `/nope` shows the not-found page, and its link goes back to `/`; `fetch('/api/shop/offerings')` reached a throwaway listener on :8080.
