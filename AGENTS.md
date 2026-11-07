@@ -41,7 +41,7 @@ Work arrives as tasks. Follow [working on a task](_docs/tasks/README.md#working-
 ├─ backend/            Spring Boot, Maven
 ├─ frontend/           React SPA, Vite
 ├─ docker-compose.yml  Postgres for local development
-└─ .github/workflows/  CI on GitHub Actions          (not created yet)
+└─ .github/workflows/  CI on GitHub Actions
 ```
 
 ## Backend conventions
@@ -84,6 +84,8 @@ Details: [_docs/architecture/backend.md#testing](_docs/architecture/backend.md#t
 In Claude Code cloud sessions, the environment's setup script installs JDK 25, and the SessionStart hook ([.claude/hooks/session-start.sh](.claude/hooks/session-start.sh)) starts Docker and sets `JAVA_HOME` to Java 25. Locally the hook does nothing.
 
 ## Commands
+
+CI (GitHub Actions, `.github/workflows/ci.yml`) runs the same commands on every pull request and push to `main`.
 
 ### Backend
 
