@@ -4,7 +4,7 @@ import { ImagePlaceholder } from '@/components/ImagePlaceholder'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { isNotFound } from '@/lib/api-error'
+import { isBadRequest, isNotFound } from '@/lib/api-error'
 import { formatMoney } from '@/lib/money'
 import { useShopOffering } from './queries'
 
@@ -20,7 +20,8 @@ export function OfferingDetailPage() {
     return <p className="text-muted-foreground">Loading the offering…</p>
   }
   if (offering.isError) {
-    if (isNotFound(offering.error)) {
+    // A malformed id in the URL (400) is a missing offering for the visitor, too.
+    if (isNotFound(offering.error) || isBadRequest(offering.error)) {
       return (
         <div className="space-y-4">
           <h1 className="text-2xl font-semibold">Offering not found</h1>

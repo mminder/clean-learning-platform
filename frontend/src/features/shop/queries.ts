@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { client } from '@/api/client'
-import { ApiError, retryUnlessNotFound } from '@/lib/api-error'
+import { ApiError } from '@/lib/api-error'
 
 export function useShopOfferings() {
   return useQuery({
@@ -33,6 +33,5 @@ export function useShopOffering(id: string) {
       }
       return data
     },
-    retry: retryUnlessNotFound,
   })
 }

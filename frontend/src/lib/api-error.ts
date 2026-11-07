@@ -13,13 +13,21 @@ export function isNotFound(error: unknown): boolean {
   return error instanceof ApiError && error.status === 404
 }
 
+export function isBadRequest(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 400
+}
+
+export function isClientError(error: unknown): boolean {
+  return error instanceof ApiError && error.status >= 400 && error.status < 500
+}
+
 /**
- * A query's `retry` option: a 404 won't change by asking again, so it isn't retried.
+ * The QueryClient's default `retry`: a client error (4xx) won't change by asking again, so it isn't retried.
  * Other errors are retried three times, as TanStack Query does by default.
  */
-export function retryUnlessNotFound(
+export function retryUnlessClientError(
   failureCount: number,
   error: Error,
 ): boolean {
-  return !isNotFound(error) && failureCount < 3
+  return !isClientError(error) && failureCount < 3
 }

@@ -169,7 +169,7 @@ frontend/src
 
 - **Scripts:** `dev`, `build`, `preview`, `lint`, `format`, `format:check`, `test` (`vitest run`), `generate:api` (`backend/openapi.json` → `src/api/schema.d.ts`), `check:api` (`openapi-typescript --check`: fail if `schema.d.ts` differs from what `generate:api` would write). Prettier and ESLint skip the generated file, so it stays byte for byte what the generator writes.
 - **Query keys:** `['shop', 'offerings']` and `['shop', 'offerings', id]`.
-- **API errors:** a query hook throws an `ApiError` that carries the response status, so a page tells a 404 ("not found") apart from other errors (a retry button). A detail query passes `retry: retryUnlessNotFound`, so a 404 shows at once.
+- **API errors:** a query hook throws an `ApiError` that carries the response status, so a page tells a 404 ("not found") apart from other errors (a retry button). A detail page treats a 400 like a 404: a malformed id in the URL is a missing resource for the visitor. The `QueryClient`'s default `retry` is `retryUnlessClientError`: a 4xx won't change by asking again, so it shows at once; other errors are retried three times.
 - **Money:** `formatMoney({ amount: '1800.00', currency: 'CHF' })` returns `CHF 1,800.00`.
 - **Images:** one placeholder component, `components/ImagePlaceholder.tsx`, for offering images and expert photos.
 
