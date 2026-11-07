@@ -87,4 +87,4 @@ What could go wrong, and how the plan addresses it.
 
 | # | Spec | Status |
 |---|---|---|
-| 01 | [Shop tracer bullet](01-shop-tracer-bullet.md) | Ready |
+| 01 | [Shop tracer bullet](01-shop-tracer-bullet.md) | Done |

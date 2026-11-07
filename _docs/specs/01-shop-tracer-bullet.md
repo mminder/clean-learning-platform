@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | Ready |
+| Status | Done |
 | Use cases | [UC-02](../use-cases/uc-02-browse-shop.md), consultation part (steps 1–4) |
 | Tasks | [tasks/01-shop-tracer-bullet](../tasks/01-shop-tracer-bullet/README.md) |
 
