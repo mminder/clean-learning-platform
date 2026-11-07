@@ -34,6 +34,8 @@ frontend/src
 
 A feature folder contains its pages, components, query and mutation hooks, and its tests.
 
+A shadcn/ui component is added when a page first uses it: run `npx shadcn@latest add <component>` in `frontend/`, then `npm run format`. One fix-up until we decide otherwise: the registry's components import `cn` from the npm package `cn`, which the CLI installs, while ours use `cn` from `@/lib/utils` (clsx and tailwind-merge). Change the import to `@/lib/utils` and run `npm uninstall cn` (the switch would be `npx shadcn@latest migrate cn`).
+
 ## Routes
 
 | Path | Page | Access |

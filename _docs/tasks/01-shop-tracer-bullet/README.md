@@ -157,7 +157,7 @@ Names, emails and roles follow the seed table in [UC-01](../../use-cases/uc-01-l
 frontend/src
 ├─ app/              router, QueryClient provider, layout with header (product name, "Shop")
 ├─ api/              schema.d.ts (generated, committed), client.ts (openapi-fetch, same origin)
-├─ components/       ImagePlaceholder; ui/: shadcn/ui components, added when used
+├─ components/       ImagePlaceholder; ui/: shadcn/ui components, added when used with `npx shadcn@latest add` (frontend.md)
 ├─ lib/              money.ts (formatMoney), api-error.ts (ApiError with the status), utils.ts (cn)
 └─ features/shop/    ShopPage, OfferingCard, OfferingDetailPage, queries.ts
 ```
