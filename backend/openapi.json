@@ -1,0 +1,72 @@
+{
+  "openapi" : "3.1.0",
+  "info" : {
+    "title" : "Clean Learning Platform API",
+    "version" : "v1"
+  },
+  "servers" : [ {
+    "url" : "/"
+  } ],
+  "paths" : {
+    "/api/shop/offerings" : {
+      "get" : {
+        "operationId" : "listOfferings",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ShopOfferingResponse"
+                  }
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "shop-controller" ]
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "MoneyResponse" : {
+        "type" : "object",
+        "properties" : {
+          "amount" : {
+            "type" : "string"
+          },
+          "currency" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "amount", "currency" ]
+      },
+      "ShopOfferingResponse" : {
+        "type" : "object",
+        "properties" : {
+          "description" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "price" : {
+            "$ref" : "#/components/schemas/MoneyResponse"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "CONSULTATION" ]
+          }
+        },
+        "required" : [ "description", "id", "name", "price", "type" ]
+      }
+    }
+  }
+}

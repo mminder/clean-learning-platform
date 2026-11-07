@@ -20,7 +20,8 @@
 frontend/src
 ├─ app/                 router, providers (QueryClient), layout, header navigation
 ├─ api/                 generated schema types + configured openapi-fetch client
-├─ components/ui/       shadcn/ui components
+├─ components/          shared components, e.g. ImagePlaceholder
+│  └─ ui/               shadcn/ui components
 ├─ lib/                 date formatting (Zurich), money formatting, error mapping
 └─ features/            mirrors the backend features
    ├─ shop/             UC-02, buy dialogs (UC-03, UC-04)

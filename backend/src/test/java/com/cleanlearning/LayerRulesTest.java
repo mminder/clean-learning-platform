@@ -12,7 +12,8 @@ import jakarta.persistence.Entity;
 import org.springframework.stereotype.Service;
 
 /**
- * The layer rules of _docs/architecture/backend.md. Empty layers are allowed, so the rules hold before the code exists.
+ * The layer rules of _docs/architecture/backend.md. Every layer and every rule must match classes, so a mistyped
+ * package fails instead of passing silently.
  */
 @AnalyzeClasses(packages = "com.cleanlearning", importOptions = ImportOption.DoNotIncludeTests.class)
 class LayerRulesTest {
@@ -26,7 +27,6 @@ class LayerRulesTest {
     @ArchTest
     static final ArchRule layerDependencies = layeredArchitecture()
             .consideringOnlyDependenciesInLayers()
-            .withOptionalLayers(true)
             .layer("config").definedBy(CONFIG)
             .layer("api").definedBy(API)
             .layer("application").definedBy(APPLICATION)
@@ -41,31 +41,26 @@ class LayerRulesTest {
     @ArchTest
     static final ArchRule domainDependsOnlyOnJavaAndDomain = classes()
             .that().resideInAPackage(DOMAIN)
-            .should().onlyDependOnClassesThat().resideInAnyPackage("java..", DOMAIN)
-            .allowEmptyShould(true);
+            .should().onlyDependOnClassesThat().resideInAnyPackage("java..", DOMAIN);
 
     @ArchTest
     static final ArchRule applicationIsFreeOfJpa = noClasses()
             .that().resideInAPackage(APPLICATION)
-            .should().dependOnClassesThat().resideInAPackage("jakarta.persistence..")
-            .allowEmptyShould(true);
+            .should().dependOnClassesThat().resideInAPackage("jakarta.persistence..");
 
     @ArchTest
     static final ArchRule entitiesLiveInAdaptersDatabase = classes()
             .that().areAnnotatedWith(Entity.class)
-            .should().resideInAPackage(ADAPTERS_DATABASE)
-            .allowEmptyShould(true);
+            .should().resideInAPackage(ADAPTERS_DATABASE);
 
     @ArchTest
     static final ArchRule useCaseServicesEndInService = classes()
             .that().resideInAPackage(APPLICATION).and().areAnnotatedWith(Service.class)
-            .should().haveSimpleNameEndingWith("Service")
-            .allowEmptyShould(true);
+            .should().haveSimpleNameEndingWith("Service");
 
     @ArchTest
     static final ArchRule portsEndInPort = classes()
             .that().resideInAPackage(APPLICATION).and().areInterfaces()
             .and().doNotHaveSimpleName("package-info") // compiled as a synthetic interface
-            .should().haveSimpleNameEndingWith("Port")
-            .allowEmptyShould(true);
+            .should().haveSimpleNameEndingWith("Port");
 }

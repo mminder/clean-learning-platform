@@ -33,12 +33,13 @@ class RoleMatrixTest {
     // Every new route gets a row here. Until a prefix has a real route, a probe path stands in for it: security
     // decides before routing, so a probe that passes security ends in 404.
     private static final List<Route> ROUTES = List.of(
-            new Route(GET, "/api/shop/probe", Access.PUBLIC),
+            new Route(GET, "/api/shop/offerings", Access.PUBLIC),
             new Route(GET, "/api/me", Access.AUTHENTICATED),
             new Route(GET, "/api/probe", Access.AUTHENTICATED), // any /api route without a rule of its own
             new Route(GET, "/api/customer/probe", Access.CUSTOMER),
             new Route(GET, "/api/expert/probe", Access.EXPERT),
             new Route(GET, "/api/admin/probe", Access.ADMIN),
+            new Route(GET, "/v3/api-docs", Access.PUBLIC),
             new Route(GET, "/", Access.PUBLIC),
             new Route(GET, "/offerings/anything", Access.PUBLIC));
 
