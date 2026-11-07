@@ -39,13 +39,14 @@ Configured declaratively in the Spring Security config (D-26).
 | Prefix | Access |
 |---|---|
 | `/api/shop/**`, `GET /api/images/**` | public |
-| `/api/me`, `/api/logout` | authenticated |
+| `/api/me`, `/api/logout`, every other `/api/**` | authenticated |
 | `/api/customer/**` | `CUSTOMER` |
 | `/api/expert/**` | `EXPERT` |
 | `/api/admin/**` | `ADMIN` |
 | `/api/poc/**` | public, `poc` profile only |
+| everything outside `/api` (the SPA) | public |
 
-A user with several roles can call every prefix their roles allow.
+A user with several roles can call every prefix their roles allow. An anonymous caller gets 401 without a redirect, login page or Basic challenge; a missing role gets 403.
 
 ### Ownership in use cases
 
