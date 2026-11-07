@@ -21,6 +21,8 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(requests -> requests
                         .requestMatchers("/api/shop/**").permitAll()
+                        // the OpenAPI document (D-29)
+                        .requestMatchers("/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/customer/**").hasRole("CUSTOMER")
                         .requestMatchers("/api/expert/**").hasRole("EXPERT")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
