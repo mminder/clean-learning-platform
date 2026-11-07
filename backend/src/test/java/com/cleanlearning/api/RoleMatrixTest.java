@@ -35,6 +35,7 @@ class RoleMatrixTest {
     private static final List<Route> ROUTES = List.of(
             new Route(GET, "/api/shop/probe", Access.PUBLIC),
             new Route(GET, "/api/me", Access.AUTHENTICATED),
+            new Route(GET, "/api/probe", Access.AUTHENTICATED), // any /api route without a rule of its own
             new Route(GET, "/api/customer/probe", Access.CUSTOMER),
             new Route(GET, "/api/expert/probe", Access.EXPERT),
             new Route(GET, "/api/admin/probe", Access.ADMIN),
