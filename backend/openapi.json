@@ -49,7 +49,17 @@
                 }
               }
             },
-            "description" : "Created"
+            "description" : "Created",
+            "headers" : {
+              "Location" : {
+                "description" : "The new offering's URL, relative",
+                "schema" : {
+                  "type" : "string",
+                  "format" : "uri-reference"
+                },
+                "style" : "simple"
+              }
+            }
           },
           "400" : {
             "content" : {
@@ -935,7 +945,7 @@
           },
           "price" : {
             "type" : "string",
-            "pattern" : "\\d{1,8}(\\.\\d{1,2})?"
+            "pattern" : "^\\d{1,8}(\\.\\d{1,2})?$"
           },
           "sessionCount" : {
             "type" : "integer",

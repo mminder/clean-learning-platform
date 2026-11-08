@@ -411,6 +411,8 @@ export interface operations {
             /** @description Created */
             201: {
                 headers: {
+                    /** @description The new offering's URL, relative */
+                    Location?: string;
                     [name: string]: unknown;
                 };
                 content: {

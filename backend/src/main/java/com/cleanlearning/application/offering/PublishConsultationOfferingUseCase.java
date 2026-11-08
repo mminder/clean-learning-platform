@@ -26,7 +26,8 @@ public class PublishConsultationOfferingUseCase {
 
     /**
      * @throws NotFoundException if there's no consultation offering with this id
-     * @throws BusinessRuleException if the offering isn't a draft ({@code WRONG_OFFERING_STATUS}), or has no package or no eligible expert ({@code OFFERING_INCOMPLETE})
+     * @throws BusinessRuleException if the offering isn't a draft ({@code WRONG_OFFERING_STATUS}), or has no package
+     *     or no eligible expert ({@code OFFERING_INCOMPLETE})
      */
     @Transactional
     public ConsultationOffering invoke(OfferingId id) {

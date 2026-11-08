@@ -202,9 +202,7 @@ export function ConsultationOfferingForm({
                       checked={field.value.includes(expert.id)}
                       onCheckedChange={(checked) =>
                         field.onChange(
-                          checked
-                            ? [...field.value, expert.id]
-                            : field.value.filter((id) => id !== expert.id),
+                          withExpert(field.value, expert.id, checked),
                         )
                       }
                     />
@@ -212,11 +210,6 @@ export function ConsultationOfferingForm({
                 </>
               )}
             />
-          )}
-          {errors.eligibleExpertIds?.message !== undefined && (
-            <p className="text-sm text-destructive">
-              {errors.eligibleExpertIds.message}
-            </p>
           )}
         </fieldset>
       </fieldset>
@@ -234,6 +227,15 @@ export function ConsultationOfferingForm({
       )}
     </form>
   )
+}
+
+/**
+ * The eligible expert ids with one expert checked or unchecked, sorted by id as the saved offering's are (as text, the
+ * backend's order). So unchecking and checking an expert again gives the saved ids back, and the form isn't dirty.
+ */
+function withExpert(ids: string[], expertId: string, checked: boolean) {
+  const others = ids.filter((id) => id !== expertId)
+  return (checked ? [...others, expertId] : others).sort()
 }
 
 /** A checkbox with its label. */

@@ -66,6 +66,8 @@ class ImageControllerTest {
                 .hasStatusOk()
                 .hasContentType("image/png")
                 .hasHeader(HttpHeaders.CACHE_CONTROL, "public, max-age=31536000, immutable")
+                // the browser keeps to the content type and doesn't guess another one from the bytes
+                .hasHeader("X-Content-Type-Options", "nosniff")
                 // Spring Security's no-cache headers stay off
                 .doesNotContainHeader(HttpHeaders.PRAGMA)
                 .doesNotContainHeader(HttpHeaders.EXPIRES);

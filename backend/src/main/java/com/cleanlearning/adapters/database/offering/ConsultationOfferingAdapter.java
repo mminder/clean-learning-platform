@@ -192,8 +192,8 @@ class ConsultationOfferingAdapter implements LoadConsultationOfferingSummariesPo
     }
 
     private static ConsultationPackage toConsultationPackage(ConsultationPackageEntity entity) {
-        return new ConsultationPackage(new ConsultationPackageId(entity.getId()), new SessionCount(entity.getSessionCount()),
-                new Money(entity.getPrice()));
+        return new ConsultationPackage(new ConsultationPackageId(entity.getId()),
+                new SessionCount(entity.getSessionCount()), new Money(entity.getPrice()));
     }
 
     private static ConsultationOfferingSummary toSummary(ConsultationOfferingSummaryRow row) {

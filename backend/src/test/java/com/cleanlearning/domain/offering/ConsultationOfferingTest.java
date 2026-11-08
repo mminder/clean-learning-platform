@@ -143,7 +143,8 @@ class ConsultationOfferingTest {
                 .containsExactly(new SessionCount(1), new SessionCount(4));
         assertThat(offering.packages()).extracting(ConsultationPackage::price)
                 .containsExactly(Money.chf("160"), Money.chf("600"));
-        assertThat(offering.packages()).extracting(ConsultationPackage::id).doesNotContainNull().doesNotHaveDuplicates();
+        assertThat(offering.packages()).extracting(ConsultationPackage::id)
+                .doesNotContainNull().doesNotHaveDuplicates();
     }
 
     @Test
@@ -222,7 +223,8 @@ class ConsultationOfferingTest {
         ConsultationOffering offering = agileCoachingWith(added(1, "160"));
         ConsultationPackage only = offering.packages().getFirst();
 
-        assertThatIllegalArgumentException().isThrownBy(() -> edit(offering, kept(only, 1, "160"), kept(only, 2, "300")));
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> edit(offering, kept(only, 1, "160"), kept(only, 2, "300")));
     }
 
     @Test
@@ -263,6 +265,18 @@ class ConsultationOfferingTest {
         assertThatIllegalArgumentException().isThrownBy(() -> agileCoaching().edit(AGILE_COACHING, "",
                 new SessionDuration(45), new CancellationDeadline(48), List.of(), Set.of(customer), EXPERTS))
                 .withMessageContaining(customer.value().toString());
+    }
+
+    @Test
+    void packagesAndEligibleExpertIdsAreNotNull() {
+        OfferingId id = new OfferingId(UUID.randomUUID());
+
+        assertThatNullPointerException().isThrownBy(() -> new ConsultationOffering(id, AGILE_COACHING, "",
+                new SessionDuration(45), new CancellationDeadline(48), OfferingStatus.DRAFT, null, Set.of(),
+                Optional.empty())).withMessage("packages");
+        assertThatNullPointerException().isThrownBy(() -> new ConsultationOffering(id, AGILE_COACHING, "",
+                new SessionDuration(45), new CancellationDeadline(48), OfferingStatus.DRAFT, List.of(), null,
+                Optional.empty())).withMessage("eligibleExpertIds");
     }
 
     @Test

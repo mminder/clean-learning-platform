@@ -33,12 +33,12 @@ They build one form on one aggregate, so they touch the same controller, use cas
 | `config` | `SecurityConfig`: session login, CSRF for the SPA, `/api/logout`, `/api/poc/**` public (01), `GET /api/images/**` public (07); `ProblemDetailSchemaCustomizer`: the shared `ProblemDetail` schema (03) | 01, 03, 07 |
 | `api` | `ApiExceptionHandler`: 400 with a field list and `IllegalArgumentException` → 400 (03), `BusinessRuleException` → 409 with `code` (06), an upload over the limit → 400 (07); `ProblemResponses`: the error answers a route declares in `openapi.json` (overall review) | 03, 06, 07 |
 | `api.response` | `ConsultationPackageResponse`, moved here from `api.shop.response`, because the shop and the admin both return it | 04 |
-| `api.user` | `PocLoginController` (`@Profile("poc")`), `MeController`, `ExpertController` | 01, 05 |
+| `api.user` | `PocLoginController` (`@Profile("poc")`), `MeController`, `ExpertController`; `CurrentUserAuthentication`: the session's authentication with the `CurrentUser` as principal | 01, 05 |
 | `api.user.request` | `PocLoginRequest` | 01 |
 | `api.user.response` | `PocUserResponse`, `MeResponse`, `ExpertResponse` | 01, 05 |
 | `api.offering` | `ConsultationOfferingController` (`/api/admin/consultation-offerings`) | 02–07 |
-| `api.offering.request` | `ConsultationOfferingRequest`, `ConsultationPackageRequest` | 03, 04 |
-| `api.offering.response` | `ConsultationOfferingSummaryResponse` (list item), `ConsultationOfferingResponse` (detail) | 02, 03 |
+| `api.offering.request` | `ConsultationOfferingRequest`, `ConsultationPackageRequest` | 03–05 |
+| `api.offering.response` | `ConsultationOfferingSummaryResponse` (list item), `ConsultationOfferingResponse` (detail; it gains the packages (04), the eligible expert ids (05) and the image id (07)) | 02–05, 07 |
 | `api.image` | `ImageController` | 07 |
 | `application.user` | `ListPocUsersUseCase`, `LogInPocUserUseCase`, `GetCurrentUserUseCase`, `ListExpertsUseCase`; `LoadUsersPort`, `LoadUserPort`, `LoadExpertsPort` | 01, 05 |
 | `application.offering` | `ListConsultationOfferingsUseCase`, `GetConsultationOfferingUseCase`, `CreateConsultationOfferingUseCase`, `EditConsultationOfferingUseCase`, `PublishConsultationOfferingUseCase`, `UnpublishConsultationOfferingUseCase`, `ArchiveConsultationOfferingUseCase`, `DeleteConsultationOfferingUseCase`, `UploadConsultationOfferingImageUseCase`, `RemoveConsultationOfferingImageUseCase` | 02–07 |
@@ -52,7 +52,7 @@ They build one form on one aggregate, so they touch the same controller, use cas
 | `domain.offering.value` | `OfferingStatus` (`DRAFT`, `PUBLISHED`, `ARCHIVED`) | 02 |
 | `domain.image` | `Image` (id, type, bytes; at most 2 MB, not empty) | 07 |
 | `domain.image.value` | `ImageId`, `ImageType` (`JPEG`, `PNG`, `WEBP`, with the content type and detection from the first bytes) | 07 |
-| `adapters.database.user` | `UserAdapter` (users, roles, experts), its repository; `entity`: `UserEntity`, `UserRoleEntity` | 01, 05 |
+| `adapters.database.user` | `UserAdapter` (users, roles, experts), `UserRepository`; `entity`: `UserEntity`, `UserRoleEntity`, and `ExpertProfileEntity` from increment 01; `row`: `UserRoleRow` (01), `ExpertRow` (05) | 01, 05 |
 | `adapters.database.offering` | `ConsultationOfferingAdapter`, which implements the admin's offering ports; the repositories it needs. `ShopOfferingAdapter` stays for the shop. | 02–07 |
 | `adapters.database.image` | `ImageAdapter` (through the `EntityManager`, no repository: it only finds, persists and removes by id); `entity`: `ImageEntity` | 07 |
 
@@ -225,7 +225,8 @@ frontend/src
 │                      the message for the user (problemMessage) (06);
 │                      api-error.ts: ApiError carries the problem of a 400 or 409 (03), isConflict (06)
 └─ features/
-   ├─ user/            LoginPage, landing.ts (landingPath, safe redirect), queries.ts (useMe, usePocUsers, useLogin, useLogout)
+   ├─ user/            LoginPage, landing.ts (landingPath, safe redirect),
+   │                   queries.ts (useMe, usePocUsers, useLogin, useLogout; useExperts (05))
    ├─ offering/        ConsultationOfferingsPage, NewConsultationOfferingPage, ConsultationOfferingPage,
    │                   ConsultationOfferingForm, OfferingStatusBadge (03), BackToConsultations (03),
    │                   OfferingStatusActions (06), OfferingImageSection (07), queries.ts (with toRequest: a saved offering as the form's values)

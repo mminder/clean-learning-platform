@@ -60,7 +60,9 @@ export function ConsultationOfferingPage() {
           This offering is archived and can't be changed any more.
         </p>
       )}
-      <OfferingImageSection offering={offering.data} />
+      {/* A new section per offering, so a message about another offering's image doesn't stay. Not the form's key:
+          two siblings with one key confuse React. */}
+      <OfferingImageSection key={`${id}-image`} offering={offering.data} />
       <ConsultationOfferingForm
         // A new form for another offering; a reload of this one keeps what the admin is typing. Archived, the form
         // starts again from the saved offering: unsaved edits can't be saved any more and mustn't look saved.

@@ -77,6 +77,8 @@ class ConsultationOfferingConcurrencyTest {
                     unpublish.get(TIMEOUT.toSeconds(), TimeUnit.SECONDS));
         } finally {
             requests.shutdownNow();
+            // A failed run waits for its requests, so they can't race the cleanup script.
+            requests.awaitTermination(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
         }
 
         assertThat(statuses).containsExactlyInAnyOrder(200, 409);
@@ -102,10 +104,11 @@ class ConsultationOfferingConcurrencyTest {
         }
     }
 
+    /** This test's statements waiting for a lock: those on the {@code offering} table, a word in their text. */
     private long waitingForALock() {
         return jdbc.sql("""
                 select count(*) from pg_stat_activity
-                where datname = current_database() and wait_event_type = 'Lock'
+                where datname = current_database() and wait_event_type = 'Lock' and query ~ '\\moffering\\M'
                 """).query(Long.class).single();
     }
 }

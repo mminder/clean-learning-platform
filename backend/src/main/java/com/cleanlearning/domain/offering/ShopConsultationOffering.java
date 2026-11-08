@@ -17,8 +17,8 @@ import com.cleanlearning.domain.offering.value.SessionDuration;
  * no eligible experts. Without an image, the page shows a placeholder.
  */
 public record ShopConsultationOffering(OfferingId id, OfferingName name, String description,
-        Optional<ImageId> imageId, SessionDuration sessionDuration, CancellationDeadline cancellationDeadline, List<ConsultationPackage> packages,
-        List<EligibleExpert> eligibleExperts) {
+        Optional<ImageId> imageId, SessionDuration sessionDuration, CancellationDeadline cancellationDeadline,
+        List<ConsultationPackage> packages, List<EligibleExpert> eligibleExperts) {
 
     public ShopConsultationOffering {
         Objects.requireNonNull(id, "id");

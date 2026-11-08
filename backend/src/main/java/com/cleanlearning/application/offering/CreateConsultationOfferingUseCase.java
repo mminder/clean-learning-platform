@@ -27,8 +27,8 @@ public class CreateConsultationOfferingUseCase {
     @Transactional
     public ConsultationOffering invoke(ConsultationOfferingCommand command) {
         ConsultationOffering offering = ConsultationOffering.create(command.name(), command.description(),
-                command.sessionDuration(), command.cancellationDeadline(), command.packages(), command.eligibleExpertIds(),
-                loadExperts.loadExperts());
+                command.sessionDuration(), command.cancellationDeadline(), command.packages(),
+                command.eligibleExpertIds(), loadExperts.loadExperts());
         saveOffering.create(offering);
         return offering;
     }

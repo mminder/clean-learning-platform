@@ -57,12 +57,16 @@ class RoleMatrixTest {
             new Route(POST, "/api/admin/consultation-offerings", Access.ADMIN), // no body: 400
             new Route(GET, "/api/admin/consultation-offerings/" + SeedData.CAREER_COACHING, Access.ADMIN),
             new Route(PUT, "/api/admin/consultation-offerings/" + UNKNOWN_ID, Access.ADMIN), // no body: 400
-            new Route(POST, "/api/admin/consultation-offerings/" + UNKNOWN_ID + "/publish", Access.ADMIN), // unknown id: 404
-            new Route(POST, "/api/admin/consultation-offerings/" + UNKNOWN_ID + "/unpublish", Access.ADMIN), // unknown id: 404
-            new Route(POST, "/api/admin/consultation-offerings/" + UNKNOWN_ID + "/archive", Access.ADMIN), // unknown id: 404
+            // unknown id: 404
+            new Route(POST, "/api/admin/consultation-offerings/" + UNKNOWN_ID + "/publish", Access.ADMIN),
+            // unknown id: 404
+            new Route(POST, "/api/admin/consultation-offerings/" + UNKNOWN_ID + "/unpublish", Access.ADMIN),
+            // unknown id: 404
+            new Route(POST, "/api/admin/consultation-offerings/" + UNKNOWN_ID + "/archive", Access.ADMIN),
             new Route(DELETE, "/api/admin/consultation-offerings/" + UNKNOWN_ID, Access.ADMIN), // unknown id: 404
             new Route(PUT, "/api/admin/consultation-offerings/" + UNKNOWN_ID + "/image", Access.ADMIN), // no body: 415
-            new Route(DELETE, "/api/admin/consultation-offerings/" + UNKNOWN_ID + "/image", Access.ADMIN), // unknown id: 404
+            // unknown id: 404
+            new Route(DELETE, "/api/admin/consultation-offerings/" + UNKNOWN_ID + "/image", Access.ADMIN),
             new Route(GET, "/api/admin/experts", Access.ADMIN),
             new Route(GET, "/api/images/" + UNKNOWN_ID, Access.PUBLIC), // unknown id: 404
             new Route(GET, "/v3/api-docs", Access.PUBLIC),

@@ -37,8 +37,14 @@ class PocLoginControllerTest {
                           { "id": "00000000-0000-0000-0000-000000000302", "name": "Admin 2", "roles": ["ADMIN"] },
                           { "id": "00000000-0000-0000-0000-000000000101", "name": "Customer 1", "roles": ["CUSTOMER"] },
                           { "id": "00000000-0000-0000-0000-000000000102", "name": "Customer 2", "roles": ["CUSTOMER"] },
-                          { "id": "00000000-0000-0000-0000-000000000201", "name": "Expert 1", "roles": ["CUSTOMER", "EXPERT"] },
-                          { "id": "00000000-0000-0000-0000-000000000202", "name": "Expert 2", "roles": ["EXPERT", "ADMIN"] }
+                          {
+                            "id": "00000000-0000-0000-0000-000000000201", "name": "Expert 1",
+                            "roles": ["CUSTOMER", "EXPERT"]
+                          },
+                          {
+                            "id": "00000000-0000-0000-0000-000000000202", "name": "Expert 2",
+                            "roles": ["EXPERT", "ADMIN"]
+                          }
                         ]
                         """);
     }

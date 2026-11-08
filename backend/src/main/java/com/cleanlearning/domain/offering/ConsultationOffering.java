@@ -54,8 +54,8 @@ public record ConsultationOffering(OfferingId id, OfferingName name, String desc
         Objects.requireNonNull(sessionDuration, "sessionDuration");
         Objects.requireNonNull(cancellationDeadline, "cancellationDeadline");
         Objects.requireNonNull(status, "status");
-        packages = packages.stream().sorted(PACKAGE_ORDER).toList();
-        eligibleExpertIds = Set.copyOf(eligibleExpertIds);
+        packages = Objects.requireNonNull(packages, "packages").stream().sorted(PACKAGE_ORDER).toList();
+        eligibleExpertIds = Set.copyOf(Objects.requireNonNull(eligibleExpertIds, "eligibleExpertIds"));
         Objects.requireNonNull(imageId, "imageId");
     }
 

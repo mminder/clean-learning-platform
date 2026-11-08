@@ -2,13 +2,15 @@ package com.cleanlearning;
 
 import java.util.Arrays;
 
+import com.cleanlearning.domain.image.Image;
+
 /**
  * Image files for tests. Only their first bytes make them a type (D-21), so each is its signature, padded to a size.
  */
 public final class TestImages {
 
     /** 2 MB, the most an image may have (D-21). */
-    public static final int MAX_BYTES = 2 * 1024 * 1024;
+    public static final int MAX_BYTES = Image.MAX_BYTES;
 
     private static final byte[] JPEG = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0};
 

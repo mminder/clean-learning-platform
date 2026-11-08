@@ -5,8 +5,8 @@ import { ApiError } from './api-error'
 /** An error body of the API (RFC 9457), as the generated contract describes it (D-34). */
 export type ProblemDetail = components['schemas']['ProblemDetail']
 
-/** A field error of a 400, with the field's path in a React Hook Form form. */
-export interface FieldError {
+/** An invalid field of a 400, with the field's path in a React Hook Form form. */
+export interface InvalidField {
   path: string
   message: string
 }
@@ -28,7 +28,7 @@ export function toFormPath(field: string): string {
 }
 
 /** The 400's invalid fields, for `setError` on each. A problem without `errors` shows its `detail` instead. */
-export function fieldErrors(problem: ProblemDetail): FieldError[] {
+export function fieldErrors(problem: ProblemDetail): InvalidField[] {
   return (problem.errors ?? []).map(({ field, message }) => ({
     path: toFormPath(field),
     message,

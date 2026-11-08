@@ -10,8 +10,8 @@ import com.cleanlearning.domain.shared.BusinessRuleException;
 import com.cleanlearning.domain.shared.NotFoundException;
 
 /**
- * UC-16 steps 3–4: the admin saves an existing consultation offering. It replaces the offering's fields, packages and eligible experts; a published
- * offering's changes show in the shop at once.
+ * UC-16 steps 3–4: the admin saves an existing consultation offering. It replaces the offering's fields, packages and
+ * eligible experts; a published offering's changes show in the shop at once.
  */
 @Service
 public class EditConsultationOfferingUseCase {
@@ -31,8 +31,8 @@ public class EditConsultationOfferingUseCase {
 
     /**
      * @throws NotFoundException if there's no consultation offering with this id
-     * @throws IllegalArgumentException if a package id isn't one of this offering's, or an eligible expert id
-     *     isn't an expert's
+     * @throws IllegalArgumentException if a package id isn't one of this offering's, a package is named twice, or
+     *     an eligible expert id isn't an expert's
      * @throws BusinessRuleException if the offering is archived ({@code WRONG_OFFERING_STATUS})
      */
     @Transactional

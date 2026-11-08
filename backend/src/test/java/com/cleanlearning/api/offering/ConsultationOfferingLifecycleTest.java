@@ -24,8 +24,8 @@ import com.jayway.jsonpath.JsonPath;
 
 /**
  * UC-16 step 5: publish, unpublish, archive and delete a consultation offering. Like
- * {@link ConsultationOfferingControllerTest}, a test creates its own offerings and {@link SeedData#DELETE_TEST_OFFERINGS}
- * removes them afterwards.
+ * {@link ConsultationOfferingControllerTest}, a test creates its own offerings and
+ * {@link SeedData#DELETE_TEST_OFFERINGS} removes them afterwards.
  */
 @IntegrationTest
 class ConsultationOfferingLifecycleTest {

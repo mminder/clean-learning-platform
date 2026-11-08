@@ -124,11 +124,32 @@ class ConsultationOfferingControllerTest {
     @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
     void listsEveryStatusSortedByName() {
         assertThat(list())
-                .bodyJson().extractingPath("$[*].name").asArray()
-                .containsExactly("Archived Coaching", "Career Coaching", "Draft Coaching");
-        assertThat(list())
-                .bodyJson().extractingPath("$[*].status").asArray()
-                .containsExactly("ARCHIVED", "PUBLISHED", "DRAFT");
+                .hasStatusOk()
+                .bodyJson().isStrictlyEqualTo("""
+                        [
+                          {
+                            "id": "00000000-0000-0000-0000-000000009002",
+                            "name": "Archived Coaching",
+                            "status": "ARCHIVED",
+                            "packageCount": 1,
+                            "eligibleExpertCount": 0
+                          },
+                          {
+                            "id": "00000000-0000-0000-0000-000000001001",
+                            "name": "Career Coaching",
+                            "status": "PUBLISHED",
+                            "packageCount": 2,
+                            "eligibleExpertCount": 2
+                          },
+                          {
+                            "id": "00000000-0000-0000-0000-000000009001",
+                            "name": "Draft Coaching",
+                            "status": "DRAFT",
+                            "packageCount": 1,
+                            "eligibleExpertCount": 0
+                          }
+                        ]
+                        """);
     }
 
     @Test
@@ -222,6 +243,21 @@ class ConsultationOfferingControllerTest {
                 """.formatted(id);
         assertThat(edited).hasStatusOk().bodyJson().isStrictlyEqualTo(expected);
         assertThat(get(id)).hasStatusOk().bodyJson().isStrictlyEqualTo(expected);
+    }
+
+    @Test
+    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    void anEditIgnoresAStatusInTheBody() throws Exception {
+        String id = createAgileCoaching();
+
+        MvcTestResult edited = put(id, """
+                { "name": "Agile Coaching", "description": "", "sessionDurationMinutes": 45,
+                  "cancellationDeadlineHours": 48, "packages": [], "eligibleExpertIds": [], "status": "PUBLISHED" }
+                """);
+
+        // the status changes only through publish, unpublish and archive
+        assertThat(edited).hasStatusOk().bodyJson().extractingPath("$.status").isEqualTo("DRAFT");
+        assertThat(get(id)).hasStatusOk().bodyJson().extractingPath("$.status").isEqualTo("DRAFT");
     }
 
     @Test

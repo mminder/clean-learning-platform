@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -48,6 +49,9 @@ import com.cleanlearning.domain.offering.value.SessionDuration;
 import com.cleanlearning.domain.shared.value.Money;
 import com.cleanlearning.domain.user.value.UserId;
 
+import io.swagger.v3.oas.annotations.headers.Header;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 
 /**
@@ -106,9 +110,15 @@ class ConsultationOfferingController {
         return listConsultationOfferings.invoke().stream().map(ConsultationOfferingSummaryResponse::from).toList();
     }
 
-    /** {@code @ResponseStatus} tells springdoc the status that {@code ResponseEntity.created} sets. */
+    /**
+     * {@code @ResponseStatus} tells springdoc the status that {@code ResponseEntity.created} sets, and
+     * {@code @ApiResponse} adds its {@code Location} header to the contract.
+     */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @ApiResponse(responseCode = "201", headers = @Header(name = HttpHeaders.LOCATION,
+            description = "The new offering's URL, relative",
+            schema = @Schema(type = "string", format = "uri-reference")))
     @ProblemResponses.Status400
     ResponseEntity<ConsultationOfferingResponse> createConsultationOffering(
             @Valid @RequestBody ConsultationOfferingRequest request) {
