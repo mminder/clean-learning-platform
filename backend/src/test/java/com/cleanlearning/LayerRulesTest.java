@@ -35,6 +35,8 @@ class LayerRulesTest {
     private static final String APPLICATION = "com.cleanlearning.application..";
     private static final String DOMAIN = "com.cleanlearning.domain..";
     private static final String ADAPTERS_DATABASE = "com.cleanlearning.adapters.database..";
+    private static final String ADAPTER_ENTITIES = "com.cleanlearning.adapters.database.*.entity";
+    private static final String ADAPTER_ROWS = "com.cleanlearning.adapters.database.*.row";
 
     @ArchTest
     static final ArchRule layerDependencies = layeredArchitecture()
@@ -61,9 +63,14 @@ class LayerRulesTest {
             .should().dependOnClassesThat().resideInAPackage("jakarta.persistence..");
 
     @ArchTest
-    static final ArchRule entitiesLiveInAdaptersDatabase = classes()
+    static final ArchRule entitiesLiveInAnAdapterEntityPackage = classes()
             .that().areAnnotatedWith(Entity.class)
-            .should().resideInAPackage(ADAPTERS_DATABASE);
+            .should().resideInAPackage(ADAPTER_ENTITIES);
+
+    @ArchTest
+    static final ArchRule rowsLiveInAnAdapterRowPackage = classes()
+            .that().resideInAPackage(ADAPTERS_DATABASE).and().haveSimpleNameEndingWith("Row")
+            .should().resideInAPackage(ADAPTER_ROWS);
 
     @ArchTest
     static final ArchRule useCasesEndInUseCase = classes()

@@ -1,4 +1,4 @@
-package com.cleanlearning.adapters.database.offering;
+package com.cleanlearning.adapters.database.offering.entity;
 
 import java.util.UUID;
 
@@ -8,12 +8,12 @@ import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 
 /**
- * Read through the projection in {@link OfferingRepository}.
+ * Read through the projection in {@code OfferingRepository}.
  */
 @Entity
 @Table(name = "eligible_expert")
 @IdClass(EligibleExpertEntity.Key.class)
-class EligibleExpertEntity {
+public class EligibleExpertEntity {
 
     @Id
     private UUID consultationOfferingId;

@@ -1,4 +1,4 @@
-package com.cleanlearning.adapters.database.offering;
+package com.cleanlearning.adapters.database.offering.entity;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -8,11 +8,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 /**
- * Read through the projection in {@link OfferingRepository}.
+ * Read through the projection in {@code OfferingRepository}.
  */
 @Entity
 @Table(name = "consultation_package")
-class ConsultationPackageEntity {
+public class ConsultationPackageEntity {
 
     @Id
     private UUID id;

@@ -1,4 +1,4 @@
-package com.cleanlearning.adapters.database.user;
+package com.cleanlearning.adapters.database.user.entity;
 
 import java.util.UUID;
 
@@ -12,7 +12,7 @@ import jakarta.persistence.Table;
  */
 @Entity
 @Table(name = "expert_profile")
-class ExpertProfileEntity {
+public class ExpertProfileEntity {
 
     // The expert's user id.
     @Id

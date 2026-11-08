@@ -9,6 +9,10 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
+import com.cleanlearning.adapters.database.offering.row.ConsultationPackageRow;
+import com.cleanlearning.adapters.database.offering.row.EligibleExpertRow;
+import com.cleanlearning.adapters.database.offering.row.ShopConsultationOfferingRow;
+import com.cleanlearning.adapters.database.offering.row.ShopOfferingPriceRow;
 import com.cleanlearning.application.offering.LoadShopOfferingPort;
 import com.cleanlearning.application.offering.LoadShopOfferingsPort;
 import com.cleanlearning.domain.offering.CancellationDeadline;
