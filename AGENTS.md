@@ -53,6 +53,7 @@ Details: [_docs/architecture/backend.md](_docs/architecture/backend.md).
 - Business rules live in `domain` POJOs and records. `domain` has no Spring or JPA imports.
 - Outgoing ports are interfaces named `<Purpose>Port` in `application.<feature>`. They are narrow and use-case specific, and implemented in `adapters.database.<feature>`. There are no incoming ports: controllers call use cases directly.
 - Controllers pass `CurrentUser` explicitly into use cases. Ownership is enforced by scoped port queries; a resource that isn't yours returns 404.
+- In `api.<feature>`, the controllers sit at the top, the `*Response` records in `response` and the `*Request` records in `request`. Responses that several features return live in `api.response`.
 - JPA entities never leave `adapters.database`. In `adapters.database.<feature>`, the adapters and Spring Data repositories sit at the top, the entities in `entity`, and the `*Row` records that queries select into in `row`. Mappers are hand-written. No Lombok, no MapStruct. Value objects, commands and DTOs are records.
 - Always get the current time from the injected `java.time.Clock`.
 - Derived states (consumed appointment, completed case or enrollment, open credits) are computed, never stored.

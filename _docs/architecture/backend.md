@@ -177,7 +177,8 @@ Clients rely only on the status for the second group, never on its body ([D-34](
 
 - Route prefixes by audience (D-26): `/api/shop`, `/api/customer`, `/api/expert`, `/api/admin`, plus `/api/me`, `/api/images`, `/api/poc` (`poc` profile only).
 - **Response DTOs per audience:** customer, expert and admin case responses are different records. This makes "admin never sees notes" a property of the API's shape.
-- Request and response records have names that are unique across `api`, because the OpenAPI schema name is the simple class name (a test checks this). A record that several features return, such as `MoneyResponse`, lives in `api` itself.
+- **Controllers and DTOs.** `api.<feature>` holds the controllers. Its `response` sub-package holds the `*Response` records, each with a public static `from(...)` that maps the domain object; its `request` sub-package holds the `*Request` records. A response that several features return, such as `MoneyResponse`, lives in `api.response`. ArchUnit checks the `response` packages; the rule for `request` comes with the first request record, because every rule must match at least one class.
+- Request and response records have names that are unique across `api`, because the OpenAPI schema name is the simple class name (a test checks this).
 - JSON with camelCase. Instants are ISO-8601 with offset; local dates and times are ISO-8601 without offset. Money is `{ "amount": "450.00", "currency": "CHF" }`.
 - The API is code-first. springdoc generates `backend/openapi.json`, which is committed. A test fails if the committed file differs from the generated one (D-29).
 

@@ -1,4 +1,4 @@
-package com.cleanlearning.api.shop;
+package com.cleanlearning.api.shop.response;
 
 import java.util.UUID;
 
@@ -9,7 +9,7 @@ import com.cleanlearning.domain.offering.EligibleExpert;
  */
 public record EligibleExpertResponse(UUID id, String displayName, String bio) {
 
-    static EligibleExpertResponse from(EligibleExpert expert) {
+    public static EligibleExpertResponse from(EligibleExpert expert) {
         return new EligibleExpertResponse(expert.id().value(), expert.displayName(), expert.bio());
     }
 }

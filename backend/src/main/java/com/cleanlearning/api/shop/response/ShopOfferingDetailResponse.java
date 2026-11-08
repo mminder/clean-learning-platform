@@ -1,4 +1,4 @@
-package com.cleanlearning.api.shop;
+package com.cleanlearning.api.shop.response;
 
 import java.util.UUID;
 
@@ -11,7 +11,7 @@ import com.cleanlearning.domain.offering.ShopConsultationOffering;
 public record ShopOfferingDetailResponse(UUID id, OfferingType type, String name, String description,
         ConsultationOfferingDetailResponse consultation) {
 
-    static ShopOfferingDetailResponse from(ShopConsultationOffering offering) {
+    public static ShopOfferingDetailResponse from(ShopConsultationOffering offering) {
         return new ShopOfferingDetailResponse(offering.id().value(), offering.type(), offering.name(),
                 offering.description(), ConsultationOfferingDetailResponse.from(offering));
     }

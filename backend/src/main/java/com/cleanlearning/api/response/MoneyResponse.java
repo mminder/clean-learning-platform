@@ -1,4 +1,4 @@
-package com.cleanlearning.api;
+package com.cleanlearning.api.response;
 
 import com.cleanlearning.domain.shared.Money;
 

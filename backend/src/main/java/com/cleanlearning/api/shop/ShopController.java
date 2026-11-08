@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.cleanlearning.api.shop.response.ShopOfferingDetailResponse;
+import com.cleanlearning.api.shop.response.ShopOfferingResponse;
 import com.cleanlearning.application.offering.GetShopOfferingUseCase;
 import com.cleanlearning.application.offering.ListShopOfferingsUseCase;
 import com.cleanlearning.domain.offering.OfferingId;
