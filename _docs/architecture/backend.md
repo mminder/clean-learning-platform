@@ -188,7 +188,29 @@ Clients rely only on the status for the second group, never on its body ([D-34](
 
 **409s:** a business rule that says no throws `BusinessRuleException` (`domain.shared`) with a stable `code` and a message written for the user. `ApiExceptionHandler` maps it to 409 with the message as `detail` and `code` as a property; the frontend shows the `detail` ([D-34](../decisions.md#architecture)). The codes are constants next to the rule, such as `ConsultationOffering.WRONG_OFFERING_STATUS`.
 
-**In `openapi.json`:** one shared `ProblemDetail` schema (D-34): `title`, `status`, `instance`, `detail`, `errors` for a 400, and `code` for a 409. `type` is optional: Spring leaves it out when it's `about:blank`, as it is for every body so far. springdoc lists the answers of `ApiExceptionHandler`'s methods that carry `@ResponseStatus` on every route, as `application/problem+json`, and `ProblemDetailSchemaCustomizer` replaces the schema springdoc derives from Spring's class with the body as sent. So every route lists 400, 404 and 409 with `ProblemDetail`, though not every route gives them (`GET /api/me` never answers 409); that's accepted noise of springdoc's own mechanism, and the increment plans' route tables say which answers a route really gives. The frontend reads only a 400's and a 409's body ([frontend](frontend.md#errors)).
+**In `openapi.json`:** one shared `ProblemDetail` schema (D-34): `title`, `status`, `instance`, `detail`, `errors` for a 400, and `code` for a 409. `type` is optional: Spring leaves it out when it's `about:blank`, as it is for every body so far. `ProblemDetailSchemaCustomizer` builds it as the body is sent; the schema springdoc would derive from Spring's class has a `properties` map and neither `errors` nor `code`. The frontend reads only a 400's and a 409's body ([frontend](frontend.md#errors)).
+
+**Each route lists exactly the error answers it can give** from Spring MVC, as `application/problem+json` with that schema; 401, 403 and 500 stay out (D-34). The controller method declares them next to its mapping, with the meta-annotations of `ProblemResponses` (`api`):
+
+| Annotation | When the route answers it |
+|---|---|
+| `@ProblemResponses.Status400` | 400: a malformed id in the path, an invalid or unreadable body, a value a value object rejects |
+| `@ProblemResponses.Status404` | 404: a `NotFoundException`, such as an unknown id |
+| `@ProblemResponses.Status409` | 409: a `BusinessRuleException` |
+| `@ProblemResponses.Status415` | 415: a body of another type than the route `consumes`, such as an upload that isn't multipart |
+
+```java
+@PostMapping("/{id}/publish")
+@ResponseStatus(HttpStatus.OK)
+@ProblemResponses.Status400
+@ProblemResponses.Status404
+@ProblemResponses.Status409
+ConsultationOfferingResponse publishConsultationOffering(@PathVariable UUID id) { … }
+```
+
+- **A new route** gets one annotation per error it can answer, and none if it can't answer any (a list without parameters). The increment plan's route table names them. The annotations are named after the status, not `BadRequest`: `LayerRulesTest` takes a name ending in `Request` for a request record.
+- **`@ResponseStatus` with the success status** goes on every method that declares an error, `HttpStatus.OK` included: springdoc lists a route's success by itself only while the route declares no other answer. `OpenApiContractTest` checks that every route lists its success, and the answers of a few routes.
+- `ApiExceptionHandler`'s methods carry no `@ResponseStatus`: the returned `ProblemDetail` sets the status. `springdoc.override-with-generic-response: false` (`application.yml`) keeps springdoc from adding the advice's answers to every route.
 
 ## REST conventions
 

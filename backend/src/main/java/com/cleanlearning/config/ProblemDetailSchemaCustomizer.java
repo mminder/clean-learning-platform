@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.springdoc.core.customizers.OpenApiCustomizer;
 
+import com.cleanlearning.api.ProblemResponses;
+
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.IntegerSchema;
@@ -12,20 +14,18 @@ import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
 
 /**
- * The one shared {@code ProblemDetail} schema of the error bodies (D-34). springdoc lists the answers of
- * {@code ApiExceptionHandler}'s {@code @ResponseStatus} methods on every route, with a schema it derives from Spring's
- * {@code ProblemDetail} class. That one doesn't match the JSON: it has a {@code properties} map, which Jackson writes
- * as top-level fields, and neither {@code errors} nor {@code code}. This customizer replaces it with the body as sent.
+ * The one shared {@code ProblemDetail} schema of the error bodies (D-34), which the error answers a route declares with
+ * {@link ProblemResponses} refer to. It's the body as sent, not a schema derived from Spring's {@code ProblemDetail}
+ * class: that one has a {@code properties} map, which Jackson writes as top-level fields, and neither {@code errors}
+ * nor {@code code}.
  * <p>
  * {@code type} is left out when it's {@code about:blank}, as every body of this API so far is, so it's optional.
  */
 class ProblemDetailSchemaCustomizer implements OpenApiCustomizer {
 
-    static final String NAME = "ProblemDetail";
-
     @Override
     public void customise(OpenAPI openApi) {
-        openApi.getComponents().addSchemas(NAME, problemDetail());
+        openApi.getComponents().addSchemas(ProblemResponses.SCHEMA_NAME, problemDetail());
     }
 
     private static Schema<?> problemDetail() {

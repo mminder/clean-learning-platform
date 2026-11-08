@@ -3,6 +3,7 @@ package com.cleanlearning.api.user;
 import java.util.List;
 
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -13,8 +14,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.cleanlearning.api.ProblemResponses;
 import com.cleanlearning.api.user.request.PocLoginRequest;
 import com.cleanlearning.api.user.response.MeResponse;
 import com.cleanlearning.api.user.response.PocUserResponse;
@@ -66,6 +69,9 @@ class PocLoginController {
      * {@code SecurityConfig}), then the authentication in the session.
      */
     @PostMapping("/login")
+    @ResponseStatus(HttpStatus.OK)
+    @ProblemResponses.Status400
+    @ProblemResponses.Status404
     MeResponse logIn(@Valid @RequestBody PocLoginRequest login, HttpServletRequest request,
             HttpServletResponse response) {
         User user = logInPocUser.invoke(new UserId(login.userId()));

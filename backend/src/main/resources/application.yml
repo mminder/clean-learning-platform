@@ -33,6 +33,9 @@ springdoc:
   writer-with-default-pretty-printer: true
   writer-with-order-by-keys: true
   default-produces-media-type: application/json
+  # Each controller method declares the error answers it can give (ProblemResponses); the answers of
+  # ApiExceptionHandler aren't added to every route.
+  override-with-generic-response: false
   model-converters:
     # A response field annotated with @Nullable is nullable, and so not required (RequiredResponseFieldsCustomizer).
     java-nullable-property-customizer:

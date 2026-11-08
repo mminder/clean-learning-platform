@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.cleanlearning.api.ProblemResponses;
 import com.cleanlearning.api.offering.request.ConsultationOfferingRequest;
 import com.cleanlearning.api.offering.request.ConsultationPackageRequest;
 import com.cleanlearning.api.offering.response.ConsultationOfferingResponse;
@@ -108,6 +109,7 @@ class ConsultationOfferingController {
     /** {@code @ResponseStatus} tells springdoc the status that {@code ResponseEntity.created} sets. */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @ProblemResponses.Status400
     ResponseEntity<ConsultationOfferingResponse> createConsultationOffering(
             @Valid @RequestBody ConsultationOfferingRequest request) {
         ConsultationOffering offering = createConsultationOffering.invoke(toCommand(request));
@@ -116,11 +118,18 @@ class ConsultationOfferingController {
     }
 
     @GetMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    @ProblemResponses.Status400
+    @ProblemResponses.Status404
     ConsultationOfferingResponse getConsultationOffering(@PathVariable UUID id) {
         return ConsultationOfferingResponse.from(getConsultationOffering.invoke(new OfferingId(id)));
     }
 
     @PutMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    @ProblemResponses.Status400
+    @ProblemResponses.Status404
+    @ProblemResponses.Status409
     ConsultationOfferingResponse editConsultationOffering(@PathVariable UUID id,
             @Valid @RequestBody ConsultationOfferingRequest request) {
         return ConsultationOfferingResponse.from(editConsultationOffering.invoke(new OfferingId(id),
@@ -128,22 +137,37 @@ class ConsultationOfferingController {
     }
 
     @PostMapping("/{id}/publish")
+    @ResponseStatus(HttpStatus.OK)
+    @ProblemResponses.Status400
+    @ProblemResponses.Status404
+    @ProblemResponses.Status409
     ConsultationOfferingResponse publishConsultationOffering(@PathVariable UUID id) {
         return ConsultationOfferingResponse.from(publishConsultationOffering.invoke(new OfferingId(id)));
     }
 
     @PostMapping("/{id}/unpublish")
+    @ResponseStatus(HttpStatus.OK)
+    @ProblemResponses.Status400
+    @ProblemResponses.Status404
+    @ProblemResponses.Status409
     ConsultationOfferingResponse unpublishConsultationOffering(@PathVariable UUID id) {
         return ConsultationOfferingResponse.from(unpublishConsultationOffering.invoke(new OfferingId(id)));
     }
 
     @PostMapping("/{id}/archive")
+    @ResponseStatus(HttpStatus.OK)
+    @ProblemResponses.Status400
+    @ProblemResponses.Status404
+    @ProblemResponses.Status409
     ConsultationOfferingResponse archiveConsultationOffering(@PathVariable UUID id) {
         return ConsultationOfferingResponse.from(archiveConsultationOffering.invoke(new OfferingId(id)));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ProblemResponses.Status400
+    @ProblemResponses.Status404
+    @ProblemResponses.Status409
     void deleteConsultationOffering(@PathVariable UUID id) {
         deleteConsultationOffering.invoke(new OfferingId(id));
     }
@@ -154,6 +178,11 @@ class ConsultationOfferingController {
      * ({@code application.yml}) and answers 400, like a file of another type.
      */
     @PutMapping(path = "/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    @ProblemResponses.Status400
+    @ProblemResponses.Status404
+    @ProblemResponses.Status409
+    @ProblemResponses.Status415
     ConsultationOfferingResponse uploadConsultationOfferingImage(@PathVariable UUID id,
             @RequestPart("file") MultipartFile file) throws IOException {
         return ConsultationOfferingResponse.from(uploadConsultationOfferingImage.invoke(new OfferingId(id),
@@ -161,6 +190,10 @@ class ConsultationOfferingController {
     }
 
     @DeleteMapping("/{id}/image")
+    @ResponseStatus(HttpStatus.OK)
+    @ProblemResponses.Status400
+    @ProblemResponses.Status404
+    @ProblemResponses.Status409
     ConsultationOfferingResponse removeConsultationOfferingImage(@PathVariable UUID id) {
         return ConsultationOfferingResponse.from(removeConsultationOfferingImage.invoke(new OfferingId(id)));
     }

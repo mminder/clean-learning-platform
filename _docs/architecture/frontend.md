@@ -101,7 +101,7 @@ UC-16's `ConsultationOfferingForm` is the pattern ([increment 02](../tasks/02-ma
 ## Errors
 
 - A 409's `detail` is the message for the user, and the page shows it (inline or as a toast). Its stable `code` lets a page react to one conflict, for example by reloading stale data ([D-34](../decisions.md#architecture)). Field errors on 400 are shown next to the form fields; a 400 without a field list shows its `detail`.
-- The frontend reads an error body only through the generated `ProblemDetail` type (`components['schemas']['ProblemDetail']`, [D-34](../decisions.md#architecture)), and only a 400's or a 409's: `problemOf(status, error)` in `lib/problem.ts` returns the body for those and `undefined` otherwise. openapi-fetch types every error body as `ProblemDetail`, because `openapi.json` lists it on every route, but a 403's body is Boot's error JSON. For 401, 403 and 500 the frontend decides on the status alone.
+- The frontend reads an error body only through the generated `ProblemDetail` type (`components['schemas']['ProblemDetail']`, [D-34](../decisions.md#architecture)), and only a 400's or a 409's: `problemOf(status, error)` in `lib/problem.ts` returns the body for those and `undefined` otherwise. openapi-fetch types a route's error body as `ProblemDetail` when `openapi.json` lists an error answer for the route ([backend](backend.md#errors)), whatever the status, but a 403's body is Boot's error JSON; a route that lists none has no typed `error`. For 401, 403 and 500 the frontend decides on the status alone.
 - A hook throws `ApiError` for every non-2xx answer, with the status and, for a 400 or 409, the problem (`ApiError.problem`). Field paths become form paths with `toFormPath` (`packages[1].price` → `packages.1.price`).
 
 ## Development

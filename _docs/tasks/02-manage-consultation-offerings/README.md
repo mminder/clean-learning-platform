@@ -31,7 +31,7 @@ They build one form on one aggregate, so they touch the same controller, use cas
 | Package | Classes | Task |
 |---|---|---|
 | `config` | `SecurityConfig`: session login, CSRF for the SPA, `/api/logout`, `/api/poc/**` public (01), `GET /api/images/**` public (07); `ProblemDetailSchemaCustomizer`: the shared `ProblemDetail` schema (03) | 01, 03, 07 |
-| `api` | `ApiExceptionHandler`: 400 with a field list and `IllegalArgumentException` → 400 (03), `BusinessRuleException` → 409 with `code` (06), an upload over the limit → 400 (07) | 03, 06, 07 |
+| `api` | `ApiExceptionHandler`: 400 with a field list and `IllegalArgumentException` → 400 (03), `BusinessRuleException` → 409 with `code` (06), an upload over the limit → 400 (07); `ProblemResponses`: the error answers a route declares in `openapi.json` (overall review) | 03, 06, 07 |
 | `api.response` | `ConsultationPackageResponse`, moved here from `api.shop.response`, because the shop and the admin both return it | 04 |
 | `api.user` | `PocLoginController` (`@Profile("poc")`), `MeController`, `ExpertController` | 01, 05 |
 | `api.user.request` | `PocLoginRequest` | 01 |
@@ -82,8 +82,8 @@ offering   + image_id uuid null unique → image
 | Route | Answer | Task |
 |---|---|---|
 | `GET /api/poc/users` | 200 `PocUserResponse[]`, sorted by name; `poc` profile only | 01 |
-| `POST /api/poc/login` | `PocLoginRequest` → 200 `MeResponse`, starts the session; 404 for an unknown user; `poc` profile only | 01 |
-| `GET /api/me` | 200 `MeResponse`; 401 without a login | 01 |
+| `POST /api/poc/login` | `PocLoginRequest` → 200 `MeResponse`, starts the session; 400 without a user id; 404 for an unknown user; `poc` profile only | 01 |
+| `GET /api/me` | 200 `MeResponse`; 401 without a login; 404 if the session's user no longer exists | 01 |
 | `POST /api/logout` | 204, ends the session; Spring Security's logout filter, listed in `openapi.json` by `OpenApiConfig` | 01 |
 | `GET /api/admin/consultation-offerings` | 200 `ConsultationOfferingSummaryResponse[]`: every status, sorted by name, then id | 02 |
 | `POST /api/admin/consultation-offerings` | `ConsultationOfferingRequest` → 201 `ConsultationOfferingResponse` with a `Location` header; 400 | 03 |
@@ -97,6 +97,8 @@ offering   + image_id uuid null unique → image
 | `PUT /api/admin/consultation-offerings/{id}/image` | multipart, part `file` → 200 `ConsultationOfferingResponse`; 400 (no `file` part, an empty file, not JPEG, PNG or WebP, over 2 MB); 404; 409; 415 for a body that isn't multipart | 07 |
 | `DELETE /api/admin/consultation-offerings/{id}/image` | 200 `ConsultationOfferingResponse`; 404; 409 | 07 |
 | `GET /api/images/{id}` | 200 with the bytes, their `Content-Type` and `Cache-Control: public, max-age=31536000, immutable`; 404; public | 07 |
+
+A route with an `{id}` also answers 400 for a malformed id. 401 and 403 come from security ([security.md](../../architecture/security.md#roles-by-route-prefix)). Each controller method declares its 400, 404, 409 and 415 in `openapi.json`, and a route without any declares none ([errors](#errors)).
 
 ```jsonc
 // PocUserResponse
@@ -152,7 +154,7 @@ offering   + image_id uuid null unique → image
 
 ### Errors
 
-[D-34](../../decisions.md#architecture), now with bodies the frontend reads. Task 03 adds one shared `ProblemDetail` schema to `openapi.json` with the field list, and 06 adds `code`. springdoc lists the answers of `ApiExceptionHandler`'s `@ResponseStatus` methods on every route, and `ProblemDetailSchemaCustomizer` (an `OpenApiCustomizer`) replaces the schema springdoc derives from Spring's class with the body as sent ([backend.md](../../architecture/backend.md#errors)); 06 adds `code` there. With 06's `@ResponseStatus(CONFLICT)` handler, springdoc lists 409 on every route, too, including routes that never give it (`GET /api/me`, the shop): accepted noise, like 400 and 404 before; the route table below says which routes really answer 409. The schema is named `ProblemDetail`, the drift test covers it, and the frontend reads `components['schemas']['ProblemDetail']`.
+[D-34](../../decisions.md#architecture), now with bodies the frontend reads. Task 03 adds one shared `ProblemDetail` schema to `openapi.json` with the field list, and 06 adds `code`. `ProblemDetailSchemaCustomizer` (an `OpenApiCustomizer`) builds it as the body is sent ([backend.md](../../architecture/backend.md#errors)). Each route lists exactly the error answers of the route table above, with that schema: the controller method declares them with `ProblemResponses`' annotations (`@ProblemResponses.Status400`, `Status404`, `Status409` and `Status415`) and its success with `@ResponseStatus`, and springdoc doesn't add the advice's answers to every route (overall review; until then, every route listed 400, 404 and 409). The schema is named `ProblemDetail`, the drift test covers it, and the frontend reads `components['schemas']['ProblemDetail']`.
 
 Spring leaves `"type": "about:blank"` out of the body, so the examples don't show it, and the schema's `type` is optional (RFC 9457: a missing `type` means `about:blank`).
 
