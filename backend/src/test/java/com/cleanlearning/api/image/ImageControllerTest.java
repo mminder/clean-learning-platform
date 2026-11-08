@@ -92,6 +92,8 @@ class ImageControllerTest {
 
     @Test
     void answersAMalformedIdWithBadRequest() {
-        assertThat(mockMvc.get().uri("/api/images/not-a-uuid")).hasStatus(HttpStatus.BAD_REQUEST);
+        assertThat(mockMvc.get().uri("/api/images/not-a-uuid"))
+                .hasStatus(HttpStatus.BAD_REQUEST)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
     }
 }

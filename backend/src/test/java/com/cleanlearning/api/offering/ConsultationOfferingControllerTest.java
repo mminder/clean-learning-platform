@@ -120,7 +120,7 @@ class ConsultationOfferingControllerTest {
     }
 
     @Test
-    @Sql(SHOP + "draft-and-archived-offerings.sql")
+    @Sql({ SHOP + "draft-and-archived-offerings.sql", SHOP + "published-offering-without-packages.sql" })
     @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
     void listsEveryStatusSortedByName() {
         assertThat(list())
@@ -147,6 +147,13 @@ class ConsultationOfferingControllerTest {
                             "status": "DRAFT",
                             "packageCount": 1,
                             "eligibleExpertCount": 0
+                          },
+                          {
+                            "id": "00000000-0000-0000-0000-000000009005",
+                            "name": "Empty Coaching",
+                            "status": "PUBLISHED",
+                            "packageCount": 0,
+                            "eligibleExpertCount": 1
                           }
                         ]
                         """);
