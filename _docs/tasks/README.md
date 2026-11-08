@@ -1,6 +1,6 @@
 # Tasks
 
-A task is one implementation step of an [increment spec](../specs/README.md). It's small enough for one agent session and one pull request, and it can be checked on its own.
+A task is one implementation step of an [increment spec](../specs/README.md). It's small enough for one agent session, and it can be checked on its own. An increment's tasks go onto one pull request ([executing an increment](#executing-an-increment)).
 
 The format borrows from Matt Pocock's [skills](https://github.com/mattpocock/skills) (`prd-to-plan`, `prd-to-issues`, `tdd`: vertical slices, AFK/HITL, "blocked by", test-first) and from [OpenSpec](https://github.com/Fission-AI/OpenSpec) (a technical plan next to checkable tasks).
 
@@ -30,7 +30,18 @@ A task is **ready** when every task it's blocked by is **Done**.
 2. Read the task, the increment's technical plan (its `README.md`), the spec, the linked use cases, and the architecture doc for each side you touch.
 3. Work test-first in small vertical steps: one failing test for one behavior, make it pass, refactor. Don't write all the tests up front.
 4. Stay inside the task. If something is missing, add it under **Notes** in the task and tell the user; don't widen the task.
-5. When every acceptance criterion holds and the definition of done is met, tick the criteria, set the task to **Done**, commit, and open the pull request (if you were asked to).
+5. When every acceptance criterion holds and the definition of done is met, tick the criteria, set the task to **Done** and commit on your branch. The orchestrator reviews and merges it; open a pull request only if you were asked to.
+
+## Executing an increment
+
+An orchestrating session runs the increment ([D-33](../decisions.md#scope-and-docs)):
+
+- Create the increment's branch. Its one pull request collects every task; open it once there's something for CI to check.
+- Take the ready tasks wave by wave, following the plan's task graph. A HITL task waits for the human.
+- Per task, run one implementing subagent that follows [working on a task](#working-on-a-task). Where tasks run in parallel, each gets its own git worktree and branch.
+- Then run a review subagent on the task's change. It fixes the major findings and reports the rest.
+- Merge the task into the increment's branch, and run the checks there.
+- After the last task, run an overall review of the whole change, then a fixer subagent for its major findings. Then close the increment ([specs/README.md](../specs/README.md#closing-an-increment)).
 
 ## Definition of done
 
