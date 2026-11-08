@@ -114,4 +114,4 @@ Run in `frontend/`. Node 22 (`.nvmrc`) and npm.
 | `npm run preview` | serve `dist/` locally |
 | `npm run generate:api` | generate `src/api/schema.d.ts` from `../backend/openapi.json`; commit both together |
 | `npm run check:api` | fail if `src/api/schema.d.ts` doesn't match `../backend/openapi.json` |
-| `npx shadcn@latest add <component>` | add a shadcn/ui component to `src/components/ui/`; then import `cn` from `@/lib/utils`, `npm uninstall cn` and `npm run format` ([frontend.md](_docs/architecture/frontend.md#structure)) |
+| `npx shadcn@latest add <component>` | add a shadcn/ui component to `src/components/ui/`; then `npm run format` ([frontend.md](_docs/architecture/frontend.md#structure)) |
