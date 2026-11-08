@@ -8,9 +8,9 @@ import com.cleanlearning.domain.offering.value.OfferingId;
 public interface LockConsultationOfferingPort {
 
     /**
-     * Locks the offering's row until the transaction ends ({@code select … for update}) and loads the consultation
-     * offering, or returns empty if there's none with this id. Every use case that changes an offering calls this
-     * first (D-27: offering → case → expert → run).
+     * Locks the offering's row until the transaction ends, waiting for every other lock of the row, and loads the
+     * consultation offering, or returns empty if there's none with this id. Every use case that changes an offering
+     * calls this first (D-27: offering → case → expert → run).
      */
     Optional<ConsultationOffering> lock(OfferingId id);
 }

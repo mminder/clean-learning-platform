@@ -143,7 +143,7 @@ offering   + image_id uuid null → image
 
 - **Roles** are listed in the order `CUSTOMER`, `EXPERT`, `ADMIN`.
 - **Price in a request** is a string: an amount in CHF, not negative, with at most two decimals and at most 8 digits before the point (the column is `numeric(10,2)`). One `@Pattern` checks all of it; its message says `must be an amount in CHF with at most two decimals`. Responses keep `MoneyResponse`.
-- **Numbers in a request** are `Integer` with `@NotNull`, so a missing number is a 400, not a silent 0.
+- **Numbers in a request** are `Integer` with `@NotNull`, so a missing number is a 400, not a silent 0. A decimal in a whole-number field is a 400 too, not cut off (`spring.jackson.deserialization.accept-float-as-int: false`, API-wide); it's an unreadable body, so the 400 has no `errors` (03).
 - **`PUT` replaces** the fields, the packages and the eligible experts. A package with an id must be one of this offering's packages, otherwise 400; on `POST`, any package id is a 400. Duplicate expert ids count once.
 - **`imageId`** is added to `ShopOfferingResponse` and `ShopOfferingDetailResponse` too, `@Nullable` (07).
 - New request and response names stay unique across `api` (`LayerRulesTest`).
@@ -192,7 +192,7 @@ Every 409 in this table without a code of its own is `WRONG_OFFERING_STATUS`. Be
 
 ### Writes
 
-- **Lock first.** Every use case that changes an offering (edit, publish, unpublish, archive, delete, image) loads it with `LockConsultationOfferingPort.lock(id)`: `select … for update` on its `offering` row, at the start of the transaction. (JPA's `PESSIMISTIC_WRITE`, which Hibernate sends as `for no key update`: it waits for every other lock of the row, but not for a foreign key check's key-share lock, see [backend.md](../../architecture/backend.md#concurrency).) An unknown id is a 404. This makes concurrent status changes wait for each other and keeps an archived offering read-only. The lock order is now offering → case → expert → run ([D-27](../../decisions.md#architecture)).
+- **Lock first.** Every use case that changes an offering (edit, publish, unpublish, archive, delete, image) loads it with `LockConsultationOfferingPort.lock(id)`: a row lock on its `offering` row, at the start of the transaction. It's JPA's `PESSIMISTIC_WRITE`, which Hibernate sends as `select … for no key update` (03): it waits for every other lock of the row, but not for a foreign key check's key-share lock, so every writer that must wait takes this lock itself ([backend.md](../../architecture/backend.md#concurrency)). An unknown id is a 404. This makes concurrent status changes wait for each other and keeps an archived offering read-only. The lock order is now offering → case → expert → run ([D-27](../../decisions.md#architecture)).
 - **The domain decides, the adapter writes.** `ConsultationOffering` returns the changed offering; `SaveConsultationOfferingPort.update` writes it.
 - **Packages are matched by id** (04). The domain keeps a package whose id the request names (with the new session count and price), creates a package with a new id for each entry without one, and drops the rest. The adapter deletes the dropped packages, updates the changed ones and inserts the new ones. It never deletes and re-inserts a package that's kept.
 - **Eligible experts** are a set of ids (05). The adapter may replace the offering's `eligible_expert` rows.

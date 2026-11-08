@@ -54,7 +54,10 @@ class ConsultationOfferingAdapter implements LoadConsultationOfferingSummariesPo
                 .flatMap(this::withConsultationOffering);
     }
 
-    /** {@code select … for update} on the {@code offering} row, then its {@code consultation_offering} row. */
+    /**
+     * {@code PESSIMISTIC_WRITE} on the {@code offering} row, which Hibernate sends to Postgres as
+     * {@code select … for no key update}; then its {@code consultation_offering} row.
+     */
     @Override
     public Optional<ConsultationOffering> lock(OfferingId id) {
         return Optional.ofNullable(entityManager.find(OfferingEntity.class, id.value(), LockModeType.PESSIMISTIC_WRITE))

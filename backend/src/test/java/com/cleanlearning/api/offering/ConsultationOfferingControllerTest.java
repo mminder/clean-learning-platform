@@ -275,6 +275,27 @@ class ConsultationOfferingControllerTest {
 
     @Test
     @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    void answersADecimalNumberWithBadRequest() {
+        // Not cut to 45 and saved: a whole-number field doesn't accept a decimal (accept-float-as-int).
+        assertThat(post("""
+                { "name": "Agile Coaching", "description": "", "sessionDurationMinutes": 45.5,
+                  "cancellationDeadlineHours": 48 }
+                """))
+                .hasStatus(HttpStatus.BAD_REQUEST)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson().isStrictlyEqualTo("""
+                        {
+                          "title": "Bad Request",
+                          "status": 400,
+                          "detail": "Failed to read request",
+                          "instance": "/api/admin/consultation-offerings"
+                        }
+                        """);
+        assertThat(list()).bodyJson().extractingPath("$[*].name").asArray().containsExactly("Career Coaching");
+    }
+
+    @Test
+    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
     void answersInvalidValuesOfAnEditWithEachFieldAndKeepsTheOffering() throws Exception {
         String id = createAgileCoaching();
 
