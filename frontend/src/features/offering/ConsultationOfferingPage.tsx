@@ -60,8 +60,9 @@ export function ConsultationOfferingPage() {
         </p>
       )}
       <ConsultationOfferingForm
-        // A new form for another offering; a reload of this one keeps what the admin is typing.
-        key={id}
+        // A new form for another offering; a reload of this one keeps what the admin is typing. Archived, the form
+        // starts again from the saved offering: unsaved edits can't be saved any more and mustn't look saved.
+        key={archived ? `${id}-archived` : id}
         defaultValues={toRequest(offering.data)}
         readOnly={archived}
         onSave={(changed) => editOffering.mutateAsync(changed)}
