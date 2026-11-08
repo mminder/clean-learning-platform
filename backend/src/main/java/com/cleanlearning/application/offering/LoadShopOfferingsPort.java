@@ -7,7 +7,7 @@ import com.cleanlearning.domain.offering.ShopOffering;
 public interface LoadShopOfferingsPort {
 
     /**
-     * The {@code PUBLISHED} offerings, sorted by name.
+     * The {@code PUBLISHED} offerings that have at least one package, sorted by name.
      */
     List<ShopOffering> loadPublished();
 }

@@ -46,9 +46,17 @@ class ShopOfferingAdapter implements LoadShopOfferingsPort, LoadShopOfferingPort
         // Three queries, whatever the number of packages and experts: one each for the offering, its packages and
         // its experts. One joined query would repeat every package for every expert.
         return offeringRepository.findPublishedConsultationOffering(id.value())
-                .map(offering -> toShopConsultationOffering(offering,
-                        offeringRepository.findPackages(offering.id()),
-                        offeringRepository.findEligibleExperts(offering.id())));
+                .flatMap(this::loadWithPackages);
+    }
+
+    /** Like the list, the shop hides a published offering without packages (UC-02). */
+    private Optional<ShopConsultationOffering> loadWithPackages(ShopConsultationOfferingRow offering) {
+        List<ConsultationPackageRow> packages = offeringRepository.findPackages(offering.id());
+        if (packages.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(toShopConsultationOffering(offering, packages,
+                offeringRepository.findEligibleExperts(offering.id())));
     }
 
     private static ShopConsultationOffering toShopConsultationOffering(ShopConsultationOfferingRow offering,

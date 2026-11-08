@@ -154,6 +154,26 @@ class ShopControllerTest {
     }
 
     @Test
+    @Sql("published-offering-without-packages.sql")
+    @Sql(scripts = "delete-extra-offerings.sql", executionPhase = AFTER_TEST_METHOD)
+    void hidesAPublishedOfferingWithoutPackages() {
+        // UC-16 allows removing the last package of a published offering; the shop then hides it until one is added.
+        assertThat(mockMvc.get().uri("/api/shop/offerings"))
+                .hasStatusOk()
+                .bodyJson().extractingPath("$[*].name").asArray().containsExactly("Career Coaching");
+        assertThat(mockMvc.get().uri("/api/shop/offerings/{id}", "00000000-0000-0000-0000-000000009005"))
+                .hasStatus(HttpStatus.NOT_FOUND)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson().isLenientlyEqualTo("""
+                        {
+                          "status": 404,
+                          "title": "Not Found",
+                          "instance": "/api/shop/offerings/00000000-0000-0000-0000-000000009005"
+                        }
+                        """);
+    }
+
+    @Test
     void answersAMalformedIdWithBadRequest() {
         assertThat(mockMvc.get().uri("/api/shop/offerings/{id}", "not-a-uuid"))
                 .hasStatus(HttpStatus.BAD_REQUEST)

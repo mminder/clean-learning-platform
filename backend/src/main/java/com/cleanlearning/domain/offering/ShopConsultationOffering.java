@@ -5,7 +5,8 @@ import java.util.Objects;
 
 /**
  * A consultation offering as its detail page in the shop shows it (UC-02 step 4): the packages, fewest sessions first,
- * and the eligible experts, by display name.
+ * and the eligible experts, by display name. The shop shows only an offering with at least one package; it may have
+ * no eligible experts.
  */
 public record ShopConsultationOffering(OfferingId id, String name, String description,
         SessionDuration sessionDuration, CancellationDeadline cancellationDeadline, List<ConsultationPackage> packages,
@@ -18,6 +19,9 @@ public record ShopConsultationOffering(OfferingId id, String name, String descri
         Objects.requireNonNull(sessionDuration, "sessionDuration");
         Objects.requireNonNull(cancellationDeadline, "cancellationDeadline");
         packages = List.copyOf(packages);
+        if (packages.isEmpty()) {
+            throw new IllegalArgumentException("A consultation offering needs at least one package: " + id);
+        }
         eligibleExperts = List.copyOf(eligibleExperts);
     }
 

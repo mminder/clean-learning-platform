@@ -1,6 +1,7 @@
 package com.cleanlearning.domain.offering;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -47,6 +48,24 @@ class ShopConsultationOfferingTest {
         assertThat(offering.packages()).containsExactly(THREE_SESSIONS);
         assertThatThrownBy(() -> offering.eligibleExperts().clear())
                 .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void needsAPackage() {
+        List<ConsultationPackage> noPackages = List.of();
+        List<EligibleExpert> experts = List.of(EXPERT_1);
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> new ShopConsultationOffering(ID, "Career Coaching", "Coaching.", SIXTY_MINUTES,
+                        ONE_DAY, noPackages, experts))
+                .withMessageContaining("package");
+    }
+
+    @Test
+    void mayHaveNoEligibleExperts() {
+        ShopConsultationOffering offering = new ShopConsultationOffering(ID, "Career Coaching", "Coaching.",
+                SIXTY_MINUTES, ONE_DAY, List.of(THREE_SESSIONS), List.of());
+
+        assertThat(offering.eligibleExperts()).isEmpty();
     }
 
     @Test

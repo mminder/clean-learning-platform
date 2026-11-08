@@ -47,6 +47,7 @@ The admin creates consultation offerings, maintains them, and controls whether t
 - `ARCHIVED`: not in the shop and not buyable. Existing cases keep working, including booking their remaining credits.
 - Edits never change existing cases, because purchase terms are copied at purchase (D-08). Name, description and image are always shown live.
 - Removing an eligible expert only affects future expert selections, not cases where that expert is already assigned.
+- Removing packages or eligible experts from a `PUBLISHED` offering is allowed, even the last one (decided 2026-11-08). Without packages, the offering disappears from the shop until a package is added ([UC-02](uc-02-browse-shop.md#business-rules)). Without eligible experts, it stays in the shop.
 - Images follow D-21.
 
 ## Visibility and authorization

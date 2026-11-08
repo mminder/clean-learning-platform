@@ -20,7 +20,7 @@ public class GetShopOfferingService {
     }
 
     /**
-     * @throws NotFoundException if the offering doesn't exist or isn't {@code PUBLISHED}
+     * @throws NotFoundException if the offering doesn't exist, isn't {@code PUBLISHED} or has no package
      */
     @Transactional(readOnly = true)
     public ShopConsultationOffering get(OfferingId id) {

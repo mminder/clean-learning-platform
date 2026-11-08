@@ -115,8 +115,8 @@ Names, emails and roles follow the seed table in [UC-01](../../use-cases/uc-01-l
 
 | Route | Response | Task |
 |---|---|---|
-| `GET /api/shop/offerings` | 200 `ShopOfferingResponse[]`, sorted by name | 06 |
-| `GET /api/shop/offerings/{id}` | 200 `ShopOfferingDetailResponse`; 404 if unknown or not `PUBLISHED`; 400 if the id isn't a UUID | 07 |
+| `GET /api/shop/offerings` | 200 `ShopOfferingResponse[]`, sorted by name; published offerings with at least one package | 06 |
+| `GET /api/shop/offerings/{id}` | 200 `ShopOfferingDetailResponse`; 404 if unknown, not `PUBLISHED` or without packages (like the list, decided 2026-11-08); 400 if the id isn't a UUID | 07 |
 | `GET /v3/api-docs` | the OpenAPI document that `backend/openapi.json` is generated from; public (`/v3/api-docs/**` in `SecurityConfig`) | 06 |
 
 ```jsonc
