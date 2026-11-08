@@ -8,6 +8,8 @@ A web platform where customers buy and book consultation packages and training r
 
 **Status:** increment [01 Shop tracer bullet](_docs/specs/01-shop-tracer-bullet.md) is complete. The shop list and the consultation offering detail work end to end: the seeded Career Coaching offering travels from Postgres through every backend layer and the generated API client to the React shop, served by the Vite dev server or by the single jar. That path ([task 06](_docs/tasks/01-shop-tracer-bullet/06-shop-list.md)) is the pattern to copy for a new use case. Error handling follows [task 07](_docs/tasks/01-shop-tracer-bullet/07-consultation-offering-detail.md): `ApiExceptionHandler` on the backend and `ApiError` on the frontend.
 
+**Next:** increment [02 Manage consultation offerings](_docs/specs/02-manage-consultation-offerings.md) is planned (PoC login and UC-16). Its tasks are in [_docs/tasks/02-manage-consultation-offerings](_docs/tasks/02-manage-consultation-offerings/README.md).
+
 ## Read first
 
 | What | Where |
@@ -58,7 +60,7 @@ Details: [_docs/architecture/backend.md](_docs/architecture/backend.md).
 - JPA entities never leave `adapters.database`. In `adapters.database.<feature>`, the adapters and Spring Data repositories sit at the top, the entities in `entity`, and the `*Row` records that queries select into in `row`. Mappers are hand-written. No Lombok, no MapStruct. Value objects, commands and DTOs are records.
 - Always get the current time from the injected `java.time.Clock`.
 - Derived states (consumed appointment, completed case or enrollment, open credits) are computed, never stored.
-- Contended writes take row locks first, in the order case → expert → run.
+- Contended writes take row locks first, in the order offering → case → expert → run.
 - Domain exceptions are mapped centrally to `ProblemDetail`.
 
 ## Frontend conventions
@@ -77,7 +79,7 @@ Details: [_docs/architecture/backend.md#testing](_docs/architecture/backend.md#t
 - Domain: extensive unit tests.
 - REST: one happy-path integration test per route, against Testcontainers Postgres.
 - Authorization (mandatory): a role matrix over all routes, plus ownership tests that use the two seeded users per role.
-- Concurrency: one test per locked race (expert slot, case credits, run seats).
+- Concurrency: one test per locked race (offering status, expert slot, case credits, run seats).
 - Use-case tests only where they add real value.
 - The ArchUnit layer rules and the OpenAPI drift test must pass.
 

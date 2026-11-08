@@ -50,7 +50,7 @@ A shadcn/ui component is added when a page first uses it: run `npx shadcn@latest
 | `/expert/trainings`, `/expert/trainings/:id` | My trainings (UC-12) | expert |
 | `/expert/availability` | Availability (UC-13) | expert |
 | `/expert/profile` | Profile (UC-14) | expert |
-| `/admin/consultations`, `/admin/consultations/:id` | Consultation offerings (UC-16) | admin |
+| `/admin/consultations`, `/admin/consultations/new`, `/admin/consultations/:id` | Consultation offerings (UC-16) | admin |
 | `/admin/trainings`, `/admin/trainings/:id` | Training offerings and runs (UC-17) | admin |
 | `/admin/cases`, `/admin/cases/:id` | All cases (UC-18) | admin |
 | `/admin/users` | Users (UC-19, MVP) | admin |
@@ -82,8 +82,8 @@ A shadcn/ui component is added when a page first uses it: run `npx shadcn@latest
 
 ## Errors
 
-- A `ProblemDetail` response with status 409 carries a stable `code`, which maps to a user-friendly message (toast or inline). Field errors on 400 are shown next to the form fields.
-- The frontend reads an error body only through a generated type: the task with the first 409 adds one shared `ProblemDetail` schema to `openapi.json` ([D-34](../decisions.md#architecture)). For 401, 403 and 500 it decides on the status alone.
+- A 409's `detail` is the message for the user, and the page shows it (inline or as a toast). Its stable `code` lets a page react to one conflict, for example by reloading stale data ([D-34](../decisions.md#architecture)). Field errors on 400 are shown next to the form fields; a 400 without a field list shows its `detail`.
+- The frontend reads an error body only through a generated type: the first task that reads one, UC-16's form in [increment 02](../specs/02-manage-consultation-offerings.md), adds one shared `ProblemDetail` schema to `openapi.json` ([D-34](../decisions.md#architecture)). For 401, 403 and 500 it decides on the status alone.
 
 ## Development
 

@@ -114,7 +114,7 @@ class BookConsultationAppointmentUseCase {
 - Outgoing ports are interfaces named `<Purpose>Port` (e.g. `LoadCaseForBookingPort`, `LoadExpertBusyTimesPort`, `SaveAppointmentPort`), living in `application.<feature>` next to the use cases that need them.
 - Ports are **narrow and use-case specific**. They return exactly the domain object that use case needs. Two use cases share a port only if they need the identical thing.
 - Ports are implemented in `adapters.database.<feature>`. One adapter class may implement several ports.
-- `ImageStore` is the port for image bytes (D-21). Its implementation is a Postgres table, replaceable by S3 later.
+- `ImageStorePort` is the port for image bytes (D-21). Its implementation is a Postgres table, replaceable by S3 later.
 
 ## Domain
 
@@ -138,14 +138,15 @@ class BookConsultationAppointmentUseCase {
 - **Columns:** points in time are `timestamptz`, local times are `time`, dates are `date`, money is `numeric(10,2)` (currency is always CHF). Every table has `created_at` and `updated_at` (D-20).
 - **Sorting text:** a name column the UI sorts by is declared `collate "und-x-icu"` (ICU root collation), so `order by` is alphabetical regardless of case and umlauts, and the same in dev, test and production; the database's default collation can sort byte-wise.
 - **Purchase terms** are columns on `consultation_case` and `enrollment` (D-08). A run's schedule is stored in `run_day` and `run_time_slot`.
-- **Images:** an `image` table with `bytea`, content type and size (D-21).
+- **Images:** an `image` table with the bytes (`bytea`) and the content type; a check keeps the size between 1 byte and 2 MB (D-21).
 
 ## Concurrency
 
-Pessimistic row locks (`SELECT … FOR UPDATE`) through port methods, at the start of the use-case transaction, always in the order **case → expert → run** (D-27).
+Pessimistic row locks (`SELECT … FOR UPDATE`) through port methods, at the start of the use-case transaction, always in the order **offering → case → expert → run** (D-27).
 
 | Use case | Locks |
 |---|---|
+| Edit an offering, change its status or image, delete it (UC-16, UC-17) | offering |
 | Book appointment (UC-06) | case → expert (user row) |
 | Cancel appointment / case (UC-07, UC-08) | case |
 | Adjust credits (UC-18) | case |
@@ -173,7 +174,7 @@ Not every error body is a `ProblemDetail`:
   - Spring Security's 403, including the CSRF rejection: Boot's error JSON.
   - Unexpected 500s: Boot's error JSON.
 
-Clients rely only on the status for the second group, never on its body ([D-34](../decisions.md#architecture)). Error bodies aren't in `openapi.json` yet: the task with the first 409 adds one shared `ProblemDetail` schema, with `code` for 409 and the field list for 400 (D-34).
+Clients rely only on the status for the second group, never on its body ([D-34](../decisions.md#architecture)). Error bodies aren't in `openapi.json` yet: the first task whose frontend reads one, UC-16's form in [increment 02](../specs/02-manage-consultation-offerings.md), adds one shared `ProblemDetail` schema, with `code` for 409 and the field list for 400 (D-34).
 
 ## REST conventions
 
@@ -191,7 +192,7 @@ Clients rely only on the status for the second group, never on its body ([D-34](
 | Domain unit tests | every business rule (slots, deadlines, credits, refund eligibility, seats, lifecycle, link window) | extensive; plain JUnit; time is fixed via `Clock` |
 | REST integration tests | `@SpringBootTest` + `MockMvcTester` + Testcontainers Postgres | one happy-path test per route |
 | Authorization tests | role matrix over all routes (anonymous → 401, wrong role → 403); ownership with the two seed users per role (other's resource → 404); the admin case response has no notes; private notes never appear in customer responses | mandatory ([security](security.md#testing)) |
-| Concurrency tests | parallel requests on each locked race (expert slot, case credits, run seats) | one per race |
+| Concurrency tests | parallel requests on each locked race (offering status, expert slot, case credits, run seats) | one per race |
 | Use-case tests | only where the flow has logic worth isolating | optional |
 | Architecture tests | ArchUnit layer rules | mandatory |
 | Contract test | the committed `openapi.json` is up to date | mandatory |
