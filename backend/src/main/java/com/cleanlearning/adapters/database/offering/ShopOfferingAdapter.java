@@ -23,6 +23,7 @@ import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import com.cleanlearning.domain.offering.value.ConsultationPackageId;
 import com.cleanlearning.domain.offering.value.OfferingId;
 import com.cleanlearning.domain.offering.value.OfferingName;
+import com.cleanlearning.domain.offering.value.SessionCount;
 import com.cleanlearning.domain.offering.value.SessionDuration;
 import com.cleanlearning.domain.shared.value.Money;
 import com.cleanlearning.domain.user.value.DisplayName;
@@ -75,7 +76,8 @@ class ShopOfferingAdapter implements LoadShopOfferingsPort, LoadShopOfferingPort
     }
 
     private static ConsultationPackage toConsultationPackage(ConsultationPackageRow row) {
-        return new ConsultationPackage(new ConsultationPackageId(row.id()), row.sessionCount(), new Money(row.price()));
+        return new ConsultationPackage(new ConsultationPackageId(row.id()), new SessionCount(row.sessionCount()),
+                new Money(row.price()));
     }
 
     private static EligibleExpert toEligibleExpert(EligibleExpertRow row) {

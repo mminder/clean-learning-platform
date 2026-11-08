@@ -119,7 +119,8 @@ class BookConsultationAppointmentUseCase {
 ## Domain
 
 - POJOs and `record` value objects without framework imports. All business rules live here and are unit tested.
-- **Value objects** (examples): `Money` (CHF), `CancellationDeadline` (hours), `SessionDuration`, `OfferingName` and `DisplayName` (never blank), `TimeRange`, `LocalTimeSlot`, `Seats`, `EmailAddress`, typed ids (`CaseId`, `UserId`, …).
+- **Value objects** (examples): `Money` (CHF), `CancellationDeadline` (hours), `SessionDuration`, `SessionCount` (at least 1), `OfferingName` and `DisplayName` (never blank), `TimeRange`, `LocalTimeSlot`, `Seats`, `EmailAddress`, typed ids (`CaseId`, `UserId`, …).
+- **When a value is a value object** (D-36): when it has a rule beyond not null, a unit or behavior, or could be mixed up with another value of the same type. Other values stay Java types, like an offering's description and an expert's bio (`String`s that may be empty). A column that holds a value object repeats its rule as a check constraint.
 - **Use-case-specific domain objects** are encouraged, e.g. `CaseForBooking` and `CaseForCancellation` instead of one big `Case`.
 - **Models and value objects.** In `domain.<feature>`, the models a use case works with sit at the top, and the value objects in `value`. A value object describes one thing by its value (an amount, a duration, an id, a type) and depends only on Java and other value objects; ArchUnit checks this, so a class that needs a model is a model itself. Typed ids are value objects, so several models can share one, like `OfferingId`. Shared value objects live in `domain.shared.value`.
 - **Derived state is computed, never stored:** `CONSUMED`, `COMPLETED`, open credits, refund eligibility before cancellation, link visibility.

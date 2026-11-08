@@ -16,6 +16,7 @@ import com.cleanlearning.domain.offering.value.ConsultationPackageId;
 import com.cleanlearning.domain.offering.value.OfferingId;
 import com.cleanlearning.domain.offering.value.OfferingName;
 import com.cleanlearning.domain.offering.value.OfferingType;
+import com.cleanlearning.domain.offering.value.SessionCount;
 import com.cleanlearning.domain.offering.value.SessionDuration;
 import com.cleanlearning.domain.shared.value.Money;
 import com.cleanlearning.domain.user.value.DisplayName;
@@ -28,7 +29,7 @@ class ShopConsultationOfferingTest {
     private static final SessionDuration SIXTY_MINUTES = new SessionDuration(60);
     private static final CancellationDeadline ONE_DAY = new CancellationDeadline(24);
     private static final ConsultationPackage THREE_SESSIONS = new ConsultationPackage(
-            new ConsultationPackageId(UUID.fromString("00000000-0000-0000-0000-000000001011")), 3,
+            new ConsultationPackageId(UUID.fromString("00000000-0000-0000-0000-000000001011")), new SessionCount(3),
             Money.chf("450.00"));
     private static final EligibleExpert EXPERT_1 = new EligibleExpert(
             new UserId(UUID.fromString("00000000-0000-0000-0000-000000000201")), new DisplayName("Expert 1"),
