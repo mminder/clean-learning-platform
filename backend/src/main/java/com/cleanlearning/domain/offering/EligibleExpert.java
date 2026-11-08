@@ -2,12 +2,13 @@ package com.cleanlearning.domain.offering;
 
 import java.util.Objects;
 
-import com.cleanlearning.domain.user.UserId;
+import com.cleanlearning.domain.user.value.DisplayName;
+import com.cleanlearning.domain.user.value.UserId;
 
 /**
  * An expert a consultation offering's customers can pick, with the public fields of their expert profile.
  */
-public record EligibleExpert(UserId id, String displayName, String bio) {
+public record EligibleExpert(UserId id, DisplayName displayName, String bio) {
 
     public EligibleExpert {
         Objects.requireNonNull(id, "id");

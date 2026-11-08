@@ -10,7 +10,7 @@ There's no Lombok and no MapStruct. Value objects, commands and DTOs are Java `r
 
 ## Packages
 
-The layers are the root packages (D-22), and the features are sub-packages within each layer (D-23).
+The layers are the root packages (D-22), and the features are sub-packages within each layer (D-23). Within a feature package, the supporting types sit in a sub-package per role (D-37): `entity` and `row` in `adapters.database`, `response` and `request` in `api`, `value` in `domain`.
 
 ```
 com.cleanlearning
@@ -23,15 +23,15 @@ com.cleanlearning
 │  ├─ offering                admin catalog endpoints
 │  ├─ user                    /api/me, poc login, (MVP) user mgmt
 │  └─ image
-├─ application                use-case services + outgoing ports
-│  ├─ consultation            e.g. BookConsultationAppointmentService, LoadCaseForBookingPort
+├─ application                use cases + outgoing ports
+│  ├─ consultation            e.g. BookConsultationAppointmentUseCase, LoadCaseForBookingPort
 │  ├─ training
 │  ├─ offering
 │  ├─ availability
 │  ├─ user
 │  └─ image
-├─ domain                     POJOs + value objects, no framework imports
-│  ├─ shared                  Money, CancellationDeadline, TimeRange, ...
+├─ domain                     models + value objects (in value/), no framework imports
+│  ├─ shared                  NotFoundException; value: Money, TimeRange, ...
 │  ├─ consultation            e.g. SlotFinder, CaseCredits, CaseCancellation
 │  ├─ training
 │  ├─ offering
@@ -56,7 +56,7 @@ com.cleanlearning
 | `training` | enrollments, enrollment cancellation, expert training views | UC-04, UC-05 (enrollments), UC-09, UC-12 |
 | `availability` | expert availability | UC-13 |
 | `image` | image upload and serving | (D-21) |
-| `shared` | cross-feature value objects (domain only) | — |
+| `shared` | `NotFoundException`, and the value objects several features use, in `domain.shared.value` (domain only) | — |
 
 UC-10 (join call) has no feature of its own. Link visibility is part of the case and enrollment detail queries, using a shared `LinkWindow` domain rule.
 
@@ -82,19 +82,19 @@ Features aren't isolated from each other (D-23). A use case may use domain class
 
 ## Use cases
 
-- One use case = one class `<Verb><Noun>Service` in `application.<feature>`, annotated `@Service`.
-- **One public method.** It takes the `CurrentUser` (if the use case needs it) and a command `record`, and returns a result `record`.
+- One use case = one class `<Verb><Noun>UseCase` in `application.<feature>`, annotated `@Service`.
+- **One public method, named `invoke`** (ArchUnit checks the name and that it is the only one). It takes the `CurrentUser` (if the use case needs it) and a command `record`, and returns a result `record`.
 - `@Transactional` sits on the use-case method. Read-only use cases use `@Transactional(readOnly = true)`.
 - **Flow only:** load through ports, call domain logic, save through ports. Business decisions (is it bookable, refund-eligible, …) live in the domain.
-- There are **no incoming port interfaces**. Controllers call the service directly.
+- There are **no incoming port interfaces**. Controllers call the use case directly.
 - Controllers don't contain logic. They map HTTP to the command, call the use case, and map the result to the response DTO.
 
 ```java
 @Service
-class BookConsultationAppointmentService {
+class BookConsultationAppointmentUseCase {
     // ports injected via constructor
     @Transactional
-    BookedAppointment book(CurrentUser user, BookAppointmentCommand cmd) {
+    BookedAppointment invoke(CurrentUser user, BookAppointmentCommand cmd) {
         var caseForBooking = loadCase.lockForCustomer(cmd.caseId(), user.id()); // 404 if not theirs
         var expertId = caseForBooking.expertOr(cmd.expertId());
         lockExpert.lock(expertId);
@@ -119,8 +119,10 @@ class BookConsultationAppointmentService {
 ## Domain
 
 - POJOs and `record` value objects without framework imports. All business rules live here and are unit tested.
-- **Value objects** (examples): `Money` (CHF), `CancellationDeadline` (hours), `SessionDuration`, `TimeRange`, `LocalTimeSlot`, `Seats`, `EmailAddress`, typed ids (`CaseId`, `UserId`, …).
+- **Value objects** (examples): `Money` (CHF), `CancellationDeadline` (hours), `SessionDuration`, `SessionCount` (at least 1), `OfferingName` and `DisplayName` (never blank), `TimeRange`, `LocalTimeSlot`, `Seats`, `EmailAddress`, typed ids (`CaseId`, `UserId`, …).
+- **When a value is a value object** (D-36): when it has a rule beyond not null, a unit or behavior, or could be mixed up with another value of the same type. Other values stay Java types, like an offering's description and an expert's bio (`String`s that may be empty). A column that holds a value object repeats its rule as a check constraint.
 - **Use-case-specific domain objects** are encouraged, e.g. `CaseForBooking` and `CaseForCancellation` instead of one big `Case`.
+- **Models and value objects.** In `domain.<feature>`, the models a use case works with sit at the top, and the value objects in `value`. A value object describes one thing by its value (an amount, a duration, an id, a type) and depends only on Java and other value objects; ArchUnit checks this, so a class that needs a model is a model itself. Typed ids are value objects, so several models can share one, like `OfferingId`. Shared value objects live in `domain.shared.value`.
 - **Derived state is computed, never stored:** `CONSUMED`, `COMPLETED`, open credits, refund eligibility before cancellation, link visibility.
 - **Rules as constants in one place:** slot grid 30 min, minimum notice 24 h, link window 1 h (D-10, D-19).
 - Methods that depend on the current time take a `Clock` or an `Instant now`.
@@ -128,6 +130,7 @@ class BookConsultationAppointmentService {
 ## Persistence
 
 - **One PostgreSQL schema** for all features (D-23). JPA entities live only in `adapters.database` and are mapped to domain objects by hand-written mappers.
+- **Entities and rows.** `adapters.database.<feature>` holds the adapter classes and the Spring Data repositories. Its `entity` sub-package holds the JPA entities, one per table, mapping only the columns the queries read. Its `row` sub-package holds the `*Row` records a query selects into with `select new` (a DTO projection): shaped for that one query, possibly spanning several tables, and never managed by JPA. The adapter maps rows to domain objects. Entities and rows are public so the parent package can use them; the layer rules keep them inside `adapters.database`, and ArchUnit checks both sub-packages.
 - **Flyway:** the schema is in `db/migration`. Seed data in `db/seed` is only on the Flyway path in the `poc` and `dev` profiles. Seed dates are relative to the migration date (e.g. `current_date + 14`), so the demo data stays in the future. A seed migration is numbered right after the schema migration it needs (`V2__create_user.sql` in `db/migration`, then `V2_1__seed_user.sql` in `db/seed`). Merged migrations, schema and seed alike, are never edited; a change is a new migration.
 - **Seed content:** the six users from [UC-01](../use-cases/uc-01-login.md); Career Coaching (packages 3 × CHF 450 and 5 × CHF 700, 60 min, 24 h deadline, both experts eligible); Software Architecture (2 days) and AI-Augmented Software Engineering (1 day), each with time slots 09:00–12:00 and 13:00–17:00, a 168 h deadline and two future runs; availability for both experts.
 - **Ids:** UUIDs generated in the application. Seed rows use fixed, readable UUIDs that tests refer to.
@@ -176,7 +179,8 @@ Clients rely only on the status for the second group, never on its body ([D-34](
 
 - Route prefixes by audience (D-26): `/api/shop`, `/api/customer`, `/api/expert`, `/api/admin`, plus `/api/me`, `/api/images`, `/api/poc` (`poc` profile only).
 - **Response DTOs per audience:** customer, expert and admin case responses are different records. This makes "admin never sees notes" a property of the API's shape.
-- Request and response records have names that are unique across `api`, because the OpenAPI schema name is the simple class name (a test checks this). A record that several features return, such as `MoneyResponse`, lives in `api` itself.
+- **Controllers and DTOs.** `api.<feature>` holds the controllers. Its `response` sub-package holds the `*Response` records, each with a public static `from(...)` that maps the domain object; its `request` sub-package holds the `*Request` records. A response that several features return, such as `MoneyResponse`, lives in `api.response`. ArchUnit checks the `response` packages; the rule for `request` comes with the first request record, because every rule must match at least one class.
+- Request and response records have names that are unique across `api`, because the OpenAPI schema name is the simple class name (a test checks this).
 - JSON with camelCase. Instants are ISO-8601 with offset; local dates and times are ISO-8601 without offset. Money is `{ "amount": "450.00", "currency": "CHF" }`.
 - The API is code-first. springdoc generates `backend/openapi.json`, which is committed. A test fails if the committed file differs from the generated one (D-29).
 

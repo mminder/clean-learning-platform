@@ -31,7 +31,7 @@ The admin creates consultation offerings, maintains them, and controls whether t
 
 - **Publishing an incomplete offering:** 409, listing what's missing.
 - **Unpublish or delete when purchases exist:** 409, "Offering has purchases. Archive it instead."
-- **Invalid values** (duration ≤ 0, deadline < 0, session count ≤ 0, price < 0): 400.
+- **Invalid values** (blank name, duration ≤ 0, deadline < 0, session count ≤ 0, price < 0): 400. The description may be empty.
 
 ## Business rules
 

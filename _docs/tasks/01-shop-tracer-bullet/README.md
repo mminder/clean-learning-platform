@@ -56,13 +56,20 @@ These major versions are new, and most examples online are for older ones. Check
 | Package | Classes in this increment |
 |---|---|
 | `config` | `SecurityConfig`, `OpenApiConfig`, `RequiredResponseFieldsCustomizer`, `SpaConfig` (the jar serves the SPA, `index.html` for client routes, task 08) |
-| `api` | `ApiExceptionHandler` (central `ProblemDetail` mapping); `MoneyResponse`, shared by every feature's responses (public `from(Money)`) |
-| `api.shop` | `ShopController`; responses `ShopOfferingResponse`, `ShopOfferingDetailResponse`, `ConsultationOfferingDetailResponse`, `ConsultationPackageResponse`, `EligibleExpertResponse` |
-| `application.offering` | `ListShopOfferingsService`, `GetShopOfferingService`, `LoadShopOfferingsPort`, `LoadShopOfferingPort` |
-| `domain.shared` | `Money`, `NotFoundException` |
-| `domain.offering` | `OfferingId`, `OfferingType`, `ShopOffering`, `ShopConsultationOffering`, `ConsultationPackage`, `ConsultationPackageId`, `EligibleExpert`, `SessionDuration`, `CancellationDeadline` |
-| `domain.user` | `UserId` |
-| `adapters.database.offering` | JPA entities, Spring Data repositories, and `ShopOfferingAdapter`, which implements both ports |
+| `api` | `ApiExceptionHandler` (central `ProblemDetail` mapping) |
+| `api.response` | `MoneyResponse`, shared by every feature's responses (public `from(Money)`) |
+| `api.shop` | `ShopController` |
+| `api.shop.response` | `ShopOfferingResponse`, `ShopOfferingDetailResponse`, `ConsultationOfferingDetailResponse`, `ConsultationPackageResponse`, `EligibleExpertResponse` |
+| `application.offering` | `ListShopOfferingsUseCase`, `GetShopOfferingUseCase`, `LoadShopOfferingsPort`, `LoadShopOfferingPort` |
+| `domain.shared` | `NotFoundException` |
+| `domain.shared.value` | `Money` |
+| `domain.offering` | `ShopOffering`, `ShopConsultationOffering`, `ConsultationPackage`, `EligibleExpert` |
+| `domain.offering.value` | `OfferingId`, `OfferingType`, `OfferingName`, `ConsultationPackageId`, `SessionCount`, `SessionDuration`, `CancellationDeadline` |
+| `domain.user.value` | `UserId`, `DisplayName` |
+| `adapters.database.offering` | `OfferingRepository`, and `ShopOfferingAdapter`, which implements both ports |
+| `adapters.database.offering.entity` | `OfferingEntity`, `ConsultationOfferingEntity`, `ConsultationPackageEntity`, `EligibleExpertEntity` |
+| `adapters.database.offering.row` | `ShopOfferingPriceRow`, `ShopConsultationOfferingRow`, `ConsultationPackageRow`, `EligibleExpertRow` |
+| `adapters.database.user.entity` | `ExpertProfileEntity` |
 
 Map only what this increment reads. For example, there's no JPA entity for `app_user` until UC-01 needs one. The adapter may join the user tables to load eligible experts ([D-23](../../decisions.md#architecture)).
 
@@ -76,9 +83,10 @@ Migrations in `db/migration`, seed in `db/seed`, numbered as described in [backe
 | `V1_1__seed_offering.sql` | 06 | Career Coaching with its two packages |
 | `V2__create_user.sql` | 07 | `app_user`, `user_role`, `expert_profile`, `eligible_expert` |
 | `V2_1__seed_user.sql` | 07 | the six users, their roles, two expert profiles, both experts eligible for Career Coaching |
+| `V3__check_names_not_blank.sql` | — | not-blank checks on `offering.name` and `expert_profile.display_name` ([D-36](../../decisions.md#architecture)) |
 
 ```
-offering               id uuid PK, type, name, description, status
+offering               id uuid PK, type, name not blank, description, status
 consultation_offering  offering_id uuid PK → offering, session_duration_minutes int > 0,
                        cancellation_deadline_hours int >= 0
 consultation_package   id uuid PK, consultation_offering_id → consultation_offering,
@@ -86,13 +94,13 @@ consultation_package   id uuid PK, consultation_offering_id → consultation_off
 
 app_user               id uuid PK, name, email UNIQUE
 user_role              user_id → app_user, role, PK (user_id, role)
-expert_profile         user_id uuid PK → app_user, display_name, bio
+expert_profile         user_id uuid PK → app_user, display_name not blank, bio
 eligible_expert        consultation_offering_id → consultation_offering,
                        expert_id → expert_profile, PK (both)
 ```
 
 - Every table also has `created_at` and `updated_at` (`timestamptz not null default now()`, D-20).
-- `offering.type` is checked against `CONSULTATION`; `TRAINING` is added with trainings. `offering.status` is checked against `DRAFT`, `PUBLISHED` and `ARCHIVED`. `user_role.role` is checked against `CUSTOMER`, `EXPERT` and `ADMIN`.
+- `offering.type` is checked against `CONSULTATION`; `TRAINING` is added with trainings. `offering.status` is checked against `DRAFT`, `PUBLISHED` and `ARCHIVED`. `user_role.role` is checked against `CUSTOMER`, `EXPERT` and `ADMIN`. `offering.name` and `expert_profile.display_name` are checked not to be blank, with the same rule as `OfferingName` and `DisplayName` (V3, D-36).
 - Type-specific data lives in a subtype table keyed by the offering id: `consultation_offering` now, `training_offering` later.
 - A name column the UI sorts by gets the ICU root collation, `collate "und-x-icu"`, so it sorts alphabetically regardless of case and umlauts, the same on every Postgres ([backend.md](../../architecture/backend.md#persistence)): `offering.name` in 06, `expert_profile.display_name` in 07.
 - Not yet: `offering.image_id` and `expert_profile.photo_image_id` (images), `expert_profile.teams_link` (UC-14), the OIDC columns on `app_user` (MVP). Each comes with its use case.

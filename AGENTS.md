@@ -48,12 +48,14 @@ Work arrives as tasks. Follow [working on a task](_docs/tasks/README.md#working-
 
 Details: [_docs/architecture/backend.md](_docs/architecture/backend.md).
 
-- Root packages `api`, `application`, `domain`, `adapters.database` (plus `config`). Each has the feature sub-packages `user`, `offering`, `consultation`, `training`, `availability`, `image`; `api` also has `shop`, the public catalog endpoints. Shared value objects live in `domain.shared`.
-- Each use case is one `@Service` class named `<Verb><Noun>Service` in `application.<feature>`. It has one public method, is `@Transactional`, and contains flow only.
-- Business rules live in `domain` POJOs and records. `domain` has no Spring or JPA imports.
-- Outgoing ports are interfaces named `<Purpose>Port` in `application.<feature>`. They are narrow and use-case specific, and implemented in `adapters.database.<feature>`. There are no incoming ports: controllers call use-case services directly.
+- Root packages `api`, `application`, `domain`, `adapters.database` (plus `config`). Each has the feature sub-packages `user`, `offering`, `consultation`, `training`, `availability`, `image`; `api` also has `shop`, the public catalog endpoints. Shared value objects live in `domain.shared.value`.
+- Each use case is one `@Service` class named `<Verb><Noun>UseCase` in `application.<feature>`. It has one public method named `invoke`, which is `@Transactional` and contains flow only.
+- Business rules live in `domain` POJOs and records. `domain` has no Spring or JPA imports. In `domain.<feature>`, the models sit at the top and the value objects in `value`; a value object depends only on Java and other value objects.
+- A domain value with a rule beyond not null, a unit or behavior is a value object, and so is an id. A column that holds one repeats its rule as a check constraint ([D-36](_docs/decisions.md#architecture)).
+- Outgoing ports are interfaces named `<Purpose>Port` in `application.<feature>`. They are narrow and use-case specific, and implemented in `adapters.database.<feature>`. There are no incoming ports: controllers call use cases directly.
 - Controllers pass `CurrentUser` explicitly into use cases. Ownership is enforced by scoped port queries; a resource that isn't yours returns 404.
-- JPA entities never leave `adapters.database`. Mappers are hand-written. No Lombok, no MapStruct. Value objects, commands and DTOs are records.
+- In `api.<feature>`, the controllers sit at the top, the `*Response` records in `response` and the `*Request` records in `request`. Responses that several features return live in `api.response`.
+- JPA entities never leave `adapters.database`. In `adapters.database.<feature>`, the adapters and Spring Data repositories sit at the top, the entities in `entity`, and the `*Row` records that queries select into in `row`. Mappers are hand-written. No Lombok, no MapStruct. Value objects, commands and DTOs are records.
 - Always get the current time from the injected `java.time.Clock`.
 - Derived states (consumed appointment, completed case or enrollment, open credits) are computed, never stored.
 - Contended writes take row locks first, in the order case → expert → run.
@@ -76,7 +78,7 @@ Details: [_docs/architecture/backend.md#testing](_docs/architecture/backend.md#t
 - REST: one happy-path integration test per route, against Testcontainers Postgres.
 - Authorization (mandatory): a role matrix over all routes, plus ownership tests that use the two seeded users per role.
 - Concurrency: one test per locked race (expert slot, case credits, run seats).
-- Use-case service tests only where they add real value.
+- Use-case tests only where they add real value.
 - The ArchUnit layer rules and the OpenAPI drift test must pass.
 
 ## Cloud sessions

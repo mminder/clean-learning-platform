@@ -23,7 +23,7 @@ Read first: [backend.md](../../architecture/backend.md), and the plan's [toolcha
   - `domain` depends on no Spring, Jakarta Persistence or Hibernate class;
   - `application` depends on no Jakarta Persistence class;
   - `@Entity` classes live only in `adapters.database`;
-  - `@Service` classes in `application` end in `Service`, and interfaces in `application` end in `Port`.
+  - `@Service` classes in `application` end in `UseCase` (renamed from `Service` on 2026-11-08, D-35), and interfaces in `application` end in `Port`.
 - **Test setup** from the plan's [tests](README.md#tests) section: a `TestcontainersConfiguration` with `postgres:18-alpine` through `@ServiceConnection`, the `@IntegrationTest` meta-annotation, and one test that starts the application context.
 - **Docs:** in [AGENTS.md](../../../AGENTS.md), replace "documentation only" in **Status** and add the backend commands. In the root `README.md`, update the status. Add a `.gitignore` for Maven and IDE files.
 
