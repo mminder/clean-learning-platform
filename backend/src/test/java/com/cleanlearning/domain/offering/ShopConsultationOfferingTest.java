@@ -14,25 +14,29 @@ import org.junit.jupiter.api.Test;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import com.cleanlearning.domain.offering.value.ConsultationPackageId;
 import com.cleanlearning.domain.offering.value.OfferingId;
+import com.cleanlearning.domain.offering.value.OfferingName;
 import com.cleanlearning.domain.offering.value.OfferingType;
 import com.cleanlearning.domain.offering.value.SessionDuration;
 import com.cleanlearning.domain.shared.value.Money;
+import com.cleanlearning.domain.user.value.DisplayName;
 import com.cleanlearning.domain.user.value.UserId;
 
 class ShopConsultationOfferingTest {
 
     private static final OfferingId ID = new OfferingId(UUID.fromString("00000000-0000-0000-0000-000000001001"));
+    private static final OfferingName NAME = new OfferingName("Career Coaching");
     private static final SessionDuration SIXTY_MINUTES = new SessionDuration(60);
     private static final CancellationDeadline ONE_DAY = new CancellationDeadline(24);
     private static final ConsultationPackage THREE_SESSIONS = new ConsultationPackage(
             new ConsultationPackageId(UUID.fromString("00000000-0000-0000-0000-000000001011")), 3,
             Money.chf("450.00"));
     private static final EligibleExpert EXPERT_1 = new EligibleExpert(
-            new UserId(UUID.fromString("00000000-0000-0000-0000-000000000201")), "Expert 1", "Career coach.");
+            new UserId(UUID.fromString("00000000-0000-0000-0000-000000000201")), new DisplayName("Expert 1"),
+            "Career coach.");
 
     @Test
     void holdsWhatTheDetailPageShows() {
-        ShopConsultationOffering offering = new ShopConsultationOffering(ID, "Career Coaching", "Coaching.",
+        ShopConsultationOffering offering = new ShopConsultationOffering(ID, NAME, "Coaching.",
                 SIXTY_MINUTES, ONE_DAY, List.of(THREE_SESSIONS), List.of(EXPERT_1));
 
         assertThat(offering.type()).isEqualTo(OfferingType.CONSULTATION);
@@ -45,7 +49,7 @@ class ShopConsultationOfferingTest {
     @Test
     void cannotBeChangedThroughItsLists() {
         List<ConsultationPackage> packages = new ArrayList<>(List.of(THREE_SESSIONS));
-        ShopConsultationOffering offering = new ShopConsultationOffering(ID, "Career Coaching", "Coaching.",
+        ShopConsultationOffering offering = new ShopConsultationOffering(ID, NAME, "Coaching.",
                 SIXTY_MINUTES, ONE_DAY, packages, List.of(EXPERT_1));
 
         packages.clear();
@@ -60,14 +64,14 @@ class ShopConsultationOfferingTest {
         List<ConsultationPackage> noPackages = List.of();
         List<EligibleExpert> experts = List.of(EXPERT_1);
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> new ShopConsultationOffering(ID, "Career Coaching", "Coaching.", SIXTY_MINUTES,
+                .isThrownBy(() -> new ShopConsultationOffering(ID, NAME, "Coaching.", SIXTY_MINUTES,
                         ONE_DAY, noPackages, experts))
                 .withMessageContaining("package");
     }
 
     @Test
     void mayHaveNoEligibleExperts() {
-        ShopConsultationOffering offering = new ShopConsultationOffering(ID, "Career Coaching", "Coaching.",
+        ShopConsultationOffering offering = new ShopConsultationOffering(ID, NAME, "Coaching.",
                 SIXTY_MINUTES, ONE_DAY, List.of(THREE_SESSIONS), List.of());
 
         assertThat(offering.eligibleExperts()).isEmpty();
@@ -77,28 +81,29 @@ class ShopConsultationOfferingTest {
     void rejectsMissingValues() {
         List<ConsultationPackage> packages = List.of(THREE_SESSIONS);
         List<EligibleExpert> experts = List.of(EXPERT_1);
-        assertThatNullPointerException().isThrownBy(() -> new ShopConsultationOffering(null, "Name", "Text",
+        assertThatNullPointerException().isThrownBy(() -> new ShopConsultationOffering(null, NAME, "Text",
                 SIXTY_MINUTES, ONE_DAY, packages, experts));
         assertThatNullPointerException().isThrownBy(() -> new ShopConsultationOffering(ID, null, "Text",
                 SIXTY_MINUTES, ONE_DAY, packages, experts));
-        assertThatNullPointerException().isThrownBy(() -> new ShopConsultationOffering(ID, "Name", null,
+        assertThatNullPointerException().isThrownBy(() -> new ShopConsultationOffering(ID, NAME, null,
                 SIXTY_MINUTES, ONE_DAY, packages, experts));
-        assertThatNullPointerException().isThrownBy(() -> new ShopConsultationOffering(ID, "Name", "Text",
+        assertThatNullPointerException().isThrownBy(() -> new ShopConsultationOffering(ID, NAME, "Text",
                 null, ONE_DAY, packages, experts));
-        assertThatNullPointerException().isThrownBy(() -> new ShopConsultationOffering(ID, "Name", "Text",
+        assertThatNullPointerException().isThrownBy(() -> new ShopConsultationOffering(ID, NAME, "Text",
                 SIXTY_MINUTES, null, packages, experts));
-        assertThatNullPointerException().isThrownBy(() -> new ShopConsultationOffering(ID, "Name", "Text",
+        assertThatNullPointerException().isThrownBy(() -> new ShopConsultationOffering(ID, NAME, "Text",
                 SIXTY_MINUTES, ONE_DAY, null, experts));
-        assertThatNullPointerException().isThrownBy(() -> new ShopConsultationOffering(ID, "Name", "Text",
+        assertThatNullPointerException().isThrownBy(() -> new ShopConsultationOffering(ID, NAME, "Text",
                 SIXTY_MINUTES, ONE_DAY, packages, null));
     }
 
     @Test
     void eligibleExpertNeedsAllItsValues() {
         UserId id = EXPERT_1.id();
-        assertThatNullPointerException().isThrownBy(() -> new EligibleExpert(null, "Expert 1", "Bio"));
+        DisplayName displayName = EXPERT_1.displayName();
+        assertThatNullPointerException().isThrownBy(() -> new EligibleExpert(null, displayName, "Bio"));
         assertThatNullPointerException().isThrownBy(() -> new EligibleExpert(id, null, "Bio"));
-        assertThatNullPointerException().isThrownBy(() -> new EligibleExpert(id, "Expert 1", null));
+        assertThatNullPointerException().isThrownBy(() -> new EligibleExpert(id, displayName, null));
         assertThatNullPointerException().isThrownBy(() -> new UserId(null));
     }
 }

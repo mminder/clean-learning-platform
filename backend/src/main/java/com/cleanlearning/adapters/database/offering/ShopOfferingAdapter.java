@@ -22,8 +22,10 @@ import com.cleanlearning.domain.offering.ShopOffering;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import com.cleanlearning.domain.offering.value.ConsultationPackageId;
 import com.cleanlearning.domain.offering.value.OfferingId;
+import com.cleanlearning.domain.offering.value.OfferingName;
 import com.cleanlearning.domain.offering.value.SessionDuration;
 import com.cleanlearning.domain.shared.value.Money;
+import com.cleanlearning.domain.user.value.DisplayName;
 import com.cleanlearning.domain.user.value.UserId;
 
 @Component
@@ -65,8 +67,8 @@ class ShopOfferingAdapter implements LoadShopOfferingsPort, LoadShopOfferingPort
 
     private static ShopConsultationOffering toShopConsultationOffering(ShopConsultationOfferingRow offering,
             List<ConsultationPackageRow> packages, List<EligibleExpertRow> experts) {
-        return new ShopConsultationOffering(new OfferingId(offering.id()), offering.name(), offering.description(),
-                new SessionDuration(offering.sessionDurationMinutes()),
+        return new ShopConsultationOffering(new OfferingId(offering.id()), new OfferingName(offering.name()),
+                offering.description(), new SessionDuration(offering.sessionDurationMinutes()),
                 new CancellationDeadline(offering.cancellationDeadlineHours()),
                 packages.stream().map(ShopOfferingAdapter::toConsultationPackage).toList(),
                 experts.stream().map(ShopOfferingAdapter::toEligibleExpert).toList());
@@ -77,14 +79,14 @@ class ShopOfferingAdapter implements LoadShopOfferingsPort, LoadShopOfferingPort
     }
 
     private static EligibleExpert toEligibleExpert(EligibleExpertRow row) {
-        return new EligibleExpert(new UserId(row.id()), row.displayName(), row.bio());
+        return new EligibleExpert(new UserId(row.id()), new DisplayName(row.displayName()), row.bio());
     }
 
     private static ShopOffering toShopOffering(List<ShopOfferingPriceRow> rows) {
         ShopOfferingPriceRow first = rows.getFirst();
         List<Money> packagePrices = rows.stream().map(row -> new Money(row.price())).toList();
         return switch (first.type()) {
-            case CONSULTATION -> ShopOffering.consultation(new OfferingId(first.id()), first.name(),
+            case CONSULTATION -> ShopOffering.consultation(new OfferingId(first.id()), new OfferingName(first.name()),
                     first.description(), packagePrices);
         };
     }

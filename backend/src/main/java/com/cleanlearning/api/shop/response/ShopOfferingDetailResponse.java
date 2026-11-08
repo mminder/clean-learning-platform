@@ -12,7 +12,7 @@ public record ShopOfferingDetailResponse(UUID id, OfferingType type, String name
         ConsultationOfferingDetailResponse consultation) {
 
     public static ShopOfferingDetailResponse from(ShopConsultationOffering offering) {
-        return new ShopOfferingDetailResponse(offering.id().value(), offering.type(), offering.name(),
+        return new ShopOfferingDetailResponse(offering.id().value(), offering.type(), offering.name().value(),
                 offering.description(), ConsultationOfferingDetailResponse.from(offering));
     }
 }

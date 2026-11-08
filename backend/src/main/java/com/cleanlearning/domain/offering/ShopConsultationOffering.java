@@ -5,6 +5,7 @@ import java.util.Objects;
 
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import com.cleanlearning.domain.offering.value.OfferingId;
+import com.cleanlearning.domain.offering.value.OfferingName;
 import com.cleanlearning.domain.offering.value.OfferingType;
 import com.cleanlearning.domain.offering.value.SessionDuration;
 
@@ -13,7 +14,7 @@ import com.cleanlearning.domain.offering.value.SessionDuration;
  * and the eligible experts, by display name. The shop shows only an offering with at least one package; it may have
  * no eligible experts.
  */
-public record ShopConsultationOffering(OfferingId id, String name, String description,
+public record ShopConsultationOffering(OfferingId id, OfferingName name, String description,
         SessionDuration sessionDuration, CancellationDeadline cancellationDeadline, List<ConsultationPackage> packages,
         List<EligibleExpert> eligibleExperts) {
 

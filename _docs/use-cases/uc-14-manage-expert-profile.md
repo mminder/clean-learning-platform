@@ -27,6 +27,7 @@ The expert maintains how customers see them and the Teams link for their consult
 
 ## Alternative and error flows
 
+- **The display name is blank:** 400. The bio may be empty.
 - **The photo isn't JPEG, PNG or WebP, or is larger than 2 MB:** 400.
 - **The Teams link isn't an `https://` URL:** 400.
 

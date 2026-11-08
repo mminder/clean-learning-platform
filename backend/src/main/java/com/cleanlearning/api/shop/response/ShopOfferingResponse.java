@@ -13,7 +13,7 @@ public record ShopOfferingResponse(UUID id, OfferingType type, String name, Stri
         MoneyResponse price) {
 
     public static ShopOfferingResponse from(ShopOffering offering) {
-        return new ShopOfferingResponse(offering.id().value(), offering.type(), offering.name(),
+        return new ShopOfferingResponse(offering.id().value(), offering.type(), offering.name().value(),
                 offering.description(), MoneyResponse.from(offering.price()));
     }
 }
