@@ -24,6 +24,11 @@ export function isBadRequest(error: unknown): boolean {
   return error instanceof ApiError && error.status === 400
 }
 
+/** A business rule said no (D-34), often because the page is stale: the page shows the problem and reloads. */
+export function isConflict(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 409
+}
+
 export function isClientError(error: unknown): boolean {
   return error instanceof ApiError && error.status >= 400 && error.status < 500
 }

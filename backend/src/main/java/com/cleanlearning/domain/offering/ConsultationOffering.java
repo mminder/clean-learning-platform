@@ -15,6 +15,7 @@ import com.cleanlearning.domain.offering.value.OfferingId;
 import com.cleanlearning.domain.offering.value.OfferingName;
 import com.cleanlearning.domain.offering.value.OfferingStatus;
 import com.cleanlearning.domain.offering.value.SessionDuration;
+import com.cleanlearning.domain.shared.BusinessRuleException;
 import com.cleanlearning.domain.user.Expert;
 import com.cleanlearning.domain.user.value.UserId;
 
@@ -23,10 +24,20 @@ import com.cleanlearning.domain.user.value.UserId;
  * experts. The description may be empty. The packages come fewest sessions first, then by id, which is the order the
  * shop shows them in; they may share a session count. The eligible experts are a set of user ids and may be empty;
  * each is an expert when the admin chooses them. The image comes with task 07 of increment 02.
+ * <p>
+ * The status follows UC-16's lifecycle: a draft is published, a published offering is unpublished to a draft again or
+ * archived, and only a draft is deleted. An archived offering is final and read-only. A change the status doesn't
+ * allow throws a {@link BusinessRuleException} with {@link #WRONG_OFFERING_STATUS}.
  */
 public record ConsultationOffering(OfferingId id, OfferingName name, String description,
         SessionDuration sessionDuration, CancellationDeadline cancellationDeadline, OfferingStatus status,
         List<ConsultationPackage> packages, Set<UserId> eligibleExpertIds) {
+
+    /** Publishing an offering without a package or without an eligible expert; the message names what's missing. */
+    public static final String OFFERING_INCOMPLETE = "OFFERING_INCOMPLETE";
+
+    /** A change the offering's status doesn't allow, usually from a stale page. */
+    public static final String WRONG_OFFERING_STATUS = "WRONG_OFFERING_STATUS";
 
     // The ids compare as text, which sorts a uuid the way the database does; UUID.compareTo compares signed numbers.
     private static final Comparator<ConsultationPackage> PACKAGE_ORDER = Comparator
@@ -67,12 +78,102 @@ public record ConsultationOffering(OfferingId id, OfferingName name, String desc
      * @param experts the users who are experts: every eligible expert id must be one of them
      * @throws IllegalArgumentException if an entry names an id that isn't one of this offering's packages, or names a
      *     package twice, or an eligible expert id isn't an expert's
+     * @throws BusinessRuleException if the offering is archived
      */
     public ConsultationOffering edit(OfferingName name, String description, SessionDuration sessionDuration,
             CancellationDeadline cancellationDeadline, List<ConsultationPackageEntry> packages,
             Set<UserId> eligibleExpertIds, List<Expert> experts) {
+        requireNotArchived();
         return new ConsultationOffering(id, name, description, sessionDuration, cancellationDeadline, status,
                 matchPackages(this.packages, packages), requireExperts(eligibleExpertIds, experts));
+    }
+
+    /**
+     * The draft, published: it appears in the shop (a published offering without packages doesn't, UC-02).
+     *
+     * @throws BusinessRuleException {@link #WRONG_OFFERING_STATUS} if the offering isn't a draft, or
+     *     {@link #OFFERING_INCOMPLETE} if it has no package or no eligible expert
+     */
+    public ConsultationOffering publish() {
+        requireStatus(OfferingStatus.DRAFT, "published");
+        List<String> missing = new ArrayList<>();
+        if (packages.isEmpty()) {
+            missing.add("at least one package");
+        }
+        if (eligibleExpertIds.isEmpty()) {
+            missing.add("at least one eligible expert");
+        }
+        if (!missing.isEmpty()) {
+            throw new BusinessRuleException(OFFERING_INCOMPLETE,
+                    "The offering needs " + String.join(" and ", missing) + " before it can be published.");
+        }
+        return withStatus(OfferingStatus.PUBLISHED);
+    }
+
+    /**
+     * The published offering, a draft again. Without purchases only (D-07): the check comes with UC-03.
+     *
+     * @throws BusinessRuleException {@link #WRONG_OFFERING_STATUS} if the offering isn't published
+     */
+    public ConsultationOffering unpublish() {
+        requireStatus(OfferingStatus.PUBLISHED, "unpublished");
+        return withStatus(OfferingStatus.DRAFT);
+    }
+
+    /**
+     * The published offering, archived for good: out of the shop and read-only.
+     *
+     * @throws BusinessRuleException {@link #WRONG_OFFERING_STATUS} if the offering isn't published
+     */
+    public ConsultationOffering archive() {
+        requireStatus(OfferingStatus.PUBLISHED, "archived");
+        return withStatus(OfferingStatus.ARCHIVED);
+    }
+
+    /**
+     * Only a draft may be deleted (UC-16). Without purchases only (D-07): the check comes with UC-03.
+     *
+     * @throws BusinessRuleException {@link #WRONG_OFFERING_STATUS} if the offering isn't a draft
+     */
+    public void requireDeletable() {
+        requireStatus(OfferingStatus.DRAFT, "deleted");
+    }
+
+    private void requireStatus(OfferingStatus required, String changed) {
+        requireNotArchived();
+        if (status != required) {
+            throw new BusinessRuleException(WRONG_OFFERING_STATUS,
+                    "The offering is " + describe(status) + ". Only " + describeOne(required) + " can be " + changed
+                            + ".");
+        }
+    }
+
+    private void requireNotArchived() {
+        if (status == OfferingStatus.ARCHIVED) {
+            throw new BusinessRuleException(WRONG_OFFERING_STATUS,
+                    "The offering is archived and can't be changed any more.");
+        }
+    }
+
+    private static String describe(OfferingStatus status) {
+        return switch (status) {
+            case DRAFT -> "a draft";
+            case PUBLISHED -> "published";
+            case ARCHIVED -> "archived";
+        };
+    }
+
+    private static String describeOne(OfferingStatus status) {
+        return switch (status) {
+            case DRAFT -> "a draft";
+            case PUBLISHED -> "a published offering";
+            case ARCHIVED -> "an archived offering";
+        };
+    }
+
+    private ConsultationOffering withStatus(OfferingStatus newStatus) {
+        return new ConsultationOffering(id, name, description, sessionDuration, cancellationDeadline, newStatus,
+                packages, eligibleExpertIds);
     }
 
     private static Set<UserId> requireExperts(Set<UserId> eligibleExpertIds, List<Expert> experts) {

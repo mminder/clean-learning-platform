@@ -150,7 +150,7 @@ offering   + image_id uuid null → image
 
 ### Errors
 
-[D-34](../../decisions.md#architecture), now with bodies the frontend reads. Task 03 adds one shared `ProblemDetail` schema to `openapi.json` with the field list, and 06 adds `code`. springdoc lists the answers of `ApiExceptionHandler`'s `@ResponseStatus` methods on every route, and `ProblemDetailSchemaCustomizer` (an `OpenApiCustomizer`) replaces the schema springdoc derives from Spring's class with the body as sent ([backend.md](../../architecture/backend.md#errors)); 06 adds `code` there. The schema is named `ProblemDetail`, the drift test covers it, and the frontend reads `components['schemas']['ProblemDetail']`.
+[D-34](../../decisions.md#architecture), now with bodies the frontend reads. Task 03 adds one shared `ProblemDetail` schema to `openapi.json` with the field list, and 06 adds `code`. springdoc lists the answers of `ApiExceptionHandler`'s `@ResponseStatus` methods on every route, and `ProblemDetailSchemaCustomizer` (an `OpenApiCustomizer`) replaces the schema springdoc derives from Spring's class with the body as sent ([backend.md](../../architecture/backend.md#errors)); 06 adds `code` there. With 06's `@ResponseStatus(CONFLICT)` handler, springdoc lists 409 on every route, too, including routes that never give it (`GET /api/me`, the shop): accepted noise, like 400 and 404 before; the route table below says which routes really answer 409. The schema is named `ProblemDetail`, the drift test covers it, and the frontend reads `components['schemas']['ProblemDetail']`.
 
 Spring leaves `"type": "about:blank"` out of the body, so the examples don't show it, and the schema's `type` is optional (RFC 9457: a missing `type` means `about:blank`).
 
@@ -217,8 +217,9 @@ frontend/src
 ├─ app/                Layout: Log in, or the user's name and Log out (01); Consultations for admins (02);
 │                      RequireRole (02); the QueryClient sends a 401 to the login (02)
 ├─ components/         ConfirmDialog (06), OfferingImage: the image or the placeholder (07)
-├─ lib/                problem.ts: read a ProblemDetail (problemOf), map its errors to form fields (showSaveError) (03);
-│                      api-error.ts: ApiError carries the problem of a 400 or 409 (03)
+├─ lib/                problem.ts: read a ProblemDetail (problemOf), map its errors to form fields (showSaveError) (03),
+│                      the message for the user (problemMessage) (06);
+│                      api-error.ts: ApiError carries the problem of a 400 or 409 (03), isConflict (06)
 └─ features/
    ├─ user/            LoginPage, landing.ts (landingPath, safe redirect), queries.ts (useMe, usePocUsers, useLogin, useLogout)
    ├─ offering/        ConsultationOfferingsPage, NewConsultationOfferingPage, ConsultationOfferingPage,

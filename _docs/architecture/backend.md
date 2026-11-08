@@ -146,6 +146,8 @@ class BookConsultationAppointmentUseCase {
 
 Pessimistic row locks through port methods, at the start of the use-case transaction, always in the order **offering → case → expert → run** (D-27). A lock port loads the row with JPA's `PESSIMISTIC_WRITE` (`LockConsultationOfferingPort`, `EntityManager.find` with the lock mode), which Hibernate sends to Postgres as `for no key update`: it waits for every other lock of the row, but not for the key-share lock a foreign key check takes. So every writer that must wait takes the lock itself.
 
+A concurrency test makes its race certain, not likely: it holds the contended row lock in its own transaction (`select … for no key update`), starts both requests, waits until `pg_stat_activity` shows both waiting for a lock, and only then commits. With the lock, both wait at the lock and run one after the other; without it, both read the row at once and wait only at their update. `ConsultationOfferingConcurrencyTest` is the pattern, and it fails without the lock.
+
 | Use case | Locks |
 |---|---|
 | Edit an offering, change its status or image, delete it (UC-16, UC-17) | offering |
@@ -170,7 +172,7 @@ Domain and application exceptions are mapped centrally (`@RestControllerAdvice`)
 
 Not every error body is a `ProblemDetail`:
 
-- **`ProblemDetail`** (`application/problem+json`): every error raised inside Spring MVC, through `ApiExceptionHandler` and its base class `ResponseEntityExceptionHandler`: 400, 404, 405, and later 409.
+- **`ProblemDetail`** (`application/problem+json`): every error raised inside Spring MVC, through `ApiExceptionHandler` and its base class `ResponseEntityExceptionHandler`: 400, 404, 405 and 409.
 - **Not `ProblemDetail`:** errors that never reach a controller or the advice.
   - Spring Security's 401: an empty body.
   - Spring Security's 403, including the CSRF rejection: Boot's error JSON.
@@ -184,7 +186,9 @@ Clients rely only on the status for the second group, never on its body ([D-34](
 - **A value object's rule.** The request annotations repeat the use case's rules, but the value object stays the authority. A value it rejects anyway, such as a name of only no-break spaces, throws `IllegalArgumentException`, which `ApiExceptionHandler` maps to 400 with the message as `detail` and no `errors`. **In this code base, `IllegalArgumentException` means "invalid value"; don't throw it for anything else.** A broken invariant or a programming error is an `IllegalStateException` (or a `NullPointerException`), a 500.
 - Spring MVC's own 400s (a malformed id, an unreadable body) have no `errors` either.
 
-**In `openapi.json`:** one shared `ProblemDetail` schema (D-34): `title`, `status`, `instance`, `detail`, and `errors` for a 400 (`code` for a 409 comes with the first 409). `type` is optional: Spring leaves it out when it's `about:blank`, as it is for every body so far. springdoc lists the answers of `ApiExceptionHandler`'s methods that carry `@ResponseStatus` on every route, as `application/problem+json`, and `ProblemDetailSchemaCustomizer` replaces the schema springdoc derives from Spring's class with the body as sent. So every route lists 400 and 404 with `ProblemDetail`, though not every route gives them; the increment plans' route tables say which do. The frontend reads only a 400's and a 409's body ([frontend](frontend.md#errors)).
+**409s:** a business rule that says no throws `BusinessRuleException` (`domain.shared`) with a stable `code` and a message written for the user. `ApiExceptionHandler` maps it to 409 with the message as `detail` and `code` as a property; the frontend shows the `detail` ([D-34](../decisions.md#architecture)). The codes are constants next to the rule, such as `ConsultationOffering.WRONG_OFFERING_STATUS`.
+
+**In `openapi.json`:** one shared `ProblemDetail` schema (D-34): `title`, `status`, `instance`, `detail`, `errors` for a 400, and `code` for a 409. `type` is optional: Spring leaves it out when it's `about:blank`, as it is for every body so far. springdoc lists the answers of `ApiExceptionHandler`'s methods that carry `@ResponseStatus` on every route, as `application/problem+json`, and `ProblemDetailSchemaCustomizer` replaces the schema springdoc derives from Spring's class with the body as sent. So every route lists 400, 404 and 409 with `ProblemDetail`, though not every route gives them (`GET /api/me` never answers 409); that's accepted noise of springdoc's own mechanism, and the increment plans' route tables say which answers a route really gives. The frontend reads only a 400's and a 409's body ([frontend](frontend.md#errors)).
 
 ## REST conventions
 

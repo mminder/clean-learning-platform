@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { isBadRequest, isNotFound } from '@/lib/api-error'
 import { BackToConsultations } from './BackToConsultations'
 import { ConsultationOfferingForm } from './ConsultationOfferingForm'
+import { OfferingStatusActions } from './OfferingStatusActions'
 import { OfferingStatusBadge } from './OfferingStatusBadge'
 import {
   toRequest,
@@ -10,7 +11,10 @@ import {
   useEditConsultationOffering,
 } from './queries'
 
-/** UC-16 steps 2–4: an existing offering, with its status and its form. */
+/**
+ * UC-16 steps 2–5: an existing offering, with its status, the status changes it allows and its form. An archived
+ * offering is read-only.
+ */
 export function ConsultationOfferingPage() {
   // The route /admin/consultations/:id always has an id.
   const { id = '' } = useParams()
@@ -41,6 +45,7 @@ export function ConsultationOfferingPage() {
   }
 
   const { name, status } = offering.data
+  const archived = status === 'ARCHIVED'
   return (
     <div className="space-y-6">
       <BackToConsultations />
@@ -48,10 +53,17 @@ export function ConsultationOfferingPage() {
         <h1 className="text-2xl font-semibold">{name}</h1>
         <OfferingStatusBadge status={status} />
       </header>
+      <OfferingStatusActions offering={offering.data} />
+      {archived && (
+        <p className="text-muted-foreground">
+          This offering is archived and can't be changed any more.
+        </p>
+      )}
       <ConsultationOfferingForm
         // A new form for another offering; a reload of this one keeps what the admin is typing.
         key={id}
         defaultValues={toRequest(offering.data)}
+        readOnly={archived}
         onSave={(changed) => editOffering.mutateAsync(changed)}
       />
     </div>

@@ -1,6 +1,7 @@
 package com.cleanlearning.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.http.HttpMethod.DELETE;
 import static org.springframework.http.HttpMethod.GET;
 import static org.springframework.http.HttpMethod.POST;
 import static org.springframework.http.HttpMethod.PUT;
@@ -56,6 +57,10 @@ class RoleMatrixTest {
             new Route(POST, "/api/admin/consultation-offerings", Access.ADMIN), // no body: 400
             new Route(GET, "/api/admin/consultation-offerings/" + SeedData.CAREER_COACHING, Access.ADMIN),
             new Route(PUT, "/api/admin/consultation-offerings/" + UNKNOWN_ID, Access.ADMIN), // no body: 400
+            new Route(POST, "/api/admin/consultation-offerings/" + UNKNOWN_ID + "/publish", Access.ADMIN), // unknown id: 404
+            new Route(POST, "/api/admin/consultation-offerings/" + UNKNOWN_ID + "/unpublish", Access.ADMIN), // unknown id: 404
+            new Route(POST, "/api/admin/consultation-offerings/" + UNKNOWN_ID + "/archive", Access.ADMIN), // unknown id: 404
+            new Route(DELETE, "/api/admin/consultation-offerings/" + UNKNOWN_ID, Access.ADMIN), // unknown id: 404
             new Route(GET, "/api/admin/experts", Access.ADMIN),
             new Route(GET, "/v3/api-docs", Access.PUBLIC),
             new Route(GET, "/", Access.PUBLIC),

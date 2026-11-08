@@ -16,6 +16,7 @@ import com.cleanlearning.adapters.database.offering.entity.ConsultationPackageEn
 import com.cleanlearning.adapters.database.offering.entity.EligibleExpertEntity;
 import com.cleanlearning.adapters.database.offering.entity.OfferingEntity;
 import com.cleanlearning.adapters.database.offering.row.ConsultationOfferingSummaryRow;
+import com.cleanlearning.application.offering.DeleteConsultationOfferingPort;
 import com.cleanlearning.application.offering.LoadConsultationOfferingPort;
 import com.cleanlearning.application.offering.LoadConsultationOfferingSummariesPort;
 import com.cleanlearning.application.offering.LockConsultationOfferingPort;
@@ -44,7 +45,7 @@ import jakarta.persistence.LockModeType;
  */
 @Component
 class ConsultationOfferingAdapter implements LoadConsultationOfferingSummariesPort, LoadConsultationOfferingPort,
-        LockConsultationOfferingPort, SaveConsultationOfferingPort {
+        LockConsultationOfferingPort, SaveConsultationOfferingPort, DeleteConsultationOfferingPort {
 
     private final ConsultationOfferingRepository repository;
 
@@ -102,6 +103,20 @@ class ConsultationOfferingAdapter implements LoadConsultationOfferingSummariesPo
         consultationOfferingEntity.setCancellationDeadlineHours(offering.cancellationDeadline().hours());
         writePackages(id, offering.packages());
         writeEligibleExperts(id, offering.eligibleExpertIds());
+    }
+
+    /**
+     * Removes the managed entities in the order the foreign keys need: the eligible experts, the packages, the
+     * {@code consultation_offering} row and then the {@code offering} row. The transaction deletes them in this order
+     * when it commits.
+     */
+    @Override
+    public void delete(OfferingId id) {
+        UUID offeringId = id.value();
+        repository.findEligibleExpertEntities(offeringId).forEach(entityManager::remove);
+        repository.findPackageEntities(offeringId).forEach(entityManager::remove);
+        entityManager.remove(existing(ConsultationOfferingEntity.class, offeringId));
+        entityManager.remove(existing(OfferingEntity.class, offeringId));
     }
 
     /**

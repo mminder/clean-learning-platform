@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { ApiError } from './api-error'
 import {
   fieldErrors,
+  problemMessage,
   problemOf,
   showSaveError,
   toFormPath,
@@ -70,6 +71,43 @@ describe('fieldErrors', () => {
         detail: 'An offering name is not blank',
       }),
     ).toEqual([])
+  })
+})
+
+describe('problemMessage', () => {
+  const conflict: ProblemDetail = {
+    title: 'Conflict',
+    status: 409,
+    detail: 'The offering is published. Only a draft can be published.',
+    instance: '/api/admin/consultation-offerings/…/publish',
+    code: 'WRONG_OFFERING_STATUS',
+  }
+
+  it("returns a problem's detail, or its title without one", () => {
+    expect(
+      problemMessage(
+        new ApiError('Publishing failed', 409, conflict),
+        'Failed.',
+      ),
+    ).toBe('The offering is published. Only a draft can be published.')
+    expect(
+      problemMessage(
+        new ApiError('Publishing failed', 409, {
+          ...conflict,
+          detail: undefined,
+        }),
+        'Failed.',
+      ),
+    ).toBe('Conflict')
+  })
+
+  it('returns the fallback for an error without a problem', () => {
+    expect(
+      problemMessage(new ApiError('Publishing failed', 500), 'Failed.'),
+    ).toBe('Failed.')
+    expect(problemMessage(new TypeError('Failed to fetch'), 'Failed.')).toBe(
+      'Failed.',
+    )
   })
 })
 

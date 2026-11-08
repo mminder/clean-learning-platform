@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,11 +21,15 @@ import com.cleanlearning.api.offering.request.ConsultationOfferingRequest;
 import com.cleanlearning.api.offering.request.ConsultationPackageRequest;
 import com.cleanlearning.api.offering.response.ConsultationOfferingResponse;
 import com.cleanlearning.api.offering.response.ConsultationOfferingSummaryResponse;
+import com.cleanlearning.application.offering.ArchiveConsultationOfferingUseCase;
 import com.cleanlearning.application.offering.ConsultationOfferingCommand;
 import com.cleanlearning.application.offering.CreateConsultationOfferingUseCase;
+import com.cleanlearning.application.offering.DeleteConsultationOfferingUseCase;
 import com.cleanlearning.application.offering.EditConsultationOfferingUseCase;
 import com.cleanlearning.application.offering.GetConsultationOfferingUseCase;
 import com.cleanlearning.application.offering.ListConsultationOfferingsUseCase;
+import com.cleanlearning.application.offering.PublishConsultationOfferingUseCase;
+import com.cleanlearning.application.offering.UnpublishConsultationOfferingUseCase;
 import com.cleanlearning.domain.offering.ConsultationOffering;
 import com.cleanlearning.domain.offering.ConsultationPackageEntry;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
@@ -55,14 +60,30 @@ class ConsultationOfferingController {
 
     private final EditConsultationOfferingUseCase editConsultationOffering;
 
+    private final PublishConsultationOfferingUseCase publishConsultationOffering;
+
+    private final UnpublishConsultationOfferingUseCase unpublishConsultationOffering;
+
+    private final ArchiveConsultationOfferingUseCase archiveConsultationOffering;
+
+    private final DeleteConsultationOfferingUseCase deleteConsultationOffering;
+
     ConsultationOfferingController(ListConsultationOfferingsUseCase listConsultationOfferings,
             GetConsultationOfferingUseCase getConsultationOffering,
             CreateConsultationOfferingUseCase createConsultationOffering,
-            EditConsultationOfferingUseCase editConsultationOffering) {
+            EditConsultationOfferingUseCase editConsultationOffering,
+            PublishConsultationOfferingUseCase publishConsultationOffering,
+            UnpublishConsultationOfferingUseCase unpublishConsultationOffering,
+            ArchiveConsultationOfferingUseCase archiveConsultationOffering,
+            DeleteConsultationOfferingUseCase deleteConsultationOffering) {
         this.listConsultationOfferings = listConsultationOfferings;
         this.getConsultationOffering = getConsultationOffering;
         this.createConsultationOffering = createConsultationOffering;
         this.editConsultationOffering = editConsultationOffering;
+        this.publishConsultationOffering = publishConsultationOffering;
+        this.unpublishConsultationOffering = unpublishConsultationOffering;
+        this.archiveConsultationOffering = archiveConsultationOffering;
+        this.deleteConsultationOffering = deleteConsultationOffering;
     }
 
     @GetMapping
@@ -90,6 +111,27 @@ class ConsultationOfferingController {
             @Valid @RequestBody ConsultationOfferingRequest request) {
         return ConsultationOfferingResponse.from(editConsultationOffering.invoke(new OfferingId(id),
                 toCommand(request)));
+    }
+
+    @PostMapping("/{id}/publish")
+    ConsultationOfferingResponse publishConsultationOffering(@PathVariable UUID id) {
+        return ConsultationOfferingResponse.from(publishConsultationOffering.invoke(new OfferingId(id)));
+    }
+
+    @PostMapping("/{id}/unpublish")
+    ConsultationOfferingResponse unpublishConsultationOffering(@PathVariable UUID id) {
+        return ConsultationOfferingResponse.from(unpublishConsultationOffering.invoke(new OfferingId(id)));
+    }
+
+    @PostMapping("/{id}/archive")
+    ConsultationOfferingResponse archiveConsultationOffering(@PathVariable UUID id) {
+        return ConsultationOfferingResponse.from(archiveConsultationOffering.invoke(new OfferingId(id)));
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void deleteConsultationOffering(@PathVariable UUID id) {
+        deleteConsultationOffering.invoke(new OfferingId(id));
     }
 
     /** A value object that rejects a value Bean Validation let through throws, and the API answers 400. */

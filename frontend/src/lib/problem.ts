@@ -36,6 +36,18 @@ export function fieldErrors(problem: ProblemDetail): FieldError[] {
 }
 
 /**
+ * The message for the user in an error: the `detail` of a 400's or 409's problem (a 409's is written for the user,
+ * D-34), its `title` without one, or the fallback for any other error.
+ */
+export function problemMessage(error: unknown, fallback: string): string {
+  const problem = error instanceof ApiError ? error.problem : undefined
+  if (problem === undefined) {
+    return fallback
+  }
+  return problem.detail ?? problem.title
+}
+
+/**
  * Shows why a save failed, in a React Hook Form form. A 400 with `errors` puts each message next to its field; then
  * there's nothing to show above the form. Otherwise it returns the message for above the form: the `detail` of a 400
  * or 409, or a general message.
@@ -45,12 +57,9 @@ export function showSaveError<T extends FieldValues>(
   setError: UseFormSetError<T>,
 ): string | undefined {
   const problem = error instanceof ApiError ? error.problem : undefined
-  if (problem === undefined) {
-    return 'Saving failed. Please try again.'
-  }
-  const errors = fieldErrors(problem)
+  const errors = problem === undefined ? [] : fieldErrors(problem)
   if (errors.length === 0) {
-    return problem.detail ?? problem.title
+    return problemMessage(error, 'Saving failed. Please try again.')
   }
   for (const { path, message } of errors) {
     // The backend names the field; a path the form doesn't have isn't shown.

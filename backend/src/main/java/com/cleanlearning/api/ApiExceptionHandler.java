@@ -15,13 +15,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import com.cleanlearning.domain.shared.BusinessRuleException;
 import com.cleanlearning.domain.shared.NotFoundException;
 
 /**
  * Maps exceptions to {@code ProblemDetail} (RFC 9457) bodies, see the errors in _docs/architecture/backend.md. Spring
  * MVC's own exceptions are handled by {@link ResponseEntityExceptionHandler}: an unknown route answers 404, and a
  * malformed request, such as an id that isn't a UUID, answers 400. A Bean Validation failure answers 400 with every
- * invalid field in {@code errors}.
+ * invalid field in {@code errors}. A business rule that says no answers 409 with its {@code code}.
  * <p>
  * The {@code @ResponseStatus} annotations make springdoc list these answers with the {@code ProblemDetail} schema in
  * {@code openapi.json} ({@code OpenApiConfig}).
@@ -43,6 +44,15 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     ProblemDetail handleInvalidValue(IllegalArgumentException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
+    }
+
+    /** The message is written for the user, and the frontend shows it; {@code code} is stable (D-34). */
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.CONFLICT)
+    ProblemDetail handleBusinessRule(BusinessRuleException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, exception.getMessage());
+        problem.setProperty("code", exception.code());
+        return problem;
     }
 
     /** Spring's 400 for an invalid request body, plus {@code errors}: each invalid field, sorted by its path. */

@@ -15,7 +15,7 @@ import io.swagger.v3.oas.models.media.StringSchema;
  * The one shared {@code ProblemDetail} schema of the error bodies (D-34). springdoc lists the answers of
  * {@code ApiExceptionHandler}'s {@code @ResponseStatus} methods on every route, with a schema it derives from Spring's
  * {@code ProblemDetail} class. That one doesn't match the JSON: it has a {@code properties} map, which Jackson writes
- * as top-level fields, and no {@code errors}. This customizer replaces it with the body as sent.
+ * as top-level fields, and neither {@code errors} nor {@code code}. This customizer replaces it with the body as sent.
  * <p>
  * {@code type} is left out when it's {@code about:blank}, as every body of this API so far is, so it's optional.
  */
@@ -39,6 +39,8 @@ class ProblemDetailSchemaCustomizer implements OpenApiCustomizer {
                 .addProperty("errors", new ArraySchema()
                         .items(invalidField())
                         .description("A 400 from Bean Validation: each invalid field."))
+                .addProperty("code", new StringSchema()
+                        .description("A 409: the stable code of the business rule, like OFFERING_INCOMPLETE."))
                 .required(List.of("instance", "status", "title"));
     }
 

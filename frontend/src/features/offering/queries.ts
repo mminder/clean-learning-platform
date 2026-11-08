@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { client } from '@/api/client'
 import type { components } from '@/api/schema'
-import { ApiError } from '@/lib/api-error'
+import { ApiError, isConflict } from '@/lib/api-error'
 import { problemOf } from '@/lib/problem'
 
 export type ConsultationOfferingRequest =
@@ -116,6 +116,78 @@ export function useEditConsultationOffering(id: string) {
       return data
     },
     onSuccess: invalidateOfferings,
+    // A 409 comes from a stale page, such as an edit of an offering archived meanwhile: reload it.
+    onError: (error) => (isConflict(error) ? invalidateOfferings() : undefined),
+  })
+}
+
+/** A change of an offering's status (UC-16 step 5); delete is separate. */
+export type StatusChange = 'publish' | 'unpublish' | 'archive'
+
+const statusChangePaths = {
+  publish: '/api/admin/consultation-offerings/{id}/publish',
+  unpublish: '/api/admin/consultation-offerings/{id}/unpublish',
+  archive: '/api/admin/consultation-offerings/{id}/archive',
+} as const
+
+export function useChangeConsultationOfferingStatus(id: string) {
+  const invalidateOfferings = useInvalidateOfferings()
+  return useMutation({
+    mutationFn: async (change: StatusChange) => {
+      const { data, error, response } = await client.POST(
+        statusChangePaths[change],
+        { params: { path: { id } } },
+      )
+      if (data === undefined) {
+        throw new ApiError(
+          `Changing the consultation offering's status (${change}) failed: ${response.status}`,
+          response.status,
+          problemOf(response.status, error),
+        )
+      }
+      return data
+    },
+    onSuccess: invalidateOfferings,
+    // A 409 means the page showed another status than the server has: reload the offering.
+    onError: (error) => (isConflict(error) ? invalidateOfferings() : undefined),
+  })
+}
+
+/**
+ * Deletes a draft. Its page closes afterwards, so its detail isn't fetched again, which would answer 404: it's only
+ * marked stale. The list is dropped from the cache, so it opens freshly loaded, without the deleted offering.
+ */
+export function useDeleteConsultationOffering(id: string) {
+  const queryClient = useQueryClient()
+  const invalidateOfferings = useInvalidateOfferings()
+  return useMutation({
+    mutationFn: async () => {
+      const { error, response } = await client.DELETE(
+        '/api/admin/consultation-offerings/{id}',
+        { params: { path: { id } } },
+      )
+      if (!response.ok) {
+        throw new ApiError(
+          `Deleting the consultation offering failed: ${response.status}`,
+          response.status,
+          problemOf(response.status, error),
+        )
+      }
+    },
+    onSuccess: () => {
+      queryClient.removeQueries({
+        queryKey: consultationOfferingsKey,
+        exact: true,
+      })
+      return Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: consultationOfferingsKey,
+          refetchType: 'none',
+        }),
+        queryClient.invalidateQueries({ queryKey: ['shop'] }),
+      ])
+    },
+    onError: (error) => (isConflict(error) ? invalidateOfferings() : undefined),
   })
 }
 

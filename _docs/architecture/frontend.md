@@ -92,6 +92,9 @@ UC-16's `ConsultationOfferingForm` is the pattern ([increment 02](../tasks/02-ma
 - **Saving** calls the mutation's `mutateAsync`. When it fails, `showSaveError` (`lib/problem.ts`) puts a 400's field errors on the fields with `setError`, or returns the message to show above the form. After a save, the saved offering's values become the form's defaults (`reset(toRequest(saved))`), and "Saved" shows until the next change. The saved offering, not the submitted values, because it carries the ids the server gave to new rows.
 - **Lists of rows** (the packages) use `useFieldArray`: one row per entry, **Remove** on each, **Add package** below. A row's server `id` stays in the form's values, unseen, so a save names the rows it keeps; `fields[i].id` is only React's key. A new row starts empty (`NaN` for a number, `''` for a text), not at 0. Field errors land on the row (`packages.1.price`).
 - **Mutations** invalidate what they change and return the invalidation, so they stay pending until the queries on the screen have reloaded.
+- **A 409** comes from a stale page. The mutation refetches what it changed (`isConflict` in `lib/api-error.ts`), and the page shows the `detail` above the form (`problemMessage` or `showSaveError` in `lib/problem.ts`). A delete doesn't refetch the deleted resource, whose page closes (a refetch would answer 404).
+- **Read-only:** a form that may not be changed, such as an archived offering's, wraps its fields in a disabled `<fieldset>`, has no **Save**, and the page says why.
+- **Confirmations:** an action with a consequence asks first, with `ConfirmDialog` (`components/`, shadcn `alert-dialog`): a title that names the thing, a text that states the consequence, **Cancel** and the action. Cancel changes nothing.
 
 ## Errors
 

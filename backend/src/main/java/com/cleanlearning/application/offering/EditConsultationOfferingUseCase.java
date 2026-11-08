@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.cleanlearning.application.user.LoadExpertsPort;
 import com.cleanlearning.domain.offering.ConsultationOffering;
 import com.cleanlearning.domain.offering.value.OfferingId;
+import com.cleanlearning.domain.shared.BusinessRuleException;
 import com.cleanlearning.domain.shared.NotFoundException;
 
 /**
@@ -32,6 +33,7 @@ public class EditConsultationOfferingUseCase {
      * @throws NotFoundException if there's no consultation offering with this id
      * @throws IllegalArgumentException if a package id isn't one of this offering's, or an eligible expert id
      *     isn't an expert's
+     * @throws BusinessRuleException if the offering is archived ({@code WRONG_OFFERING_STATUS})
      */
     @Transactional
     public ConsultationOffering invoke(OfferingId id, ConsultationOfferingCommand command) {
