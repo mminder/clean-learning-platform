@@ -1,5 +1,5 @@
 -- A PUBLISHED consultation offering whose last package was removed (UC-16 allows that). It has an eligible expert, so
--- only the missing package keeps it out of the shop. delete-extra-offerings.sql removes it.
+-- only the missing package keeps it out of the shop. The shared delete-test-offerings.sql removes it.
 
 insert into offering (id, type, name, description, status)
 values ('00000000-0000-0000-0000-000000009005', 'CONSULTATION', 'Empty Coaching', 'No packages left.', 'PUBLISHED');

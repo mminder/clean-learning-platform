@@ -10,7 +10,7 @@
   "paths" : {
     "/api/admin/consultation-offerings" : {
       "get" : {
-        "operationId" : "list",
+        "operationId" : "listConsultationOfferings",
         "responses" : {
           "200" : {
             "content" : {
@@ -24,6 +24,174 @@
               }
             },
             "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "consultation-offering-controller" ]
+      },
+      "post" : {
+        "operationId" : "createConsultationOffering",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ConsultationOfferingRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConsultationOfferingResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "consultation-offering-controller" ]
+      }
+    },
+    "/api/admin/consultation-offerings/{id}" : {
+      "get" : {
+        "operationId" : "getConsultationOffering",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConsultationOfferingResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "consultation-offering-controller" ]
+      },
+      "put" : {
+        "operationId" : "editConsultationOffering",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ConsultationOfferingRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConsultationOfferingResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
           }
         },
         "tags" : [ "consultation-offering-controller" ]
@@ -53,6 +221,26 @@
               }
             },
             "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
           }
         },
         "tags" : [ "me-controller" ]
@@ -81,6 +269,26 @@
               }
             },
             "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
           }
         },
         "tags" : [ "poc-login-controller" ]
@@ -102,6 +310,26 @@
               }
             },
             "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
           }
         },
         "tags" : [ "poc-login-controller" ]
@@ -123,6 +351,26 @@
               }
             },
             "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
           }
         },
         "tags" : [ "shop-controller" ]
@@ -150,6 +398,26 @@
               }
             },
             "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
           }
         },
         "tags" : [ "shop-controller" ]
@@ -183,6 +451,57 @@
           }
         },
         "required" : [ "cancellationDeadlineHours", "eligibleExperts", "packages", "sessionDurationMinutes" ]
+      },
+      "ConsultationOfferingRequest" : {
+        "type" : "object",
+        "properties" : {
+          "cancellationDeadlineHours" : {
+            "type" : "integer",
+            "format" : "int32",
+            "minimum" : 0
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "sessionDurationMinutes" : {
+            "type" : "integer",
+            "format" : "int32",
+            "exclusiveMinimum" : 0
+          }
+        },
+        "required" : [ "cancellationDeadlineHours", "description", "name", "sessionDurationMinutes" ]
+      },
+      "ConsultationOfferingResponse" : {
+        "type" : "object",
+        "properties" : {
+          "cancellationDeadlineHours" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "sessionDurationMinutes" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "DRAFT", "PUBLISHED", "ARCHIVED" ]
+          }
+        },
+        "required" : [ "cancellationDeadlineHours", "description", "id", "name", "sessionDurationMinutes", "status" ]
       },
       "ConsultationOfferingSummaryResponse" : {
         "type" : "object",
@@ -306,6 +625,48 @@
           }
         },
         "required" : [ "id", "name", "roles" ]
+      },
+      "ProblemDetail" : {
+        "type" : "object",
+        "properties" : {
+          "detail" : {
+            "type" : "string"
+          },
+          "errors" : {
+            "type" : "array",
+            "description" : "A 400 from Bean Validation: each invalid field.",
+            "items" : {
+              "type" : "object",
+              "properties" : {
+                "field" : {
+                  "type" : "string",
+                  "description" : "The field's path as Spring reports it, like packages[1].price."
+                },
+                "message" : {
+                  "type" : "string"
+                }
+              },
+              "required" : [ "field", "message" ]
+            }
+          },
+          "instance" : {
+            "type" : "string",
+            "format" : "uri"
+          },
+          "status" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string",
+            "format" : "uri",
+            "description" : "Left out when it's about:blank."
+          }
+        },
+        "required" : [ "instance", "status", "title" ]
       },
       "ShopOfferingDetailResponse" : {
         "type" : "object",

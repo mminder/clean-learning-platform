@@ -11,8 +11,24 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list"];
+        get: operations["listConsultationOfferings"];
         put?: never;
+        post: operations["createConsultationOffering"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/consultation-offerings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getConsultationOffering"];
+        put: operations["editConsultationOffering"];
         post?: never;
         delete?: never;
         options?: never;
@@ -128,6 +144,26 @@ export interface components {
             /** Format: int32 */
             sessionDurationMinutes: number;
         };
+        ConsultationOfferingRequest: {
+            /** Format: int32 */
+            cancellationDeadlineHours: number;
+            description: string;
+            name: string;
+            /** Format: int32 */
+            sessionDurationMinutes: number;
+        };
+        ConsultationOfferingResponse: {
+            /** Format: int32 */
+            cancellationDeadlineHours: number;
+            description: string;
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** Format: int32 */
+            sessionDurationMinutes: number;
+            /** @enum {string} */
+            status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+        };
         ConsultationOfferingSummaryResponse: {
             /** Format: int32 */
             eligibleExpertCount: number;
@@ -173,6 +209,25 @@ export interface components {
             name: string;
             roles: ("CUSTOMER" | "EXPERT" | "ADMIN")[];
         };
+        ProblemDetail: {
+            detail?: string;
+            /** @description A 400 from Bean Validation: each invalid field. */
+            errors?: {
+                /** @description The field's path as Spring reports it, like packages[1].price. */
+                field: string;
+                message: string;
+            }[];
+            /** Format: uri */
+            instance: string;
+            /** Format: int32 */
+            status: number;
+            title: string;
+            /**
+             * Format: uri
+             * @description Left out when it's about:blank.
+             */
+            type?: string;
+        };
         ShopOfferingDetailResponse: {
             consultation: components["schemas"]["ConsultationOfferingDetailResponse"];
             description: string;
@@ -200,7 +255,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    list: {
+    listConsultationOfferings: {
         parameters: {
             query?: never;
             header?: never;
@@ -216,6 +271,150 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConsultationOfferingSummaryResponse"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    createConsultationOffering: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsultationOfferingRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsultationOfferingResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    getConsultationOffering: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsultationOfferingResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    editConsultationOffering: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsultationOfferingRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsultationOfferingResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };
@@ -256,6 +455,24 @@ export interface operations {
                     "application/json": components["schemas"]["MeResponse"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
         };
     };
     logIn: {
@@ -280,6 +497,24 @@ export interface operations {
                     "application/json": components["schemas"]["MeResponse"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
         };
     };
     listUsers: {
@@ -298,6 +533,24 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PocUserResponse"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };
@@ -320,6 +573,24 @@ export interface operations {
                     "application/json": components["schemas"]["ShopOfferingResponse"][];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
         };
     };
     getOffering: {
@@ -340,6 +611,24 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ShopOfferingDetailResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };

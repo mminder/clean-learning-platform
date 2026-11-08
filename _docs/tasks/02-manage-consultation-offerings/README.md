@@ -30,7 +30,7 @@ They build one form on one aggregate, so they touch the same controller, use cas
 
 | Package | Classes | Task |
 |---|---|---|
-| `config` | `SecurityConfig`: session login, CSRF for the SPA, `/api/logout`, `/api/poc/**` public (01), `GET /api/images/**` public (07) | 01, 07 |
+| `config` | `SecurityConfig`: session login, CSRF for the SPA, `/api/logout`, `/api/poc/**` public (01), `GET /api/images/**` public (07); `ProblemDetailSchemaCustomizer`: the shared `ProblemDetail` schema (03) | 01, 03, 07 |
 | `api` | `ApiExceptionHandler`: 400 with a field list and `IllegalArgumentException` → 400 (03), `BusinessRuleException` → 409 with `code` (06), an upload over the limit → 400 (07) | 03, 06, 07 |
 | `api.response` | `ConsultationPackageResponse`, moved here from `api.shop.response`, because the shop and the admin both return it | 04 |
 | `api.user` | `PocLoginController` (`@Profile("poc")`), `MeController`, `ExpertController` | 01, 05 |
@@ -42,6 +42,7 @@ They build one form on one aggregate, so they touch the same controller, use cas
 | `api.image` | `ImageController` | 07 |
 | `application.user` | `ListPocUsersUseCase`, `LogInPocUserUseCase`, `GetCurrentUserUseCase`, `ListExpertsUseCase`; `LoadUsersPort`, `LoadUserPort`, `LoadExpertsPort` | 01, 05 |
 | `application.offering` | `ListConsultationOfferingsUseCase`, `GetConsultationOfferingUseCase`, `CreateConsultationOfferingUseCase`, `EditConsultationOfferingUseCase`, `PublishConsultationOfferingUseCase`, `UnpublishConsultationOfferingUseCase`, `ArchiveConsultationOfferingUseCase`, `DeleteConsultationOfferingUseCase`, `UploadConsultationOfferingImageUseCase`, `RemoveConsultationOfferingImageUseCase` | 02–07 |
+| `application.offering` (commands) | `ConsultationOfferingCommand`: what the form saves, for create and edit; it gains the packages (04) and the eligible expert ids (05) | 03–05 |
 | `application.offering` (ports) | `LoadConsultationOfferingSummariesPort`, `LoadConsultationOfferingPort`, `LockConsultationOfferingPort`, `SaveConsultationOfferingPort` (`create`, `update`), `DeleteConsultationOfferingPort` | 02, 03, 06 |
 | `application.image` | `GetImageUseCase`, `ImageStorePort` (`save`, `load`, `delete`) | 07 |
 | `domain.shared` | `BusinessRuleException`: a business rule says no; carries a stable `code` and a message for the user | 06 |
@@ -149,12 +150,14 @@ offering   + image_id uuid null → image
 
 ### Errors
 
-[D-34](../../decisions.md#architecture), now with bodies the frontend reads. Task 03 adds one shared `ProblemDetail` schema to `openapi.json` with the field list, and 06 adds `code`. How springdoc documents it is the task's choice (an advice method with `@ResponseStatus` or an `OpenApiCustomizer`); the schema is named `ProblemDetail`, the drift test covers it, and the frontend reads `components['schemas']['ProblemDetail']`.
+[D-34](../../decisions.md#architecture), now with bodies the frontend reads. Task 03 adds one shared `ProblemDetail` schema to `openapi.json` with the field list, and 06 adds `code`. springdoc lists the answers of `ApiExceptionHandler`'s `@ResponseStatus` methods on every route, and `ProblemDetailSchemaCustomizer` (an `OpenApiCustomizer`) replaces the schema springdoc derives from Spring's class with the body as sent ([backend.md](../../architecture/backend.md#errors)); 06 adds `code` there. The schema is named `ProblemDetail`, the drift test covers it, and the frontend reads `components['schemas']['ProblemDetail']`.
+
+Spring leaves `"type": "about:blank"` out of the body, so the examples don't show it, and the schema's `type` is optional (RFC 9457: a missing `type` means `about:blank`).
 
 ```jsonc
 // 400 from Bean Validation; a value object's rule gives the same body without "errors"
 {
-  "type": "about:blank", "title": "Bad Request", "status": 400,
+  "title": "Bad Request", "status": 400,
   "detail": "Invalid request content.",
   "instance": "/api/admin/consultation-offerings",
   "errors": [ { "field": "packages[1].price", "message": "must be an amount in CHF with at most two decimals" } ]
@@ -162,14 +165,14 @@ offering   + image_id uuid null → image
 
 // 409
 {
-  "type": "about:blank", "title": "Conflict", "status": 409,
+  "title": "Conflict", "status": 409,
   "detail": "The offering needs at least one eligible expert before it can be published.",
   "instance": "/api/admin/consultation-offerings/…/publish",
   "code": "OFFERING_INCOMPLETE"
 }
 ```
 
-- **400 from Bean Validation** lists every invalid field. `field` is the path Spring reports (`name`, `packages[1].price`); `message` is Hibernate Validator's default ("must not be blank") unless the plan says otherwise.
+- **400 from Bean Validation** lists every invalid field, sorted by `field`. `field` is the path Spring reports (`name`, `packages[1].price`); `message` is Hibernate Validator's default ("must not be blank") unless the plan says otherwise, in English whatever the browser's `Accept-Language` (03).
 - **400 from a value object.** The request annotations repeat UC-16's rules, but a value object stays the authority. A value it rejects anyway, such as a name of only no-break spaces, throws `IllegalArgumentException`, which `ApiExceptionHandler` maps to 400 with the message as `detail`. The same goes for a package id that isn't the offering's and an expert id that isn't an expert. In this code base, `IllegalArgumentException` means "invalid value"; don't throw it for anything else. Task 03 adds this to [backend.md](../../architecture/backend.md#errors).
 - **409** comes from `BusinessRuleException` (06). `detail` is written for the user, and the frontend shows it ([D-34](../../decisions.md#architecture)).
 
@@ -189,11 +192,11 @@ Every 409 in this table without a code of its own is `WRONG_OFFERING_STATUS`. Be
 
 ### Writes
 
-- **Lock first.** Every use case that changes an offering (edit, publish, unpublish, archive, delete, image) loads it with `LockConsultationOfferingPort.lock(id)`: `select … for update` on its `offering` row, at the start of the transaction. An unknown id is a 404. This makes concurrent status changes wait for each other and keeps an archived offering read-only. The lock order is now offering → case → expert → run ([D-27](../../decisions.md#architecture)).
+- **Lock first.** Every use case that changes an offering (edit, publish, unpublish, archive, delete, image) loads it with `LockConsultationOfferingPort.lock(id)`: `select … for update` on its `offering` row, at the start of the transaction. (JPA's `PESSIMISTIC_WRITE`, which Hibernate sends as `for no key update`: it waits for every other lock of the row, but not for a foreign key check's key-share lock, see [backend.md](../../architecture/backend.md#concurrency).) An unknown id is a 404. This makes concurrent status changes wait for each other and keeps an archived offering read-only. The lock order is now offering → case → expert → run ([D-27](../../decisions.md#architecture)).
 - **The domain decides, the adapter writes.** `ConsultationOffering` returns the changed offering; `SaveConsultationOfferingPort.update` writes it.
 - **Packages are matched by id** (04). The domain keeps a package whose id the request names (with the new session count and price), creates a package with a new id for each entry without one, and drops the rest. The adapter deletes the dropped packages, updates the changed ones and inserts the new ones. It never deletes and re-inserts a package that's kept.
 - **Eligible experts** are a set of ids (05). The adapter may replace the offering's `eligible_expert` rows.
-- **New rows are persisted, not merged.** The application sets the ids, so Spring Data's `save()` would treat each new entity as existing and select it first. Insert new rows with `EntityManager.persist` (or make the entity `Persistable`). Entities gain writable fields and a constructor for this; they still map only the columns the adapter uses.
+- **New rows are persisted, not merged.** The application sets the ids, so Spring Data's `save()` would treat each new entity as existing and select it first. Insert new rows with `EntityManager.persist` (or make the entity `Persistable`). Entities gain writable fields and a constructor for this; they still map only the columns the adapter uses. `update` changes the managed entities, which the lock loaded in the same transaction (03).
 - **Delete** (06) removes the offering's `eligible_expert`, `consultation_package`, `consultation_offering` and `offering` rows, in that order, and from 07 its `image` row after the `offering` row.
 - **Images** (07). Uploading stores the new image, points `offering.image_id` at it and deletes the old image, in one transaction. A replaced image gets a new id, so `GET /api/images/{id}` can be cached for good.
 
@@ -214,11 +217,13 @@ frontend/src
 ├─ app/                Layout: Log in, or the user's name and Log out (01); Consultations for admins (02);
 │                      RequireRole (02); the QueryClient sends a 401 to the login (02)
 ├─ components/         ConfirmDialog (06), OfferingImage: the image or the placeholder (07)
-├─ lib/                problem.ts: read a ProblemDetail, map its errors to form fields (03)
+├─ lib/                problem.ts: read a ProblemDetail (problemOf), map its errors to form fields (showSaveError) (03);
+│                      api-error.ts: ApiError carries the problem of a 400 or 409 (03)
 └─ features/
    ├─ user/            LoginPage, landing.ts (landingPath, safe redirect), queries.ts (useMe, usePocUsers, useLogin, useLogout)
    ├─ offering/        ConsultationOfferingsPage, NewConsultationOfferingPage, ConsultationOfferingPage,
-   │                   ConsultationOfferingForm, OfferingStatusActions (06), OfferingImageSection (07), queries.ts
+   │                   ConsultationOfferingForm, OfferingStatusBadge (03), BackToConsultations (03),
+   │                   OfferingStatusActions (06), OfferingImageSection (07), queries.ts
    └─ shop/            the card and the detail page show the image (07)
 ```
 
@@ -268,7 +273,7 @@ shadcn/ui components are added when a task first uses them ([frontend.md](../../
 |---|---|
 | Logged-in requests | 01 adds a test helper, `LoggedIn.as(userId, roles…)`: a `RequestPostProcessor` with the same principal a PoC login creates. REST tests of admin routes log in as Admin 1. `RoleMatrixTest`'s callers use it too, so a controller that needs `CurrentUser` doesn't fail there. |
 | CSRF in tests | A mutating request uses `.with(Csrf.token())` (01): the `XSRF-TOKEN` cookie and the `X-XSRF-TOKEN` header, as the SPA sends them. Not Spring Security Test's `csrf()`, which swaps the CSRF filter's token repository for a session-based one in the shared Spring context ([security](../../architecture/security.md#testing)). |
-| Test data | Tests never change seed rows. A writing test creates its own offering, through the API or with `@Sql`, and one shared script, run with `@Sql(…, executionPhase = AFTER_TEST_METHOD)`, deletes every offering that isn't in the seed, with its packages, eligible experts and (07) image. 03 adds the script; it may replace the shop tests' `delete-extra-offerings.sql`. |
+| Test data | Tests never change seed rows. A writing test creates its own offering, through the API or with `@Sql`, and one shared script, run with `@Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)`, deletes every offering that isn't in the seed, with its packages, eligible experts and (07) image. 03 added it as `delete-test-offerings.sql`, in place of the shop tests' `delete-extra-offerings.sql`; 07 adds the image. |
 | Role matrix | A row per new route. An allowed caller must not change data, so a mutating row targets an unknown id (security passes, then 404) or sends no body (400). |
 | Concurrency | One test for the offering lock (06): two status changes on one offering, one succeeds and the other gets 409. It must fail without the lock. |
 | Domain | Every cell of the status table, publishing completeness, matching packages by id, `ImageType` detection, `Image` size. |

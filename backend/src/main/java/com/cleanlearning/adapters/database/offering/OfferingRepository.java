@@ -8,7 +8,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 
 import com.cleanlearning.adapters.database.offering.entity.OfferingEntity;
-import com.cleanlearning.adapters.database.offering.row.ConsultationOfferingSummaryRow;
 import com.cleanlearning.adapters.database.offering.row.ConsultationPackageRow;
 import com.cleanlearning.adapters.database.offering.row.EligibleExpertRow;
 import com.cleanlearning.adapters.database.offering.row.ShopConsultationOfferingRow;

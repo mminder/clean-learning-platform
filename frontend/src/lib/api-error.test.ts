@@ -14,6 +14,18 @@ describe('ApiError', () => {
     expect(error).toBeInstanceOf(Error)
     expect(error.status).toBe(404)
     expect(error.message).toBe('Loading the offering failed')
+    expect(error.problem).toBeUndefined()
+  })
+
+  it('carries the problem of a 400', () => {
+    const problem = {
+      title: 'Bad Request',
+      status: 400,
+      instance: '/api/admin/consultation-offerings',
+      errors: [{ field: 'name', message: 'must not be blank' }],
+    }
+
+    expect(new ApiError('Saving failed', 400, problem).problem).toBe(problem)
   })
 })
 

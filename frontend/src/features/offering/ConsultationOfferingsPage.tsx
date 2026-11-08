@@ -1,5 +1,4 @@
-import type { components } from '@/api/schema'
-import { Badge } from '@/components/ui/badge'
+import { Link } from 'react-router'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -9,28 +8,19 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { OfferingStatusBadge } from './OfferingStatusBadge'
 import { useConsultationOfferings } from './queries'
 
-type Status =
-  components['schemas']['ConsultationOfferingSummaryResponse']['status']
-
-const statusLabels: Record<Status, string> = {
-  DRAFT: 'Draft',
-  PUBLISHED: 'Published',
-  ARCHIVED: 'Archived',
-}
-
-const statusVariants: Record<Status, 'default' | 'secondary' | 'outline'> = {
-  DRAFT: 'secondary',
-  PUBLISHED: 'default',
-  ARCHIVED: 'outline',
-}
-
-/** UC-16 step 1: every consultation offering with its status and counts. */
+/** UC-16 step 1: every consultation offering with its status and counts; each name opens the offering. */
 export function ConsultationOfferingsPage() {
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Consultations</h1>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-2xl font-semibold">Consultations</h1>
+        <Button asChild>
+          <Link to="/admin/consultations/new">New offering</Link>
+        </Button>
+      </div>
       <ConsultationOfferings />
     </div>
   )
@@ -72,11 +62,16 @@ function ConsultationOfferings() {
       <TableBody>
         {offerings.data.map((offering) => (
           <TableRow key={offering.id}>
-            <TableCell className="font-medium">{offering.name}</TableCell>
+            <TableCell className="font-medium">
+              <Link
+                to={`/admin/consultations/${offering.id}`}
+                className="hover:underline"
+              >
+                {offering.name}
+              </Link>
+            </TableCell>
             <TableCell>
-              <Badge variant={statusVariants[offering.status]}>
-                {statusLabels[offering.status]}
-              </Badge>
+              <OfferingStatusBadge status={offering.status} />
             </TableCell>
             <TableCell className="text-right">
               {offering.packageCount}

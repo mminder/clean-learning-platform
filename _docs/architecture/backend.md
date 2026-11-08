@@ -136,13 +136,15 @@ class BookConsultationAppointmentUseCase {
 - **Ids:** UUIDs generated in the application. Seed rows use fixed, readable UUIDs that tests refer to.
 - **Tables:** singular snake_case names. The user table is `app_user`, because `user` is reserved in PostgreSQL.
 - **Columns:** points in time are `timestamptz`, local times are `time`, dates are `date`, money is `numeric(10,2)` (currency is always CHF). Every table has `created_at` and `updated_at` (D-20).
+- **`updated_at`** is the time of the last change, and the database sets it: a `before update` trigger with the function `set_updated_at()` (`V4__set_updated_at.sql`) sets it to the transaction's `now()`, like `created_at`'s default. Entities map neither column. A new table adds the trigger in its create migration; `UpdatedAtTriggersTest` fails for a table without it.
+- **Writing with JPA:** the application sets the ids, so an adapter inserts a new row with `EntityManager.persist`; Spring Data's `save()` would merge it, with a select first. A changed row is written by changing its managed entity, loaded in the same transaction. Entities gain a constructor and setters for this, and still map only the columns the adapter uses.
 - **Sorting text:** a name column the UI sorts by is declared `collate "und-x-icu"` (ICU root collation), so `order by` is alphabetical regardless of case and umlauts, and the same in dev, test and production; the database's default collation can sort byte-wise.
 - **Purchase terms** are columns on `consultation_case` and `enrollment` (D-08). A run's schedule is stored in `run_day` and `run_time_slot`.
 - **Images:** an `image` table with the bytes (`bytea`) and the content type; a check keeps the size between 1 byte and 2 MB (D-21).
 
 ## Concurrency
 
-Pessimistic row locks (`SELECT … FOR UPDATE`) through port methods, at the start of the use-case transaction, always in the order **offering → case → expert → run** (D-27).
+Pessimistic row locks (`SELECT … FOR UPDATE`) through port methods, at the start of the use-case transaction, always in the order **offering → case → expert → run** (D-27). A lock port loads the row with JPA's `PESSIMISTIC_WRITE` (`LockConsultationOfferingPort`, `EntityManager.find` with the lock mode), which Hibernate sends to Postgres as `for no key update`: it waits for every other lock of the row, but not for the key-share lock a foreign key check takes. So every writer that must wait takes the lock itself.
 
 | Use case | Locks |
 |---|---|
@@ -174,7 +176,15 @@ Not every error body is a `ProblemDetail`:
   - Spring Security's 403, including the CSRF rejection: Boot's error JSON.
   - Unexpected 500s: Boot's error JSON.
 
-Clients rely only on the status for the second group, never on its body ([D-34](../decisions.md#architecture)). Error bodies aren't in `openapi.json` yet: the first task whose frontend reads one, UC-16's form in [increment 02](../specs/02-manage-consultation-offerings.md), adds one shared `ProblemDetail` schema, with `code` for 409 and the field list for 400 (D-34).
+Clients rely only on the status for the second group, never on its body ([D-34](../decisions.md#architecture)).
+
+**400s:**
+
+- **Bean Validation** on a `@Valid @RequestBody` answers 400 with every invalid field in `errors`, sorted by path: `field` is the path Spring reports (`name`, `packages[1].price`), `message` is Hibernate Validator's default ("must not be blank") unless a constraint says otherwise. Messages are English whatever the browser's `Accept-Language` (`spring.web.locale` in `application.yml`, D-20).
+- **A value object's rule.** The request annotations repeat the use case's rules, but the value object stays the authority. A value it rejects anyway, such as a name of only no-break spaces, throws `IllegalArgumentException`, which `ApiExceptionHandler` maps to 400 with the message as `detail` and no `errors`. **In this code base, `IllegalArgumentException` means "invalid value"; don't throw it for anything else.** A broken invariant or a programming error is an `IllegalStateException` (or a `NullPointerException`), a 500.
+- Spring MVC's own 400s (a malformed id, an unreadable body) have no `errors` either.
+
+**In `openapi.json`:** one shared `ProblemDetail` schema (D-34): `title`, `status`, `instance`, `detail`, and `errors` for a 400 (`code` for a 409 comes with the first 409). `type` is optional: Spring leaves it out when it's `about:blank`, as it is for every body so far. springdoc lists the answers of `ApiExceptionHandler`'s methods that carry `@ResponseStatus` on every route, as `application/problem+json`, and `ProblemDetailSchemaCustomizer` replaces the schema springdoc derives from Spring's class with the body as sent. So every route lists 400 and 404 with `ProblemDetail`, though not every route gives them; the increment plans' route tables say which do. The frontend reads only a 400's and a 409's body ([frontend](frontend.md#errors)).
 
 ## REST conventions
 
@@ -182,6 +192,9 @@ Clients rely only on the status for the second group, never on its body ([D-34](
 - **Response DTOs per audience:** customer, expert and admin case responses are different records. This makes "admin never sees notes" a property of the API's shape.
 - **Controllers and DTOs.** `api.<feature>` holds the controllers. Its `response` sub-package holds the `*Response` records, each with a public static `from(...)` that maps the domain object; its `request` sub-package holds the `*Request` records. A response that several features return, such as `MoneyResponse`, lives in `api.response`. ArchUnit checks both packages.
 - Request and response records have names that are unique across `api`, because the OpenAPI schema name is the simple class name (a test checks this).
+- **Controller method names** are the `operationId`s in `openapi.json`, so each names its route uniquely: `listConsultationOfferings`, `getConsultationOffering`, `createConsultationOffering`, `editConsultationOffering`.
+- **A `POST` that creates** answers 201 with the new resource and a relative `Location` (`ResponseEntity.created`), plus `@ResponseStatus(HttpStatus.CREATED)` on the method, so springdoc lists 201 instead of 200.
+- **Request records** carry Bean Validation annotations that repeat the use case's rules, so a 400 names every invalid field ([errors](#errors)); numbers are boxed (`Integer`) with `@NotNull`, so a missing number is a 400, not a silent 0. The controller maps the request to the use case's command, building the value objects.
 - JSON with camelCase. Instants are ISO-8601 with offset; local dates and times are ISO-8601 without offset. Money is `{ "amount": "450.00", "currency": "CHF" }`.
 - The API is code-first. springdoc generates `backend/openapi.json`, which is committed. A test fails if the committed file differs from the generated one (D-29).
 

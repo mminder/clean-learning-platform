@@ -55,7 +55,7 @@ class ShopControllerTest {
 
     @Test
     @Sql("draft-and-archived-offerings.sql")
-    @Sql(scripts = "delete-extra-offerings.sql", executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
     void hidesDraftAndArchivedOfferings() {
         assertThat(mockMvc.get().uri("/api/shop/offerings"))
                 .hasStatusOk()
@@ -64,7 +64,7 @@ class ShopControllerTest {
 
     @Test
     @Sql("more-published-offerings.sql")
-    @Sql(scripts = "delete-extra-offerings.sql", executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
     void sortsOfferingsAlphabeticallyByName() {
         // Alphabetically, regardless of umlauts: a byte-wise sort would put "Ärger-Coaching" last.
         assertThat(mockMvc.get().uri("/api/shop/offerings"))
@@ -145,7 +145,7 @@ class ShopControllerTest {
     @ParameterizedTest(name = "{0}")
     @ValueSource(strings = { "00000000-0000-0000-0000-000000009001", "00000000-0000-0000-0000-000000009002" })
     @Sql("draft-and-archived-offerings.sql")
-    @Sql(scripts = "delete-extra-offerings.sql", executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
     void answersDraftAndArchivedOfferingsWithNotFound(String draftOrArchivedId) {
         assertThat(mockMvc.get().uri("/api/shop/offerings/{id}", draftOrArchivedId))
                 .hasStatus(HttpStatus.NOT_FOUND)
@@ -155,7 +155,7 @@ class ShopControllerTest {
 
     @Test
     @Sql("published-offering-without-packages.sql")
-    @Sql(scripts = "delete-extra-offerings.sql", executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
     void hidesAPublishedOfferingWithoutPackages() {
         // UC-16 allows removing the last package of a published offering; the shop then hides it until one is added.
         assertThat(mockMvc.get().uri("/api/shop/offerings"))

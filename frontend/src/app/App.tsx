@@ -1,5 +1,7 @@
 import { Route, Routes } from 'react-router'
+import { ConsultationOfferingPage } from '@/features/offering/ConsultationOfferingPage'
 import { ConsultationOfferingsPage } from '@/features/offering/ConsultationOfferingsPage'
+import { NewConsultationOfferingPage } from '@/features/offering/NewConsultationOfferingPage'
 import { OfferingDetailPage } from '@/features/shop/OfferingDetailPage'
 import { ShopPage } from '@/features/shop/ShopPage'
 import { LoginPage } from '@/features/user/LoginPage'
@@ -18,6 +20,14 @@ export function App() {
           <Route
             path="admin/consultations"
             element={<ConsultationOfferingsPage />}
+          />
+          <Route
+            path="admin/consultations/new"
+            element={<NewConsultationOfferingPage />}
+          />
+          <Route
+            path="admin/consultations/:id"
+            element={<ConsultationOfferingPage />}
           />
         </Route>
         <Route path="*" element={<NotFoundPage />} />

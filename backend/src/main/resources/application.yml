@@ -14,6 +14,10 @@ spring:
       ddl-auto: validate
   flyway:
     locations: classpath:db/migration
+  web:
+    # The UI is English only (D-20): validation messages ignore the browser's Accept-Language.
+    locale: en
+    locale-resolver: fixed
 springdoc:
   # The committed backend/openapi.json must not change unless the API does: pretty-printed, keys sorted.
   writer-with-default-pretty-printer: true

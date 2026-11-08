@@ -35,6 +35,11 @@ public class OpenApiConfig {
         return new RequiredResponseFieldsCustomizer();
     }
 
+    @Bean
+    OpenApiCustomizer problemDetailSchema() {
+        return new ProblemDetailSchemaCustomizer();
+    }
+
     /**
      * {@code POST /api/logout} is Spring Security's logout filter, not a controller, so springdoc doesn't see it. The
      * document lists it, so the SPA calls it through the generated client like every other route.

@@ -82,10 +82,21 @@ A shadcn/ui component is added when a page first uses it: run `npx shadcn@latest
 - The frontend never decides a business rule (deadline passed, seats left, link window). It shows what the API returns, for example `canCancel`, `refundIfCancelledNow` and `teamsLink`.
 - Money is formatted as `CHF 1,800.00` from the API's `{ amount, currency }`.
 
+## Forms
+
+UC-16's `ConsultationOfferingForm` is the pattern ([increment 02](../tasks/02-manage-consultation-offerings/README.md#forms-and-mutations)):
+
+- **React Hook Form**, with the generated `*Request` type as the form's values. One form serves the new and the edit page.
+- **No rules in the form.** Inputs have their types (text, number), but no `required` or `min`: the backend's 400 is the one source of the rules, and its messages show next to the fields.
+- **Number inputs** use `valueAsNumber`. An empty one is `NaN`, which JSON sends as `null`, so the backend answers "must not be null" next to the field. A new form starts with `NaN` for an empty number field.
+- **Saving** calls the mutation's `mutateAsync`. When it fails, `showSaveError` (`lib/problem.ts`) puts a 400's field errors on the fields with `setError`, or returns the message to show above the form. After a save, the saved values become the form's defaults (`reset`), and "Saved" shows until the next change.
+- **Mutations** invalidate what they change and return the invalidation, so they stay pending until the queries on the screen have reloaded.
+
 ## Errors
 
 - A 409's `detail` is the message for the user, and the page shows it (inline or as a toast). Its stable `code` lets a page react to one conflict, for example by reloading stale data ([D-34](../decisions.md#architecture)). Field errors on 400 are shown next to the form fields; a 400 without a field list shows its `detail`.
-- The frontend reads an error body only through a generated type: the first task that reads one, UC-16's form in [increment 02](../specs/02-manage-consultation-offerings.md), adds one shared `ProblemDetail` schema to `openapi.json` ([D-34](../decisions.md#architecture)). For 401, 403 and 500 it decides on the status alone.
+- The frontend reads an error body only through the generated `ProblemDetail` type (`components['schemas']['ProblemDetail']`, [D-34](../decisions.md#architecture)), and only a 400's or a 409's: `problemOf(status, error)` in `lib/problem.ts` returns the body for those and `undefined` otherwise. openapi-fetch types every error body as `ProblemDetail`, because `openapi.json` lists it on every route, but a 403's body is Boot's error JSON. For 401, 403 and 500 the frontend decides on the status alone.
+- A hook throws `ApiError` for every non-2xx answer, with the status and, for a 400 or 409, the problem (`ApiError.problem`). Field paths become form paths with `toFormPath` (`packages[1].price` → `packages.1.price`).
 
 ## Development
 

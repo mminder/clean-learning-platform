@@ -1,11 +1,18 @@
-/** A non-2xx answer from the API, with its HTTP status, so a page can tell a 404 apart from other errors. */
+import type { ProblemDetail } from './problem'
+
+/**
+ * A non-2xx answer from the API, with its HTTP status, so a page can tell a 404 apart from other errors. A 400's or
+ * 409's body comes with it as `problem` (`problemOf` in `problem.ts`).
+ */
 export class ApiError extends Error {
   readonly status: number
+  readonly problem: ProblemDetail | undefined
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, problem?: ProblemDetail) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    this.problem = problem
   }
 }
 

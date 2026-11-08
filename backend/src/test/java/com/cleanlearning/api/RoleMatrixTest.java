@@ -3,6 +3,7 @@ package com.cleanlearning.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.HttpMethod.GET;
 import static org.springframework.http.HttpMethod.POST;
+import static org.springframework.http.HttpMethod.PUT;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.anonymous;
 
 import java.util.Arrays;
@@ -34,6 +35,8 @@ import com.cleanlearning.domain.user.value.Role;
 @IntegrationTest
 class RoleMatrixTest {
 
+    private static final String UNKNOWN_ID = "00000000-0000-0000-0000-000000000000";
+
     // Every new route gets a row here. Until a prefix has a real route, a probe path stands in for it: security
     // decides before routing, so a probe that passes security ends in 404. An allowed caller must not change data, so
     // a mutating row sends no body (400) or targets an unknown id (404).
@@ -50,6 +53,9 @@ class RoleMatrixTest {
             new Route(GET, "/api/expert/probe", Access.EXPERT),
             new Route(GET, "/api/admin/probe", Access.ADMIN),
             new Route(GET, "/api/admin/consultation-offerings", Access.ADMIN),
+            new Route(POST, "/api/admin/consultation-offerings", Access.ADMIN), // no body: 400
+            new Route(GET, "/api/admin/consultation-offerings/" + SeedData.CAREER_COACHING, Access.ADMIN),
+            new Route(PUT, "/api/admin/consultation-offerings/" + UNKNOWN_ID, Access.ADMIN), // no body: 400
             new Route(GET, "/v3/api-docs", Access.PUBLIC),
             new Route(GET, "/", Access.PUBLIC),
             new Route(GET, "/offerings/anything", Access.PUBLIC));
