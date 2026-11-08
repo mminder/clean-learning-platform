@@ -81,7 +81,7 @@ offering   + image_id uuid null → image
 | `GET /api/poc/users` | 200 `PocUserResponse[]`, sorted by name; `poc` profile only | 01 |
 | `POST /api/poc/login` | `PocLoginRequest` → 200 `MeResponse`, starts the session; 404 for an unknown user; `poc` profile only | 01 |
 | `GET /api/me` | 200 `MeResponse`; 401 without a login | 01 |
-| `POST /api/logout` | 204, ends the session | 01 |
+| `POST /api/logout` | 204, ends the session; Spring Security's logout filter, listed in `openapi.json` by `OpenApiConfig` | 01 |
 | `GET /api/admin/consultation-offerings` | 200 `ConsultationOfferingSummaryResponse[]`: every status, sorted by name, then id | 02 |
 | `POST /api/admin/consultation-offerings` | `ConsultationOfferingRequest` → 201 `ConsultationOfferingResponse` with a `Location` header; 400 | 03 |
 | `GET /api/admin/consultation-offerings/{id}` | 200 `ConsultationOfferingResponse`; 404; 400 for a malformed id | 03 |
@@ -232,7 +232,7 @@ frontend/src
 ### Auth in the SPA
 
 - **`useMe()`**, query key `['me']`: the current user, or `null` for a visitor. A 401 means visitor, not an error.
-- **Header:** **Shop**; **Consultations** when the user has `ADMIN` (02); on the right **Log in**, or the user's name and **Log out** (01).
+- **Header:** **Shop**; **Consultations** when the user has `ADMIN` (02); on the right **Log in**, or the user's name and **Log out** (01). **Log in** opens `/login` without a `redirect`, so a login from the header opens the landing page (UC-01, spec scenario "An admin logs in").
 - **`RequireRole`** (02) wraps the admin routes. While `useMe` loads, it shows nothing; a visitor goes to `/login?redirect=<path>`; a user without the role sees `NotFoundPage`. The backend stays the authority ([frontend.md](../../architecture/frontend.md#navigation-and-auth)).
 - **After login** the SPA opens `redirect` if it's a local path (one leading `/`, not `//`), otherwise `landingPath(roles)`: `/admin/consultations` with `ADMIN` (02), else `/` (spec decision 3). In 01, `landingPath` always returns `/`.
 - **After login and logout**, no cached data of the previous user remains.
@@ -267,6 +267,7 @@ shadcn/ui components are added when a task first uses them ([frontend.md](../../
 | What | How |
 |---|---|
 | Logged-in requests | 01 adds a test helper, `LoggedIn.as(userId, roles…)`: a `RequestPostProcessor` with the same principal a PoC login creates. REST tests of admin routes log in as Admin 1. `RoleMatrixTest`'s callers use it too, so a controller that needs `CurrentUser` doesn't fail there. |
+| CSRF in tests | A mutating request uses `.with(Csrf.token())` (01): the `XSRF-TOKEN` cookie and the `X-XSRF-TOKEN` header, as the SPA sends them. Not Spring Security Test's `csrf()`, which swaps the CSRF filter's token repository for a session-based one in the shared Spring context ([security](../../architecture/security.md#testing)). |
 | Test data | Tests never change seed rows. A writing test creates its own offering, through the API or with `@Sql`, and one shared script, run with `@Sql(…, executionPhase = AFTER_TEST_METHOD)`, deletes every offering that isn't in the seed, with its packages, eligible experts and (07) image. 03 adds the script; it may replace the shop tests' `delete-extra-offerings.sql`. |
 | Role matrix | A row per new route. An allowed caller must not change data, so a mutating row targets an unknown id (security passes, then 404) or sends no body (400). |
 | Concurrency | One test for the offering lock (06): two status changes on one offering, one succeeds and the other gets 409. It must fail without the lock. |

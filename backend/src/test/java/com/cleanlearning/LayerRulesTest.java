@@ -33,6 +33,7 @@ class LayerRulesTest {
     private static final String CONFIG = "com.cleanlearning.config..";
     private static final String API = "com.cleanlearning.api..";
     private static final String API_RESPONSES = "com.cleanlearning.api..response";
+    private static final String API_REQUESTS = "com.cleanlearning.api..request";
     private static final String APPLICATION = "com.cleanlearning.application..";
     private static final String DOMAIN = "com.cleanlearning.domain..";
     private static final String DOMAIN_VALUES = "com.cleanlearning.domain..value";
@@ -96,11 +97,15 @@ class LayerRulesTest {
             .and().doNotHaveSimpleName("package-info") // compiled as a synthetic interface
             .should().haveSimpleNameEndingWith("Port");
 
-    /** A request rule follows with the first request record: every rule must match a class. */
     @ArchTest
     static final ArchRule responsesLiveInAResponsePackage = classes()
             .that().resideInAPackage(API).and().haveSimpleNameEndingWith("Response")
             .should().resideInAPackage(API_RESPONSES);
+
+    @ArchTest
+    static final ArchRule requestsLiveInARequestPackage = classes()
+            .that().resideInAPackage(API).and().haveSimpleNameEndingWith("Request")
+            .should().resideInAPackage(API_REQUESTS);
 
     /** springdoc names an OpenAPI schema after the simple class name, so two records with one name share a schema. */
     @ArchTest

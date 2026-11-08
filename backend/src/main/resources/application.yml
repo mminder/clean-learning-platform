@@ -1,3 +1,10 @@
+server:
+  servlet:
+    session:
+      # The login's session (D-25). Secure comes with production (MVP); see _docs/architecture/security.md.
+      cookie:
+        http-only: true
+        same-site: lax
 spring:
   application:
     name: clean-learning-platform

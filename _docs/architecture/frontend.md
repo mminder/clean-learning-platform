@@ -61,7 +61,8 @@ A shadcn/ui component is added when a page first uses it: run `npx shadcn@latest
 - The header shows **Shop** plus one section per role the user holds (union navigation, D-03).
 - After login, the SPA redirects to the landing page by priority Expert (`/expert/cases`) → Admin (`/admin/cases`) → Customer (`/my`), or back to the page where login was started (e.g. from **Buy**).
 - Route guards only hide pages. **The backend is the authority**; a 401 from any call sends the user to login.
-- CSRF: the client reads the `XSRF-TOKEN` cookie and sends `X-XSRF-TOKEN` on mutating requests.
+- After login and logout, the SPA resets the query cache, so no data of the previous user (or visitor) remains, and the queries on the screen load again.
+- CSRF: a middleware of the API client (`api/client.ts`) reads the `XSRF-TOKEN` cookie on each request and sends it as `X-XSRF-TOKEN` on `POST`, `PUT`, `PATCH` and `DELETE` ([security](security.md#authentication)).
 
 ## Data fetching
 

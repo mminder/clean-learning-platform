@@ -5,7 +5,7 @@
 | Increment | [02 Manage consultation offerings](../../specs/02-manage-consultation-offerings.md) |
 | Type | AFK |
 | Blocked by | – |
-| Status | Todo |
+| Status | Done |
 
 ## Goal
 
@@ -31,22 +31,22 @@ Work in this order, test first:
     - `features/user/queries.ts`: `useMe` (a 401 is `null`), `usePocUsers`, `useLogin`, `useLogout`;
     - `LoginPage` at `/login`: the seeded users as a list, each with their name and roles; a click logs in and opens `redirect` or `landingPath(roles)`;
     - `landing.ts`: `landingPath` (the shop for now) and the check that `redirect` is a local path;
-    - the header: **Log in** (a link to `/login?redirect=<current path>`), or the user's name and **Log out**, which opens the shop;
+    - the header: **Log in** (a link to `/login`, see Notes), or the user's name and **Log out**, which opens the shop;
     - after login and logout, no cached data of the previous user remains.
 11. **Docs:** [security.md](../../architecture/security.md) gets the CSRF and logout details as built.
 
 ## Acceptance criteria
 
-- [ ] In a fresh browser on the dev server (Playwright): **Log in**, pick Admin 1, the header shows "Admin 1" and **Log out**; **Log out** shows **Log in** again. No request fails with 403.
-- [ ] `GET /api/poc/users` lists the six seed users with their UC-01 roles, sorted by name.
-- [ ] `POST /api/poc/login` starts a session with a new session id, and `GET /api/me` then returns id, name, email and roles. Without a login, `GET /api/me` answers 401 with an empty body.
-- [ ] `POST /api/poc/login` with an unknown user id answers 404 as `ProblemDetail`.
-- [ ] `POST /api/logout` answers 204, and the same session gets 401 from `GET /api/me` afterwards.
-- [ ] A `POST` without a CSRF token answers 403.
-- [ ] Without the `poc` profile, `GET /api/poc/users` and `POST /api/poc/login` answer 404.
-- [ ] `/login?redirect=//example.com` opens the shop after login, not another site.
-- [ ] The role matrix has the four routes, and its callers use `LoggedIn`.
-- [ ] `openapi.json` and `schema.d.ts` are regenerated, and every check passes.
+- [x] In a fresh browser on the dev server (Playwright): **Log in**, pick Admin 1, the header shows "Admin 1" and **Log out**; **Log out** shows **Log in** again. No request fails with 403.
+- [x] `GET /api/poc/users` lists the six seed users with their UC-01 roles, sorted by name.
+- [x] `POST /api/poc/login` starts a session with a new session id, and `GET /api/me` then returns id, name, email and roles. Without a login, `GET /api/me` answers 401 with an empty body.
+- [x] `POST /api/poc/login` with an unknown user id answers 404 as `ProblemDetail`.
+- [x] `POST /api/logout` answers 204, and the same session gets 401 from `GET /api/me` afterwards.
+- [x] A `POST` without a CSRF token answers 403.
+- [x] Without the `poc` profile, `GET /api/poc/users` and `POST /api/poc/login` answer 404.
+- [x] `/login?redirect=//example.com` opens the shop after login, not another site.
+- [x] The role matrix has the four routes, and its callers use `LoggedIn`.
+- [x] `openapi.json` and `schema.d.ts` are regenerated, and every check passes.
 
 ## Tests
 
@@ -63,3 +63,12 @@ Work in this order, test first:
 - The landing pages of experts and customers (UC-11, UC-05).
 
 ## Notes
+
+- **Log in in the header has no `redirect`** (changed from `/login?redirect=<current path>`). With the current path as the redirect, a login from the header could never open the landing page, which the spec's scenario "An admin logs in" (task 02) and UC-01's main flow require. `redirect` is for a login started from a protected page (`RequireRole`, 02) or from **Buy** (UC-03). The plan's [auth in the SPA](README.md#auth-in-the-spa) says so now.
+- **Bean Validation came with this task:** `spring-boot-starter-validation` and `@NotNull` on `PocLoginRequest.userId`, so a body without it answers 400 instead of a 500. Spring's default 400 `ProblemDetail`; task 03 adds the `errors` list on top and needn't add the starter.
+- **Logout in the contract:** Spring Security's logout is a filter, which springdoc doesn't see. `OpenApiConfig` adds `POST /api/logout` (204) to `openapi.json`, so the SPA calls it through the generated client.
+- **No `csrf()` from Spring Security Test:** it replaces the CSRF filter's token repository with a session-based one, in the Spring context all integration tests share, so every later test runs with another CSRF setup, and the cookie flow can't be tested after it. Tests send `Csrf.token()` (cookie and header, as the SPA does); `RoleMatrixTest` switched to it. The plan's [tests](README.md#tests) and [security.md](../../architecture/security.md#testing) say so.
+- **The login's session handling is built in `SecurityConfig`:** Spring Security builds the session strategy of its own logins inside the filter chain and doesn't expose it. The `SessionAuthenticationStrategy` bean repeats it: `ChangeSessionIdAuthenticationStrategy` and a `CsrfAuthenticationStrategy` whose request handler loads the new token at once, as `csrf.spa()` does, so the login's response already sets the new `XSRF-TOKEN` cookie. The `CsrfTokenRepository` and `SecurityContextRepository` beans are the ones the filter chain uses.
+- **Session fixation in MockMvc:** Spring 7's `MockHttpServletRequest` treats a session as requested by the client only with a requested session id, otherwise `ChangeSessionIdAuthenticationStrategy` leaves it alone. `PocLoginControllerTest` sets it, as the browser's cookie would.
+- **Open: `app_user.name` has no ICU collation,** though `GET /api/poc/users` sorts by it ([backend.md](../../architecture/backend.md#persistence) asks for `collate "und-x-icu"` on a sorted name column). The six seed names sort the same either way, and the user list exists only in the `poc` profile. A migration would take `V4`, which the plan gives to task 03, so it's left for whoever adds a user list that matters (UC-19, MVP).
+- **For task 03:** Spring omits `"type": "about:blank"` from a `ProblemDetail` body; the plan's examples show it. The shared schema should match what's sent.

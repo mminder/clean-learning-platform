@@ -7,7 +7,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.Operation;
+import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.responses.ApiResponse;
+import io.swagger.v3.oas.models.responses.ApiResponses;
 import io.swagger.v3.oas.models.servers.Server;
 
 /**
@@ -29,5 +33,17 @@ public class OpenApiConfig {
     @Bean
     OpenApiCustomizer requiredResponseFields() {
         return new RequiredResponseFieldsCustomizer();
+    }
+
+    /**
+     * {@code POST /api/logout} is Spring Security's logout filter, not a controller, so springdoc doesn't see it. The
+     * document lists it, so the SPA calls it through the generated client like every other route.
+     */
+    @Bean
+    OpenApiCustomizer logoutRoute() {
+        return openApi -> openApi.path("/api/logout", new PathItem().post(new Operation()
+                .operationId("logOut")
+                .addTagsItem("logout")
+                .responses(new ApiResponses().addApiResponse("204", new ApiResponse().description("No Content")))));
     }
 }

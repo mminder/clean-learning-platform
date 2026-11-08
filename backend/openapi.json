@@ -8,6 +8,84 @@
     "url" : "/"
   } ],
   "paths" : {
+    "/api/logout" : {
+      "post" : {
+        "operationId" : "logOut",
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "tags" : [ "logout" ]
+      }
+    },
+    "/api/me" : {
+      "get" : {
+        "operationId" : "getMe",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MeResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "me-controller" ]
+      }
+    },
+    "/api/poc/login" : {
+      "post" : {
+        "operationId" : "logIn",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PocLoginRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MeResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "poc-login-controller" ]
+      }
+    },
+    "/api/poc/users" : {
+      "get" : {
+        "operationId" : "listUsers",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PocUserResponse"
+                  }
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "poc-login-controller" ]
+      }
+    },
     "/api/shop/offerings" : {
       "get" : {
         "operationId" : "listOfferings",
@@ -118,6 +196,29 @@
         },
         "required" : [ "bio", "displayName", "id" ]
       },
+      "MeResponse" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "roles" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "CUSTOMER", "EXPERT", "ADMIN" ]
+            }
+          }
+        },
+        "required" : [ "email", "id", "name", "roles" ]
+      },
       "MoneyResponse" : {
         "type" : "object",
         "properties" : {
@@ -129,6 +230,36 @@
           }
         },
         "required" : [ "amount", "currency" ]
+      },
+      "PocLoginRequest" : {
+        "type" : "object",
+        "properties" : {
+          "userId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "userId" ]
+      },
+      "PocUserResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "roles" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "CUSTOMER", "EXPERT", "ADMIN" ]
+            }
+          }
+        },
+        "required" : [ "id", "name", "roles" ]
       },
       "ShopOfferingDetailResponse" : {
         "type" : "object",
