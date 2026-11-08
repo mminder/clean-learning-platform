@@ -20,7 +20,8 @@
 frontend/src
 ├─ app/                 router, providers (QueryClient), layout, header navigation
 ├─ api/                 generated schema types + configured openapi-fetch client
-├─ components/ui/       shadcn/ui components
+├─ components/          shared components, e.g. ImagePlaceholder
+│  └─ ui/               shadcn/ui components
 ├─ lib/                 date formatting (Zurich), money formatting, error mapping
 └─ features/            mirrors the backend features
    ├─ shop/             UC-02, buy dialogs (UC-03, UC-04)
@@ -32,6 +33,8 @@ frontend/src
 ```
 
 A feature folder contains its pages, components, query and mutation hooks, and its tests.
+
+A shadcn/ui component is added when a page first uses it: run `npx shadcn@latest add <component>` in `frontend/`, then `npm run format`. The components import `cn` from shadcn's npm package `cn` (since 2026-11-08, through `npx shadcn@latest migrate cn`), and so does our own code; there's no `lib/utils.ts`. `components.json` still has the `utils` alias (`@/lib/utils`): the CLI's schema requires it, and the CLI rejects the config without it.
 
 ## Routes
 
@@ -80,6 +83,7 @@ A feature folder contains its pages, components, query and mutation hooks, and i
 ## Errors
 
 - A `ProblemDetail` response with status 409 carries a stable `code`, which maps to a user-friendly message (toast or inline). Field errors on 400 are shown next to the form fields.
+- The frontend reads an error body only through a generated type: the task with the first 409 adds one shared `ProblemDetail` schema to `openapi.json` ([D-34](../decisions.md#architecture)). For 401, 403 and 500 it decides on the status alone.
 
 ## Development
 

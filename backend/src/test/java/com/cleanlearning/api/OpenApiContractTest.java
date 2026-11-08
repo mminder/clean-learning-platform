@@ -1,0 +1,49 @@
+package com.cleanlearning.api;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import org.springframework.test.web.servlet.assertj.MvcTestResult;
+
+import com.cleanlearning.IntegrationTest;
+
+/**
+ * The committed {@code backend/openapi.json} is the API contract the frontend types are generated from (D-29). It
+ * must match the document the code generates. With {@code -Dopenapi.write=true}, the test writes the file instead.
+ */
+@IntegrationTest
+class OpenApiContractTest {
+
+    private static final Path COMMITTED = Path.of("openapi.json");
+    private static final String REGENERATE = "./mvnw test -Dtest=OpenApiContractTest -Dopenapi.write=true";
+
+    @Autowired
+    MockMvcTester mockMvc;
+
+    @Test
+    void committedDocumentMatchesTheCode() throws IOException {
+        MvcTestResult result = mockMvc.get().uri("/v3/api-docs").exchange();
+        assertThat(result).hasStatusOk();
+        String generated = result.getResponse().getContentAsString(StandardCharsets.UTF_8) + "\n";
+
+        if (Boolean.getBoolean("openapi.write")) {
+            Files.writeString(COMMITTED, generated);
+            return;
+        }
+
+        assertThat(COMMITTED)
+                .as("backend/openapi.json is missing. Generate it in backend/ with: " + REGENERATE)
+                .exists();
+        assertThat(Files.readString(COMMITTED))
+                .as("backend/openapi.json is out of date. Regenerate it in backend/ with: " + REGENERATE
+                        + ", then run npm run generate:api in frontend/")
+                .isEqualTo(generated);
+    }
+}

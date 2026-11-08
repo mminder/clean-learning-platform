@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | Ready |
+| Status | Done |
 | Use cases | [UC-02](../use-cases/uc-02-browse-shop.md), consultation part (steps 1–4) |
 | Tasks | [tasks/01-shop-tracer-bullet](../tasks/01-shop-tracer-bullet/README.md) |
 
@@ -157,7 +157,7 @@ Agreed with the product owner while planning (2026-11-07).
 8. **Seed only what the schema holds:** the six users, the two expert profiles and Career Coaching. The training and availability seeds come with their schema.
 9. **A package is `ConsultationPackage` in code** and `consultation_package` in the database, because `java.lang.Package` exists ([glossary](../glossary.md#catalog)).
 10. **No dates are shown in this increment.** The Zurich date helpers and the `Clock` bean arrive with the first use case that needs them.
-11. **Executed by Claude agents in cloud sessions**, one task per session and pull request. The first task prepares the cloud environment.
+11. **Executed by Claude agents in cloud sessions.** The first task prepares the cloud environment. Tasks 02–08 run as subagents, one per task with a review subagent after each, orchestrated from one cloud session, and the whole increment goes onto one pull request (changed 2026-11-07 by the product owner; it was one task per session and pull request before).
 
 ## Out of scope
 

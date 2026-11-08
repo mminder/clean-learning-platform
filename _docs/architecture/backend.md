@@ -4,7 +4,7 @@ A Spring Boot modular monolith with a hexagonal architecture, kept pragmatic. Th
 
 ## Tooling
 
-Java 25 · Spring Boot 4.x · Maven (wrapper) · Spring Data JPA / Hibernate · Flyway · Bean Validation · springdoc-openapi · JUnit 5 · AssertJ · Testcontainers · ArchUnit · `MockMvcTester`.
+Java 25 · Spring Boot 4.x · Maven (wrapper) · Spring Data JPA / Hibernate · Flyway · Bean Validation · springdoc-openapi · JUnit Jupiter 6 · AssertJ · Testcontainers · ArchUnit · `MockMvcTester`.
 
 There's no Lombok and no MapStruct. Value objects, commands and DTOs are Java `record`s (D-28).
 
@@ -133,6 +133,7 @@ class BookConsultationAppointmentService {
 - **Ids:** UUIDs generated in the application. Seed rows use fixed, readable UUIDs that tests refer to.
 - **Tables:** singular snake_case names. The user table is `app_user`, because `user` is reserved in PostgreSQL.
 - **Columns:** points in time are `timestamptz`, local times are `time`, dates are `date`, money is `numeric(10,2)` (currency is always CHF). Every table has `created_at` and `updated_at` (D-20).
+- **Sorting text:** a name column the UI sorts by is declared `collate "und-x-icu"` (ICU root collation), so `order by` is alphabetical regardless of case and umlauts, and the same in dev, test and production; the database's default collation can sort byte-wise.
 - **Purchase terms** are columns on `consultation_case` and `enrollment` (D-08). A run's schedule is stored in `run_day` and `run_time_slot`.
 - **Images:** an `image` table with `bytea`, content type and size (D-21).
 
@@ -161,10 +162,21 @@ Domain and application exceptions are mapped centrally (`@RestControllerAdvice`)
 | Resource doesn't exist **or isn't yours** | 404 |
 | Business rule violated (slot taken, sold out, deadline passed, offering has purchases, …) | 409 (with a stable `code` property for the frontend) |
 
+Not every error body is a `ProblemDetail`:
+
+- **`ProblemDetail`** (`application/problem+json`): every error raised inside Spring MVC, through `ApiExceptionHandler` and its base class `ResponseEntityExceptionHandler`: 400, 404, 405, and later 409.
+- **Not `ProblemDetail`:** errors that never reach a controller or the advice.
+  - Spring Security's 401: an empty body.
+  - Spring Security's 403, including the CSRF rejection: Boot's error JSON.
+  - Unexpected 500s: Boot's error JSON.
+
+Clients rely only on the status for the second group, never on its body ([D-34](../decisions.md#architecture)). Error bodies aren't in `openapi.json` yet: the task with the first 409 adds one shared `ProblemDetail` schema, with `code` for 409 and the field list for 400 (D-34).
+
 ## REST conventions
 
 - Route prefixes by audience (D-26): `/api/shop`, `/api/customer`, `/api/expert`, `/api/admin`, plus `/api/me`, `/api/images`, `/api/poc` (`poc` profile only).
 - **Response DTOs per audience:** customer, expert and admin case responses are different records. This makes "admin never sees notes" a property of the API's shape.
+- Request and response records have names that are unique across `api`, because the OpenAPI schema name is the simple class name (a test checks this). A record that several features return, such as `MoneyResponse`, lives in `api` itself.
 - JSON with camelCase. Instants are ISO-8601 with offset; local dates and times are ISO-8601 without offset. Money is `{ "amount": "450.00", "currency": "CHF" }`.
 - The API is code-first. springdoc generates `backend/openapi.json`, which is committed. A test fails if the committed file differs from the generated one (D-29).
 

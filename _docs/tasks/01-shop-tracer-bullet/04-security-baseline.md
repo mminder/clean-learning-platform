@@ -5,7 +5,7 @@
 | Increment | [01 Shop tracer bullet](../../specs/01-shop-tracer-bullet.md) |
 | Type | AFK |
 | Blocked by | [02](02-backend-skeleton.md) |
-| Status | Todo |
+| Status | Done |
 
 ## Goal
 
@@ -28,13 +28,13 @@ Read first: [security.md](../../architecture/security.md), [D-26](../../decision
 
 ## Acceptance criteria
 
-- [ ] An anonymous request to `/api/shop/...` passes security (404 for a probe, not 401).
-- [ ] Anonymous requests to `/api/customer/...`, `/api/expert/...`, `/api/admin/...` and `/api/me` get 401, without a `Location` or `WWW-Authenticate: Basic` header.
-- [ ] A user with only `CUSTOMER` gets 403 under `/api/expert` and `/api/admin`, and the same holds for the other roles.
-- [ ] A user with `EXPERT` and `ADMIN` passes both of those prefixes and gets 403 under `/api/customer`.
-- [ ] Anonymous `GET /` and `GET /offerings/anything` pass security.
-- [ ] The startup log shows no generated password.
-- [ ] security.md lists the SPA paths as public.
+- [x] An anonymous request to `/api/shop/...` passes security (404 for a probe, not 401).
+- [x] Anonymous requests to `/api/customer/...`, `/api/expert/...`, `/api/admin/...` and `/api/me` get 401, without a `Location` or `WWW-Authenticate: Basic` header.
+- [x] A user with only `CUSTOMER` gets 403 under `/api/expert` and `/api/admin`, and the same holds for the other roles.
+- [x] A user with `EXPERT` and `ADMIN` passes both of those prefixes and gets 403 under `/api/customer`.
+- [x] Anonymous `GET /` and `GET /offerings/anything` pass security.
+- [x] The startup log shows no generated password.
+- [x] security.md lists the SPA paths as public.
 
 ## Tests
 
@@ -46,3 +46,9 @@ Read first: [security.md](../../architecture/security.md), [D-26](../../decision
 - Ownership tests: added with the first resource that has an owner.
 
 ## Notes
+
+- **Starters:** Boot 4 needs `spring-boot-starter-security` and, for tests, `spring-boot-starter-security-test`. The test starter brings `spring-boot-security-test`, which applies Spring Security to the auto-configured MockMvc.
+- **No default user:** a `SecurityFilterChain` bean alone doesn't stop Boot from creating its in-memory user with a generated password. `CleanLearningApplication` excludes `UserDetailsServiceAutoConfiguration`, and `CleanLearningApplicationTest` checks that no `UserDetailsService` exists. Checked by hand: the `poc` startup log has no password line.
+- **No session on 401:** Spring's request cache saved every rejected request in a new session, so each anonymous 401 set a `JSESSIONID` cookie. `SecurityConfig` uses a `NullRequestCache`, and the role matrix checks that a 401 creates no session.
+- **CSRF default:** a `POST` without a CSRF token gets 403 before authorization is checked, even when anonymous, and the session-based token repository creates a session. `RoleMatrixTest` therefore sends a valid token with every request, so a mutating row tests roles, not CSRF. The cookie setup comes with UC-01.
+- **For UC-01:** Spring's default logout filter still answers `POST /logout` (redirect to `/login?logout`); UC-01 configures `/api/logout`. The 401 has an empty body and the 403 has Boot's `/error` JSON; neither goes through `ApiExceptionHandler`, because security rejects the request before a controller runs.

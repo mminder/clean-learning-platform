@@ -30,11 +30,11 @@ None. No login is required.
 ## Alternative and error flows
 
 - **Training without upcoming runs:** the detail page shows "No upcoming dates", and **Buy** is disabled.
-- **Offering not published, or unknown:** the detail page returns 404.
+- **Offering not published, or unknown:** the detail page returns 404. So does a published consultation offering without packages.
 
 ## Business rules
 
-- Only `PUBLISHED` offerings appear.
+- Only `PUBLISHED` offerings appear. A consultation offering also needs at least one package; without one it's hidden from the list and its detail page returns 404 ([UC-16](uc-16-manage-consultation-offering.md#business-rules)). One without eligible experts still appears.
 - Runs are listed when their first time slot is in the future. Sold-out runs are shown but can't be selected.
 - **Buy** is shown to visitors and to users with `CUSTOMER`. It's hidden for logged-in users without `CUSTOMER`.
 
