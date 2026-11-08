@@ -20,6 +20,12 @@ class OfferingNameTest {
     }
 
     @Test
+    void rejectsNamesOfNoBreakSpaces() {
+        // String.isBlank() accepts these, the database's check constraint doesn't.
+        assertThatIllegalArgumentException().isThrownBy(() -> new OfferingName("   \u0085"));
+    }
+
+    @Test
     void isRequired() {
         assertThatNullPointerException().isThrownBy(() -> new OfferingName(null));
     }

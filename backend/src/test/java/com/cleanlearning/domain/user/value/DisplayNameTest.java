@@ -20,6 +20,12 @@ class DisplayNameTest {
     }
 
     @Test
+    void rejectsNamesOfNoBreakSpaces() {
+        // String.isBlank() accepts these, the database's check constraint doesn't.
+        assertThatIllegalArgumentException().isThrownBy(() -> new DisplayName("   \u0085"));
+    }
+
+    @Test
     void isRequired() {
         assertThatNullPointerException().isThrownBy(() -> new DisplayName(null));
     }
