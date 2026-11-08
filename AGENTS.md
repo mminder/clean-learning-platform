@@ -49,9 +49,9 @@ Work arrives as tasks. Follow [working on a task](_docs/tasks/README.md#working-
 Details: [_docs/architecture/backend.md](_docs/architecture/backend.md).
 
 - Root packages `api`, `application`, `domain`, `adapters.database` (plus `config`). Each has the feature sub-packages `user`, `offering`, `consultation`, `training`, `availability`, `image`; `api` also has `shop`, the public catalog endpoints. Shared value objects live in `domain.shared`.
-- Each use case is one `@Service` class named `<Verb><Noun>Service` in `application.<feature>`. It has one public method, is `@Transactional`, and contains flow only.
+- Each use case is one `@Service` class named `<Verb><Noun>UseCase` in `application.<feature>`. It has one public method named `invoke`, which is `@Transactional` and contains flow only.
 - Business rules live in `domain` POJOs and records. `domain` has no Spring or JPA imports.
-- Outgoing ports are interfaces named `<Purpose>Port` in `application.<feature>`. They are narrow and use-case specific, and implemented in `adapters.database.<feature>`. There are no incoming ports: controllers call use-case services directly.
+- Outgoing ports are interfaces named `<Purpose>Port` in `application.<feature>`. They are narrow and use-case specific, and implemented in `adapters.database.<feature>`. There are no incoming ports: controllers call use cases directly.
 - Controllers pass `CurrentUser` explicitly into use cases. Ownership is enforced by scoped port queries; a resource that isn't yours returns 404.
 - JPA entities never leave `adapters.database`. Mappers are hand-written. No Lombok, no MapStruct. Value objects, commands and DTOs are records.
 - Always get the current time from the injected `java.time.Clock`.
@@ -76,7 +76,7 @@ Details: [_docs/architecture/backend.md#testing](_docs/architecture/backend.md#t
 - REST: one happy-path integration test per route, against Testcontainers Postgres.
 - Authorization (mandatory): a role matrix over all routes, plus ownership tests that use the two seeded users per role.
 - Concurrency: one test per locked race (expert slot, case credits, run seats).
-- Use-case service tests only where they add real value.
+- Use-case tests only where they add real value.
 - The ArchUnit layer rules and the OpenAPI drift test must pass.
 
 ## Cloud sessions

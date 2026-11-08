@@ -58,7 +58,7 @@ These major versions are new, and most examples online are for older ones. Check
 | `config` | `SecurityConfig`, `OpenApiConfig`, `RequiredResponseFieldsCustomizer`, `SpaConfig` (the jar serves the SPA, `index.html` for client routes, task 08) |
 | `api` | `ApiExceptionHandler` (central `ProblemDetail` mapping); `MoneyResponse`, shared by every feature's responses (public `from(Money)`) |
 | `api.shop` | `ShopController`; responses `ShopOfferingResponse`, `ShopOfferingDetailResponse`, `ConsultationOfferingDetailResponse`, `ConsultationPackageResponse`, `EligibleExpertResponse` |
-| `application.offering` | `ListShopOfferingsService`, `GetShopOfferingService`, `LoadShopOfferingsPort`, `LoadShopOfferingPort` |
+| `application.offering` | `ListShopOfferingsUseCase`, `GetShopOfferingUseCase`, `LoadShopOfferingsPort`, `LoadShopOfferingPort` |
 | `domain.shared` | `Money`, `NotFoundException` |
 | `domain.offering` | `OfferingId`, `OfferingType`, `ShopOffering`, `ShopConsultationOffering`, `ConsultationPackage`, `ConsultationPackageId`, `EligibleExpert`, `SessionDuration`, `CancellationDeadline` |
 | `domain.user` | `UserId` |

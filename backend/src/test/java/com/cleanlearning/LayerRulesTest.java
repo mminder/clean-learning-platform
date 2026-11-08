@@ -63,9 +63,9 @@ class LayerRulesTest {
             .should().resideInAPackage(ADAPTERS_DATABASE);
 
     @ArchTest
-    static final ArchRule useCaseServicesEndInService = classes()
+    static final ArchRule useCasesEndInUseCase = classes()
             .that().resideInAPackage(APPLICATION).and().areAnnotatedWith(Service.class)
-            .should().haveSimpleNameEndingWith("Service");
+            .should().haveSimpleNameEndingWith("UseCase");
 
     @ArchTest
     static final ArchRule portsEndInPort = classes()

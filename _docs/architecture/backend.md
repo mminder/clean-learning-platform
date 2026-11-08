@@ -23,8 +23,8 @@ com.cleanlearning
 │  ├─ offering                admin catalog endpoints
 │  ├─ user                    /api/me, poc login, (MVP) user mgmt
 │  └─ image
-├─ application                use-case services + outgoing ports
-│  ├─ consultation            e.g. BookConsultationAppointmentService, LoadCaseForBookingPort
+├─ application                use cases + outgoing ports
+│  ├─ consultation            e.g. BookConsultationAppointmentUseCase, LoadCaseForBookingPort
 │  ├─ training
 │  ├─ offering
 │  ├─ availability
@@ -82,19 +82,19 @@ Features aren't isolated from each other (D-23). A use case may use domain class
 
 ## Use cases
 
-- One use case = one class `<Verb><Noun>Service` in `application.<feature>`, annotated `@Service`.
-- **One public method.** It takes the `CurrentUser` (if the use case needs it) and a command `record`, and returns a result `record`.
+- One use case = one class `<Verb><Noun>UseCase` in `application.<feature>`, annotated `@Service`.
+- **One public method, named `invoke`.** It takes the `CurrentUser` (if the use case needs it) and a command `record`, and returns a result `record`.
 - `@Transactional` sits on the use-case method. Read-only use cases use `@Transactional(readOnly = true)`.
 - **Flow only:** load through ports, call domain logic, save through ports. Business decisions (is it bookable, refund-eligible, …) live in the domain.
-- There are **no incoming port interfaces**. Controllers call the service directly.
+- There are **no incoming port interfaces**. Controllers call the use case directly.
 - Controllers don't contain logic. They map HTTP to the command, call the use case, and map the result to the response DTO.
 
 ```java
 @Service
-class BookConsultationAppointmentService {
+class BookConsultationAppointmentUseCase {
     // ports injected via constructor
     @Transactional
-    BookedAppointment book(CurrentUser user, BookAppointmentCommand cmd) {
+    BookedAppointment invoke(CurrentUser user, BookAppointmentCommand cmd) {
         var caseForBooking = loadCase.lockForCustomer(cmd.caseId(), user.id()); // 404 if not theirs
         var expertId = caseForBooking.expertOr(cmd.expertId());
         lockExpert.lock(expertId);

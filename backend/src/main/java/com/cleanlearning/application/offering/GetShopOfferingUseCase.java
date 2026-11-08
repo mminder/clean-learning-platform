@@ -11,11 +11,11 @@ import com.cleanlearning.domain.shared.NotFoundException;
  * UC-02 steps 3–4: a published offering's detail page.
  */
 @Service
-public class GetShopOfferingService {
+public class GetShopOfferingUseCase {
 
     private final LoadShopOfferingPort loadShopOffering;
 
-    GetShopOfferingService(LoadShopOfferingPort loadShopOffering) {
+    GetShopOfferingUseCase(LoadShopOfferingPort loadShopOffering) {
         this.loadShopOffering = loadShopOffering;
     }
 
@@ -23,7 +23,7 @@ public class GetShopOfferingService {
      * @throws NotFoundException if the offering doesn't exist, isn't {@code PUBLISHED} or has no package
      */
     @Transactional(readOnly = true)
-    public ShopConsultationOffering get(OfferingId id) {
+    public ShopConsultationOffering invoke(OfferingId id) {
         return loadShopOffering.loadPublished(id)
                 .orElseThrow(() -> new NotFoundException("Offering " + id.value() + " not found."));
     }

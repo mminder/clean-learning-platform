@@ -21,7 +21,7 @@ Work in this order, test first:
 2. **Schema and seed:** `V2__create_user.sql` and `V2_1__seed_user.sql` as in the plan's [schema](README.md#schema) and [seed ids](README.md#seed-ids): the six users with their UC-01 roles, profiles for Expert 1 and Expert 2 (display name equal to the user's name, plus a short bio), and both experts eligible for Career Coaching. Add the ids to `SeedData`.
 3. **Domain**, test first: `SessionDuration` (minutes > 0), `CancellationDeadline` (hours ≥ 0), `ConsultationPackageId`, `ConsultationPackage` (session count > 0, price), `UserId`, `EligibleExpert` (id, display name, bio), and `ShopConsultationOffering`, which holds them.
 4. **Port and adapter:** `LoadShopOfferingPort` returns the offering only if it's `PUBLISHED`, with its packages (fewest sessions first) and eligible experts (by display name). The adapter joins `eligible_expert` and `expert_profile` ([D-23](../../decisions.md#architecture)).
-5. **Use case and errors:** `GetShopOfferingService` throws `NotFoundException` when nothing is found. `ApiExceptionHandler` maps it to 404, and a malformed id to 400, both as `ProblemDetail` ([backend.md](../../architecture/backend.md#errors)).
+5. **Use case and errors:** `GetShopOfferingUseCase` throws `NotFoundException` when nothing is found. `ApiExceptionHandler` maps it to 404, and a malformed id to 400, both as `ProblemDetail` ([backend.md](../../architecture/backend.md#errors)).
 6. **Controller:** the route returns `ShopOfferingDetailResponse`, shaped as in the plan's [API](README.md#api) section. Regenerate `openapi.json`, and add a row to the role matrix.
 7. **Frontend:**
    - regenerate the types; add `useShopOffering(id)`;

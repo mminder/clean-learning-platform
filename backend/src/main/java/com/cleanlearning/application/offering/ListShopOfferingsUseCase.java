@@ -11,16 +11,16 @@ import com.cleanlearning.domain.offering.ShopOffering;
  * UC-02 steps 1–2: the published offerings for the shop, sorted by name.
  */
 @Service
-public class ListShopOfferingsService {
+public class ListShopOfferingsUseCase {
 
     private final LoadShopOfferingsPort loadShopOfferings;
 
-    ListShopOfferingsService(LoadShopOfferingsPort loadShopOfferings) {
+    ListShopOfferingsUseCase(LoadShopOfferingsPort loadShopOfferings) {
         this.loadShopOfferings = loadShopOfferings;
     }
 
     @Transactional(readOnly = true)
-    public List<ShopOffering> list() {
+    public List<ShopOffering> invoke() {
         return loadShopOfferings.loadPublished();
     }
 }
