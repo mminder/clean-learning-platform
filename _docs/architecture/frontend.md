@@ -83,6 +83,7 @@ A shadcn/ui component is added when a page first uses it: run `npx shadcn@latest
 ## Errors
 
 - A `ProblemDetail` response with status 409 carries a stable `code`, which maps to a user-friendly message (toast or inline). Field errors on 400 are shown next to the form fields.
+- The frontend reads an error body only through a generated type: the task with the first 409 adds one shared `ProblemDetail` schema to `openapi.json` ([D-34](../decisions.md#architecture)). For 401, 403 and 500 it decides on the status alone.
 
 ## Development
 

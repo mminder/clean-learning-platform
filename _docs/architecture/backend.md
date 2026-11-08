@@ -170,7 +170,7 @@ Not every error body is a `ProblemDetail`:
   - Spring Security's 403, including the CSRF rejection: Boot's error JSON.
   - Unexpected 500s: Boot's error JSON.
 
-Clients rely only on the status for the second group, never on its body.
+Clients rely only on the status for the second group, never on its body ([D-34](../decisions.md#architecture)). Error bodies aren't in `openapi.json` yet: the task with the first 409 adds one shared `ProblemDetail` schema, with `code` for 409 and the field list for 400 (D-34).
 
 ## REST conventions
 

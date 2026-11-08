@@ -44,7 +44,7 @@ Configured declaratively in the Spring Security config (D-26).
 | `/api/expert/**` | `EXPERT` |
 | `/api/admin/**` | `ADMIN` |
 | `/api/poc/**` | public, `poc` profile only |
-| `/v3/api-docs/**` (the OpenAPI document, [D-29](../decisions.md#architecture)) | public |
+| `/v3/api-docs/**` (the OpenAPI document, [D-29](../decisions.md#architecture)) | public, in every profile including production |
 | everything outside `/api` (the SPA) | public |
 
 A user with several roles can call every prefix their roles allow. An anonymous caller gets 401 without a redirect, login page or Basic challenge; a missing role gets 403.
