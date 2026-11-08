@@ -3,6 +3,7 @@ package com.cleanlearning.api.offering;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +34,7 @@ import com.cleanlearning.domain.offering.value.OfferingName;
 import com.cleanlearning.domain.offering.value.SessionCount;
 import com.cleanlearning.domain.offering.value.SessionDuration;
 import com.cleanlearning.domain.shared.value.Money;
+import com.cleanlearning.domain.user.value.UserId;
 
 import jakarta.validation.Valid;
 
@@ -95,7 +97,8 @@ class ConsultationOfferingController {
         return new ConsultationOfferingCommand(new OfferingName(request.name()), request.description(),
                 new SessionDuration(request.sessionDurationMinutes()),
                 new CancellationDeadline(request.cancellationDeadlineHours()),
-                request.packages().stream().map(ConsultationOfferingController::toEntry).toList());
+                request.packages().stream().map(ConsultationOfferingController::toEntry).toList(),
+                request.eligibleExpertIds().stream().map(UserId::new).collect(Collectors.toSet()));
     }
 
     private static ConsultationPackageEntry toEntry(ConsultationPackageRequest request) {

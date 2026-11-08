@@ -23,7 +23,7 @@ The admin creates consultation offerings, maintains them, and controls whether t
    - session duration (minutes);
    - cancellation deadline (hours);
    - packages: add, edit or remove packages (session count, price in CHF);
-   - eligible experts: select from users with `EXPERT`.
+   - eligible experts: select from users with `EXPERT` and an expert profile ([UC-14](uc-14-manage-expert-profile.md)), by display name.
 4. The admin saves. A new offering starts as `DRAFT`.
 5. The admin changes the status with **Publish**, **Unpublish**, **Archive** or **Delete**. Each asks for confirmation first and states the consequence (decided 2026-11-08).
 
@@ -31,7 +31,7 @@ The admin creates consultation offerings, maintains them, and controls whether t
 
 - **Publishing an incomplete offering:** 409, listing what's missing.
 - **Unpublish or delete when purchases exist:** 409, "Offering has purchases. Archive it instead."
-- **Invalid values** (blank name, duration ≤ 0, deadline < 0, session count ≤ 0, price < 0, an eligible expert who isn't a user with `EXPERT`): 400. The description may be empty.
+- **Invalid values** (blank name, duration ≤ 0, deadline < 0, session count ≤ 0, price < 0, an eligible expert who isn't a user with `EXPERT` and an expert profile): 400. The description may be empty.
 - **Invalid image** (not JPEG, PNG or WebP, or larger than 2 MB): 400.
 - **A change the status doesn't allow** (any change to an archived offering, deleting a published offering, publishing one that is already published, …): 409.
 

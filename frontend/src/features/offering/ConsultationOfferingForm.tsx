@@ -1,10 +1,17 @@
 import { useId, useState, type ReactNode } from 'react'
-import { useFieldArray, useForm, type FieldError } from 'react-hook-form'
+import {
+  Controller,
+  useFieldArray,
+  useForm,
+  type FieldError,
+} from 'react-hook-form'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { showSaveError } from '@/lib/problem'
+import { useExperts } from '@/features/user/queries'
 import {
   toRequest,
   type ConsultationOffering,
@@ -14,8 +21,8 @@ import {
 /**
  * The offering's form, for a new and an existing offering (UC-16 steps 3–4). It has no rules of its own: the
  * backend's 400 puts each message next to its field. A number field left empty is `NaN`, which JSON sends as `null`.
- * `onSave` resolves with the saved offering, whose packages (with the ids of the new ones) become the form's new
- * starting point.
+ * The eligible experts are one checkbox per expert. `onSave` resolves with the saved offering, whose packages (with
+ * the ids of the new ones) become the form's new starting point.
  */
 export function ConsultationOfferingForm({
   defaultValues,
@@ -40,6 +47,7 @@ export function ConsultationOfferingForm({
     append,
     remove,
   } = useFieldArray({ control, name: 'packages' })
+  const experts = useExperts()
   const [formError, setFormError] = useState<string>()
   const [saved, setSaved] = useState(false)
 
@@ -154,6 +162,49 @@ export function ConsultationOfferingForm({
           Add package
         </Button>
       </fieldset>
+      <fieldset className="space-y-3">
+        <legend className="mb-2 text-lg font-semibold">Eligible experts</legend>
+        {experts.isPending && (
+          <p className="text-sm text-muted-foreground">Loading the experts…</p>
+        )}
+        {experts.isError && (
+          <p role="alert" className="text-sm text-destructive">
+            The experts could not be loaded.
+          </p>
+        )}
+        {experts.isSuccess && experts.data.length === 0 && (
+          <p className="text-sm text-muted-foreground">No experts.</p>
+        )}
+        {experts.isSuccess && (
+          <Controller
+            control={control}
+            name="eligibleExpertIds"
+            render={({ field }) => (
+              <>
+                {experts.data.map((expert) => (
+                  <ExpertCheckbox
+                    key={expert.id}
+                    label={expert.displayName}
+                    checked={field.value.includes(expert.id)}
+                    onCheckedChange={(checked) =>
+                      field.onChange(
+                        checked
+                          ? [...field.value, expert.id]
+                          : field.value.filter((id) => id !== expert.id),
+                      )
+                    }
+                  />
+                ))}
+              </>
+            )}
+          />
+        )}
+        {errors.eligibleExpertIds?.message !== undefined && (
+          <p className="text-sm text-destructive">
+            {errors.eligibleExpertIds.message}
+          </p>
+        )}
+      </fieldset>
       <div className="flex items-center gap-4">
         <Button type="submit" disabled={isSubmitting}>
           Save
@@ -165,6 +216,29 @@ export function ConsultationOfferingForm({
         )}
       </div>
     </form>
+  )
+}
+
+/** A checkbox with its label. */
+function ExpertCheckbox({
+  label,
+  checked,
+  onCheckedChange,
+}: {
+  label: string
+  checked: boolean
+  onCheckedChange: (checked: boolean) => void
+}) {
+  const id = useId()
+  return (
+    <div className="flex items-center gap-2">
+      <Checkbox
+        id={id}
+        checked={checked}
+        onCheckedChange={(state) => onCheckedChange(state === true)}
+      />
+      <Label htmlFor={id}>{label}</Label>
+    </div>
   )
 }
 

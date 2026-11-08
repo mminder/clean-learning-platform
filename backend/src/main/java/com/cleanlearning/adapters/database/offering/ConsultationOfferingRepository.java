@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 
 import com.cleanlearning.adapters.database.offering.entity.ConsultationPackageEntity;
+import com.cleanlearning.adapters.database.offering.entity.EligibleExpertEntity;
 import com.cleanlearning.adapters.database.offering.entity.OfferingEntity;
 import com.cleanlearning.adapters.database.offering.row.ConsultationOfferingSummaryRow;
 
@@ -31,4 +32,8 @@ interface ConsultationOfferingRepository extends Repository<OfferingEntity, UUID
     /** The offering's packages as managed entities, for the adapter to read and to write. */
     @Query("select p from ConsultationPackageEntity p where p.consultationOfferingId = :consultationOfferingId")
     List<ConsultationPackageEntity> findPackageEntities(UUID consultationOfferingId);
+
+    /** The offering's eligible experts as managed entities, for the adapter to read and to write. */
+    @Query("select e from EligibleExpertEntity e where e.consultationOfferingId = :consultationOfferingId")
+    List<EligibleExpertEntity> findEligibleExpertEntities(UUID consultationOfferingId);
 }

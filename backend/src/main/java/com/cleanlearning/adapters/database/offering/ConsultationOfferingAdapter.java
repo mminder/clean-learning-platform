@@ -1,8 +1,10 @@
 package com.cleanlearning.adapters.database.offering;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import com.cleanlearning.adapters.database.offering.entity.ConsultationOfferingEntity;
 import com.cleanlearning.adapters.database.offering.entity.ConsultationPackageEntity;
+import com.cleanlearning.adapters.database.offering.entity.EligibleExpertEntity;
 import com.cleanlearning.adapters.database.offering.entity.OfferingEntity;
 import com.cleanlearning.adapters.database.offering.row.ConsultationOfferingSummaryRow;
 import com.cleanlearning.application.offering.LoadConsultationOfferingPort;
@@ -28,6 +31,7 @@ import com.cleanlearning.domain.offering.value.OfferingType;
 import com.cleanlearning.domain.offering.value.SessionCount;
 import com.cleanlearning.domain.offering.value.SessionDuration;
 import com.cleanlearning.domain.shared.value.Money;
+import com.cleanlearning.domain.user.value.UserId;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
@@ -81,6 +85,8 @@ class ConsultationOfferingAdapter implements LoadConsultationOfferingSummariesPo
         entityManager.persist(new ConsultationOfferingEntity(id, offering.sessionDuration().minutes(),
                 offering.cancellationDeadline().hours()));
         offering.packages().forEach(consultationPackage -> entityManager.persist(newEntity(id, consultationPackage)));
+        offering.eligibleExpertIds().forEach(expertId -> entityManager.persist(
+                new EligibleExpertEntity(id, expertId.value())));
     }
 
     /** Changes the managed entities, which the transaction writes when it commits. */
@@ -95,6 +101,7 @@ class ConsultationOfferingAdapter implements LoadConsultationOfferingSummariesPo
         consultationOfferingEntity.setSessionDurationMinutes(offering.sessionDuration().minutes());
         consultationOfferingEntity.setCancellationDeadlineHours(offering.cancellationDeadline().hours());
         writePackages(id, offering.packages());
+        writeEligibleExperts(id, offering.eligibleExpertIds());
     }
 
     /**
@@ -115,6 +122,24 @@ class ConsultationOfferingAdapter implements LoadConsultationOfferingSummariesPo
             }
         }
         loaded.values().forEach(entityManager::remove);
+    }
+
+    /**
+     * Writes only the difference to the loaded eligible experts, like the packages: deletes the dropped rows and
+     * inserts the new ones. A row is never deleted and inserted again in one transaction, which would insert first.
+     */
+    private void writeEligibleExperts(UUID offeringId, Set<UserId> eligibleExpertIds) {
+        Set<UUID> wanted = eligibleExpertIds.stream().map(UserId::value).collect(Collectors.toSet());
+        Set<UUID> loaded = new HashSet<>();
+        for (EligibleExpertEntity entity : repository.findEligibleExpertEntities(offeringId)) {
+            if (wanted.contains(entity.getExpertId())) {
+                loaded.add(entity.getExpertId());
+            } else {
+                entityManager.remove(entity);
+            }
+        }
+        wanted.stream().filter(expertId -> !loaded.contains(expertId))
+                .forEach(expertId -> entityManager.persist(new EligibleExpertEntity(offeringId, expertId)));
     }
 
     private static ConsultationPackageEntity newEntity(UUID offeringId, ConsultationPackage consultationPackage) {
@@ -140,10 +165,12 @@ class ConsultationOfferingAdapter implements LoadConsultationOfferingSummariesPo
             ConsultationOfferingEntity consultationOffering) {
         List<ConsultationPackage> packages = repository.findPackageEntities(offering.getId()).stream()
                 .map(ConsultationOfferingAdapter::toConsultationPackage).toList();
+        Set<UserId> eligibleExpertIds = repository.findEligibleExpertEntities(offering.getId()).stream()
+                .map(entity -> new UserId(entity.getExpertId())).collect(Collectors.toSet());
         return new ConsultationOffering(new OfferingId(offering.getId()), new OfferingName(offering.getName()),
                 offering.getDescription(), new SessionDuration(consultationOffering.getSessionDurationMinutes()),
                 new CancellationDeadline(consultationOffering.getCancellationDeadlineHours()), offering.getStatus(),
-                packages);
+                packages, eligibleExpertIds);
     }
 
     private static ConsultationPackage toConsultationPackage(ConsultationPackageEntity entity) {

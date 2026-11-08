@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 
 import com.cleanlearning.adapters.database.user.entity.UserEntity;
+import com.cleanlearning.adapters.database.user.row.ExpertRow;
 import com.cleanlearning.adapters.database.user.row.UserRoleRow;
 
 interface UserRepository extends Repository<UserEntity, UUID> {
@@ -32,4 +33,17 @@ interface UserRepository extends Repository<UserEntity, UUID> {
             where u.id = :id
             """)
     List<UserRoleRow> findWithRoles(UUID id);
+
+    /**
+     * The users with {@code EXPERT} that have an expert profile, in one query, sorted by display name (the column is
+     * ICU-collated, so alphabetically), then id.
+     */
+    @Query("""
+            select new com.cleanlearning.adapters.database.user.row.ExpertRow(p.userId, p.displayName)
+            from ExpertProfileEntity p
+            join UserRoleEntity r on r.userId = p.userId
+            where r.role = com.cleanlearning.domain.user.value.Role.EXPERT
+            order by p.displayName, p.userId
+            """)
+    List<ExpertRow> findExperts();
 }

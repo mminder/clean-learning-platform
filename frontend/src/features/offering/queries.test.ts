@@ -16,9 +16,10 @@ describe('toRequest', () => {
         price: { amount: '450.00', currency: 'CHF' },
       },
     ],
+    eligibleExpertIds: ['00000000-0000-0000-0000-000000000202'],
   }
 
-  it('keeps each package with its id, and its price as the amount', () => {
+  it('keeps each package with its id and its price as the amount, and the eligible experts', () => {
     expect(toRequest(offering)).toEqual({
       name: 'Career Coaching',
       description: 'One-to-one sessions.',
@@ -31,6 +32,7 @@ describe('toRequest', () => {
           price: '450.00',
         },
       ],
+      eligibleExpertIds: ['00000000-0000-0000-0000-000000000202'],
     })
   })
 

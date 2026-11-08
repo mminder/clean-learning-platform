@@ -12,13 +12,16 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 import com.cleanlearning.adapters.database.user.row.UserRoleRow;
+import com.cleanlearning.application.user.LoadExpertsPort;
 import com.cleanlearning.application.user.LoadUserPort;
 import com.cleanlearning.application.user.LoadUsersPort;
+import com.cleanlearning.domain.user.Expert;
 import com.cleanlearning.domain.user.User;
+import com.cleanlearning.domain.user.value.DisplayName;
 import com.cleanlearning.domain.user.value.UserId;
 
 @Component
-class UserAdapter implements LoadUsersPort, LoadUserPort {
+class UserAdapter implements LoadUsersPort, LoadUserPort, LoadExpertsPort {
 
     private final UserRepository userRepository;
 
@@ -40,6 +43,12 @@ class UserAdapter implements LoadUsersPort, LoadUserPort {
     public Optional<User> load(UserId id) {
         List<UserRoleRow> rows = userRepository.findWithRoles(id.value());
         return rows.isEmpty() ? Optional.empty() : Optional.of(toUser(rows));
+    }
+
+    @Override
+    public List<Expert> loadExperts() {
+        return userRepository.findExperts().stream()
+                .map(row -> new Expert(new UserId(row.id()), new DisplayName(row.displayName()))).toList();
     }
 
     private static User toUser(List<UserRoleRow> rows) {

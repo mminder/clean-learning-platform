@@ -13,6 +13,7 @@ const newConsultationOffering: ConsultationOfferingRequest = {
   sessionDurationMinutes: NaN,
   cancellationDeadlineHours: NaN,
   packages: [],
+  eligibleExpertIds: [],
 }
 
 /** UC-16 steps 2–4: a new offering. Saving creates it as a draft and opens its page. */

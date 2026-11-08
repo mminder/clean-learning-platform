@@ -12,7 +12,7 @@ export type ConsultationOffering =
 
 /**
  * The form's values for a saved offering. A package keeps its `id`, which the form never shows: it travels with the
- * row, so a save names the packages it keeps (UC-16 step 3).
+ * row, so a save names the packages it keeps (UC-16 step 3). The eligible experts are the ids of the checked boxes.
  */
 export function toRequest({
   name,
@@ -20,6 +20,7 @@ export function toRequest({
   sessionDurationMinutes,
   cancellationDeadlineHours,
   packages,
+  eligibleExpertIds,
 }: ConsultationOffering): ConsultationOfferingRequest {
   return {
     name,
@@ -31,6 +32,7 @@ export function toRequest({
       sessionCount,
       price: price.amount,
     })),
+    eligibleExpertIds,
   }
 }
 

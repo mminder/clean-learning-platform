@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -17,24 +18,37 @@ import com.cleanlearning.domain.offering.value.OfferingStatus;
 import com.cleanlearning.domain.offering.value.SessionCount;
 import com.cleanlearning.domain.offering.value.SessionDuration;
 import com.cleanlearning.domain.shared.value.Money;
+import com.cleanlearning.domain.user.Expert;
+import com.cleanlearning.domain.user.value.DisplayName;
+import com.cleanlearning.domain.user.value.UserId;
 
 class ConsultationOfferingTest {
 
     private static final OfferingName AGILE_COACHING = new OfferingName("Agile Coaching");
 
+    private static final Expert EXPERT_1 = expert("00000000-0000-0000-0000-000000000201", "Expert 1");
+
+    private static final Expert EXPERT_2 = expert("00000000-0000-0000-0000-000000000202", "Expert 2");
+
+    private static final List<Expert> EXPERTS = List.of(EXPERT_1, EXPERT_2);
+
+    private static Expert expert(String id, String displayName) {
+        return new Expert(new UserId(UUID.fromString(id)), new DisplayName(displayName));
+    }
+
     private static ConsultationOffering agileCoaching() {
         return ConsultationOffering.create(AGILE_COACHING, "Coaching for agile teams.", new SessionDuration(45),
-                new CancellationDeadline(48), List.of());
+                new CancellationDeadline(48), List.of(), Set.of(), EXPERTS);
     }
 
     private static ConsultationOffering agileCoachingWith(ConsultationPackageEntry... packages) {
         return ConsultationOffering.create(AGILE_COACHING, "Coaching for agile teams.", new SessionDuration(45),
-                new CancellationDeadline(48), List.of(packages));
+                new CancellationDeadline(48), List.of(packages), Set.of(), EXPERTS);
     }
 
     private static ConsultationOffering edit(ConsultationOffering offering, ConsultationPackageEntry... packages) {
         return offering.edit(AGILE_COACHING, "Coaching for agile teams.", new SessionDuration(45),
-                new CancellationDeadline(48), List.of(packages));
+                new CancellationDeadline(48), List.of(packages), offering.eligibleExpertIds(), EXPERTS);
     }
 
     private static ConsultationPackageEntry added(int sessionCount, String price) {
@@ -57,6 +71,7 @@ class ConsultationOfferingTest {
         assertThat(offering.sessionDuration()).isEqualTo(new SessionDuration(45));
         assertThat(offering.cancellationDeadline()).isEqualTo(new CancellationDeadline(48));
         assertThat(offering.packages()).isEmpty();
+        assertThat(offering.eligibleExpertIds()).isEmpty();
     }
 
     @Test
@@ -69,10 +84,11 @@ class ConsultationOfferingTest {
         ConsultationOffering offering = agileCoaching();
 
         ConsultationOffering edited = offering.edit(new OfferingName("Lean Coaching"), "", new SessionDuration(60),
-                new CancellationDeadline(0), List.of());
+                new CancellationDeadline(0), List.of(), Set.of(EXPERT_2.id()), EXPERTS);
 
         assertThat(edited).isEqualTo(new ConsultationOffering(offering.id(), new OfferingName("Lean Coaching"), "",
-                new SessionDuration(60), new CancellationDeadline(0), OfferingStatus.DRAFT, List.of()));
+                new SessionDuration(60), new CancellationDeadline(0), OfferingStatus.DRAFT, List.of(),
+                Set.of(EXPERT_2.id())));
     }
 
     @Test
@@ -80,7 +96,7 @@ class ConsultationOfferingTest {
         ConsultationOffering agileCoaching = agileCoaching();
         ConsultationOffering published = new ConsultationOffering(agileCoaching.id(), agileCoaching.name(),
                 agileCoaching.description(), agileCoaching.sessionDuration(), agileCoaching.cancellationDeadline(),
-                OfferingStatus.PUBLISHED, List.of());
+                OfferingStatus.PUBLISHED, List.of(), Set.of());
 
         assertThat(edit(published).status()).isEqualTo(OfferingStatus.PUBLISHED);
     }
@@ -88,9 +104,9 @@ class ConsultationOfferingTest {
     @Test
     void theDescriptionMayBeEmptyButNotNull() {
         assertThat(ConsultationOffering.create(AGILE_COACHING, "", new SessionDuration(45),
-                new CancellationDeadline(48), List.of()).description()).isEmpty();
+                new CancellationDeadline(48), List.of(), Set.of(), EXPERTS).description()).isEmpty();
         assertThatNullPointerException().isThrownBy(() -> ConsultationOffering.create(AGILE_COACHING, null,
-                new SessionDuration(45), new CancellationDeadline(48), List.of()));
+                new SessionDuration(45), new CancellationDeadline(48), List.of(), Set.of(), EXPERTS));
     }
 
     @Test
@@ -123,7 +139,7 @@ class ConsultationOfferingTest {
 
         ConsultationOffering offering = new ConsultationOffering(new OfferingId(UUID.randomUUID()), AGILE_COACHING, "",
                 new SessionDuration(45), new CancellationDeadline(48), OfferingStatus.DRAFT,
-                List.of(three, oneB, oneA));
+                List.of(three, oneB, oneA), Set.of());
 
         // oneB's id starts with ff: as signed numbers it would sort first, as the database sorts a uuid it's last.
         assertThat(offering.packages()).containsExactly(oneA, oneB, three);
@@ -181,6 +197,52 @@ class ConsultationOfferingTest {
         ConsultationPackage only = offering.packages().getFirst();
 
         assertThatIllegalArgumentException().isThrownBy(() -> edit(offering, kept(only, 1, "160"), kept(only, 2, "300")));
+    }
+
+    @Test
+    void aNewOfferingMayHaveEligibleExperts() {
+        ConsultationOffering offering = ConsultationOffering.create(AGILE_COACHING, "", new SessionDuration(45),
+                new CancellationDeadline(48), List.of(), Set.of(EXPERT_1.id(), EXPERT_2.id()), EXPERTS);
+
+        assertThat(offering.eligibleExpertIds()).containsExactlyInAnyOrder(EXPERT_1.id(), EXPERT_2.id());
+    }
+
+    @Test
+    void anEditReplacesTheEligibleExperts() {
+        ConsultationOffering offering = agileCoaching().edit(AGILE_COACHING, "", new SessionDuration(45),
+                new CancellationDeadline(48), List.of(), Set.of(EXPERT_1.id()), EXPERTS);
+
+        ConsultationOffering edited = offering.edit(AGILE_COACHING, "", new SessionDuration(45),
+                new CancellationDeadline(48), List.of(), Set.of(EXPERT_2.id()), EXPERTS);
+
+        assertThat(edited.eligibleExpertIds()).containsExactly(EXPERT_2.id());
+    }
+
+    @Test
+    void anEditMayRemoveEveryEligibleExpert() {
+        ConsultationOffering offering = agileCoaching().edit(AGILE_COACHING, "", new SessionDuration(45),
+                new CancellationDeadline(48), List.of(), Set.of(EXPERT_1.id(), EXPERT_2.id()), EXPERTS);
+
+        assertThat(offering.edit(AGILE_COACHING, "", new SessionDuration(45), new CancellationDeadline(48),
+                List.of(), Set.of(), EXPERTS).eligibleExpertIds()).isEmpty();
+    }
+
+    @Test
+    void anIdThatIsNoExpertIsRejectedOnCreateAndOnEdit() {
+        UserId customer = new UserId(UUID.fromString("00000000-0000-0000-0000-000000000101"));
+
+        assertThatIllegalArgumentException().isThrownBy(() -> ConsultationOffering.create(AGILE_COACHING, "",
+                new SessionDuration(45), new CancellationDeadline(48), List.of(), Set.of(EXPERT_1.id(), customer),
+                EXPERTS)).withMessageContaining(customer.value().toString());
+        assertThatIllegalArgumentException().isThrownBy(() -> agileCoaching().edit(AGILE_COACHING, "",
+                new SessionDuration(45), new CancellationDeadline(48), List.of(), Set.of(customer), EXPERTS))
+                .withMessageContaining(customer.value().toString());
+    }
+
+    @Test
+    void noExpertsAtAllMeansNoIdIsAnExpert() {
+        assertThatIllegalArgumentException().isThrownBy(() -> ConsultationOffering.create(AGILE_COACHING, "",
+                new SessionDuration(45), new CancellationDeadline(48), List.of(), Set.of(EXPERT_1.id()), List.of()));
     }
 
     private static ConsultationPackageId id(String uuid) {

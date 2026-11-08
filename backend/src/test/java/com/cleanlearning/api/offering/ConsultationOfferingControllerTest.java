@@ -4,9 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.context.jdbc.Sql.ExecutionPhase.AFTER_TEST_METHOD;
 
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +45,8 @@ class ConsultationOfferingControllerTest {
               "description": "Coaching for agile teams.",
               "sessionDurationMinutes": 45,
               "cancellationDeadlineHours": 48,
-              "packages": []
+              "packages": [],
+              "eligibleExpertIds": []
             }
             """;
 
@@ -53,7 +56,8 @@ class ConsultationOfferingControllerTest {
               "description": "Coaching for lean teams.",
               "sessionDurationMinutes": 90,
               "cancellationDeadlineHours": 0,
-              "packages": []
+              "packages": [],
+              "eligibleExpertIds": []
             }
             """;
 
@@ -164,7 +168,8 @@ class ConsultationOfferingControllerTest {
                   "status": "DRAFT",
                   "sessionDurationMinutes": 45,
                   "cancellationDeadlineHours": 48,
-                  "packages": []
+                  "packages": [],
+                  "eligibleExpertIds": []
                 }
                 """.formatted(id);
         assertThat(created).bodyJson().isStrictlyEqualTo(expected);
@@ -209,7 +214,8 @@ class ConsultationOfferingControllerTest {
                   "status": "DRAFT",
                   "sessionDurationMinutes": 90,
                   "cancellationDeadlineHours": 0,
-                  "packages": []
+                  "packages": [],
+                  "eligibleExpertIds": []
                 }
                 """.formatted(id);
         assertThat(edited).hasStatusOk().bodyJson().isStrictlyEqualTo(expected);
@@ -221,7 +227,7 @@ class ConsultationOfferingControllerTest {
     void savesAnEmptyDescription() {
         assertThat(post("""
                 { "name": "Agile Coaching", "description": "", "sessionDurationMinutes": 45,
-                  "cancellationDeadlineHours": 48, "packages": [] }
+                  "cancellationDeadlineHours": 48, "packages": [], "eligibleExpertIds": [] }
                 """))
                 .hasStatus(HttpStatus.CREATED)
                 .bodyJson().extractingPath("$.description").isEqualTo("");
@@ -238,7 +244,7 @@ class ConsultationOfferingControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         { "name": " ", "description": "", "sessionDurationMinutes": 0,
-                          "cancellationDeadlineHours": -1, "packages": [] }
+                          "cancellationDeadlineHours": -1, "packages": [], "eligibleExpertIds": [] }
                         """)
                 .exchange();
 
@@ -267,12 +273,13 @@ class ConsultationOfferingControllerTest {
         // An empty number field in the form is sent as null.
         assertThat(post("""
                 { "name": null, "description": null, "sessionDurationMinutes": null,
-                  "cancellationDeadlineHours": null, "packages": null }
+                  "cancellationDeadlineHours": null, "packages": null, "eligibleExpertIds": null }
                 """))
                 .hasStatus(HttpStatus.BAD_REQUEST)
                 .bodyJson().extractingPath("$.errors").isEqualTo(List.of(
                         error("cancellationDeadlineHours", "must not be null"),
                         error("description", "must not be null"),
+                        error("eligibleExpertIds", "must not be null"),
                         error("name", "must not be blank"),
                         error("packages", "must not be null"),
                         error("sessionDurationMinutes", "must not be null")));
@@ -284,7 +291,7 @@ class ConsultationOfferingControllerTest {
         // Not cut to 45 and saved: a whole-number field doesn't accept a decimal (accept-float-as-int).
         assertThat(post("""
                 { "name": "Agile Coaching", "description": "", "sessionDurationMinutes": 45.5,
-                  "cancellationDeadlineHours": 48, "packages": [] }
+                  "cancellationDeadlineHours": 48, "packages": [], "eligibleExpertIds": [] }
                 """))
                 .hasStatus(HttpStatus.BAD_REQUEST)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
@@ -306,7 +313,7 @@ class ConsultationOfferingControllerTest {
 
         assertThat(put(id, """
                 { "name": "", "description": "", "sessionDurationMinutes": -5, "cancellationDeadlineHours": 1,
-                  "packages": [] }
+                  "packages": [], "eligibleExpertIds": [] }
                 """))
                 .hasStatus(HttpStatus.BAD_REQUEST)
                 .bodyJson().extractingPath("$.errors").isEqualTo(List.of(
@@ -321,7 +328,7 @@ class ConsultationOfferingControllerTest {
         // Bean Validation's @NotBlank lets it through; OfferingName rejects it.
         assertThat(post("""
                 { "name": "\u00A0\u202F", "description": "", "sessionDurationMinutes": 45,
-                  "cancellationDeadlineHours": 48, "packages": [] }
+                  "cancellationDeadlineHours": 48, "packages": [], "eligibleExpertIds": [] }
                 """))
                 .hasStatus(HttpStatus.BAD_REQUEST)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
@@ -412,17 +419,22 @@ class ConsultationOfferingControllerTest {
 
     private static final String PRICE_MESSAGE = "must be an amount in CHF with at most two decimals";
 
-    /** The request body for an offering with these packages, a JSON array. */
+    /** The request body for an offering with these packages, a JSON array, and no eligible experts. */
     private static String withPackages(String packages) {
+        return withPackagesAndExperts(packages, "[]");
+    }
+
+    private static String withPackagesAndExperts(String packages, String eligibleExpertIds) {
         return """
                 {
                   "name": "Agile Coaching",
                   "description": "Coaching for agile teams.",
                   "sessionDurationMinutes": 45,
                   "cancellationDeadlineHours": 48,
-                  "packages": %s
+                  "packages": %s,
+                  "eligibleExpertIds": %s
                 }
-                """.formatted(packages);
+                """.formatted(packages, eligibleExpertIds);
     }
 
     private static String aPackage(String id, int sessionCount, String price) {
@@ -618,6 +630,152 @@ class ConsultationOfferingControllerTest {
         // a package added again brings it back
         assertThat(put(agileCoaching, withPackages("[" + aNewPackage(2, "300") + "]"))).hasStatusOk();
         assertThat(mockMvc.get().uri("/api/shop/offerings/{id}", agileCoaching)).hasStatusOk();
+    }
+
+    // Eligible experts (task 05)
+
+    private static final String EXPERT_1 = SeedData.EXPERT_1.toString();
+
+    private static final String EXPERT_2 = SeedData.EXPERT_2.toString();
+
+    private static String ids(String... ids) {
+        return Arrays.stream(ids).map(id -> "\"" + id + "\"").collect(Collectors.joining(",", "[", "]"));
+    }
+
+    private static String withExperts(String eligibleExpertIds) {
+        return withPackagesAndExperts("[]", eligibleExpertIds);
+    }
+
+    private List<String> eligibleExpertRows(String offeringId) {
+        return jdbc.sql("select expert_id::text from eligible_expert where consultation_offering_id = :id order by 1")
+                .param("id", UUID.fromString(offeringId)).query(String.class).list();
+    }
+
+    @Test
+    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    void createsAnOfferingWithEligibleExpertsSortedAndCountedOnce() throws Exception {
+        MvcTestResult created = post(withExperts(ids(EXPERT_2, EXPERT_1, EXPERT_2)));
+
+        assertThat(created).hasStatus(HttpStatus.CREATED);
+        assertThat(created).bodyJson().extractingPath("$.eligibleExpertIds").asArray()
+                .containsExactly(EXPERT_1, EXPERT_2);
+        String id = json(created, "$.id");
+        assertThat(get(id).exchange().getResponse().getContentAsString())
+                .isEqualTo(created.getResponse().getContentAsString());
+        assertThat(eligibleExpertRows(id)).containsExactly(EXPERT_1, EXPERT_2);
+        assertThat(list()).bodyJson().extractingPath("$[0].eligibleExpertCount").isEqualTo(2);
+    }
+
+    @Test
+    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    void anEditReplacesTheEligibleExpertsAndLeavesAKeptRowAlone() throws Exception {
+        String id = json(post(withExperts(ids(EXPERT_1, EXPERT_2))), "$.id");
+        OffsetDateTime keptBefore = expertRowUpdatedAt(id, EXPERT_2);
+
+        MvcTestResult edited = put(id, withExperts(ids(EXPERT_2)));
+
+        assertThat(edited).hasStatusOk().bodyJson().extractingPath("$.eligibleExpertIds").asArray()
+                .containsExactly(EXPERT_2);
+        assertThat(eligibleExpertRows(id)).containsExactly(EXPERT_2);
+        assertThat(expertRowUpdatedAt(id, EXPERT_2)).isEqualTo(keptBefore);
+        assertThat(get(id)).bodyJson().extractingPath("$.eligibleExpertIds").asArray().containsExactly(EXPERT_2);
+
+        // swapped: the dropped expert comes back as a new row, in the same save as the other one leaves
+        assertThat(put(id, withExperts(ids(EXPERT_1)))).hasStatusOk();
+        assertThat(eligibleExpertRows(id)).containsExactly(EXPERT_1);
+    }
+
+    @Test
+    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    void anEditMayRemoveEveryEligibleExpert() throws Exception {
+        String id = json(post(withExperts(ids(EXPERT_1, EXPERT_2))), "$.id");
+
+        assertThat(put(id, withExperts("[]"))).hasStatusOk()
+                .bodyJson().extractingPath("$.eligibleExpertIds").asArray().isEmpty();
+
+        assertThat(eligibleExpertRows(id)).isEmpty();
+    }
+
+    @Test
+    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    void answersAnIdThatIsNoExpertWithBadRequestAndChangesNothing() throws Exception {
+        String id = json(post(withExperts(ids(EXPERT_1))), "$.id");
+        for (String notAnExpert : List.of(SeedData.CUSTOMER_1.toString(), SeedData.ADMIN_1.toString(), UNKNOWN_ID)) {
+            // one valid expert next to it: the whole save fails
+            assertThat(put(id, withExperts(ids(EXPERT_2, notAnExpert))))
+                    .hasStatus(HttpStatus.BAD_REQUEST)
+                    .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                    .bodyJson().isStrictlyEqualTo("""
+                            {
+                              "title": "Bad Request",
+                              "status": 400,
+                              "detail": "User %s is not an expert.",
+                              "instance": "%s/%s"
+                            }
+                            """.formatted(notAnExpert, PATH, id));
+            assertThat(post(withExperts(ids(notAnExpert)))).hasStatus(HttpStatus.BAD_REQUEST);
+        }
+
+        assertThat(eligibleExpertRows(id)).containsExactly(EXPERT_1);
+        assertThat(list()).bodyJson().extractingPath("$[*].name").asArray()
+                .containsExactly("Agile Coaching", "Career Coaching");
+    }
+
+    @Test
+    @Sql("/com/cleanlearning/api/user/users-that-are-not-offered-as-experts.sql")
+    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = "/com/cleanlearning/api/user/delete-users-that-are-not-offered-as-experts.sql",
+            executionPhase = AFTER_TEST_METHOD)
+    void answersAnExpertWithoutProfileAndAProfileWithoutTheRoleWithBadRequest() {
+        // Without the profile the foreign key would answer 500; without the role the user isn't an expert.
+        assertThat(post(withExperts(ids("00000000-0000-0000-0000-000000009101"))))
+                .hasStatus(HttpStatus.BAD_REQUEST);
+        assertThat(post(withExperts(ids("00000000-0000-0000-0000-000000009102"))))
+                .hasStatus(HttpStatus.BAD_REQUEST);
+        assertThat(list()).bodyJson().extractingPath("$[*].name").asArray().containsExactly("Career Coaching");
+    }
+
+    @Test
+    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    void answersAMissingOrMalformedExpertIdWithBadRequest() {
+        assertThat(post(withExperts("[null]")))
+                .hasStatus(HttpStatus.BAD_REQUEST)
+                .bodyJson().extractingPath("$.errors").isEqualTo(List.of(
+                        error("eligibleExpertIds[0]", "must not be null")));
+        assertThat(post(withExperts("[\"not-a-uuid\"]"))).hasStatus(HttpStatus.BAD_REQUEST);
+        assertThat(list()).bodyJson().extractingPath("$[*].name").asArray().containsExactly("Career Coaching");
+    }
+
+    @Test
+    @Sql(SHOP + "more-published-offerings.sql")
+    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    void theShopListsTheExpertsTheAdminChoseAndKeepsAnOfferingWithoutExperts() {
+        String agileCoaching = "00000000-0000-0000-0000-000000009003";
+        String packages = "[" + aPackage("00000000-0000-0000-0000-000000009031", 1, "250.00") + ","
+                + aPackage("00000000-0000-0000-0000-000000009032", 4, "900.00") + "]";
+
+        assertThat(put(agileCoaching, withPackagesAndExperts(packages, ids(EXPERT_2)))).hasStatusOk();
+        assertThat(mockMvc.get().uri("/api/shop/offerings/{id}", agileCoaching))
+                .hasStatusOk()
+                .bodyJson().extractingPath("$.consultation.eligibleExperts[*].displayName").asArray()
+                .containsExactly("Expert 2");
+
+        // The shop needs a package, not an expert: with every expert removed, the offering stays.
+        assertThat(put(agileCoaching, withPackagesAndExperts(packages, "[]"))).hasStatusOk()
+                .bodyJson().extractingPath("$.status").isEqualTo("PUBLISHED");
+        assertThat(mockMvc.get().uri("/api/shop/offerings"))
+                .bodyJson().extractingPath("$[*].name").asArray()
+                .containsExactly("Agile Coaching", "Ärger-Coaching", "Career Coaching");
+        assertThat(mockMvc.get().uri("/api/shop/offerings/{id}", agileCoaching))
+                .hasStatusOk()
+                .bodyJson().extractingPath("$.consultation.eligibleExperts").asArray().isEmpty();
+    }
+
+    private OffsetDateTime expertRowUpdatedAt(String offeringId, String expertId) {
+        return jdbc.sql("select updated_at from eligible_expert where consultation_offering_id = :id "
+                + "and expert_id = :expertId")
+                .param("id", UUID.fromString(offeringId)).param("expertId", UUID.fromString(expertId))
+                .query((row, rowNumber) -> row.getObject("updated_at", OffsetDateTime.class)).single();
     }
 
     /** The timestamps of the offering's package rows, fewest sessions first. */

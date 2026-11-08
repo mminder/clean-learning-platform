@@ -3,12 +3,13 @@ package com.cleanlearning.application.offering;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.cleanlearning.application.user.LoadExpertsPort;
 import com.cleanlearning.domain.offering.ConsultationOffering;
 import com.cleanlearning.domain.offering.value.OfferingId;
 import com.cleanlearning.domain.shared.NotFoundException;
 
 /**
- * UC-16 steps 3–4: the admin saves an existing consultation offering. It replaces the offering's fields and packages; a published
+ * UC-16 steps 3–4: the admin saves an existing consultation offering. It replaces the offering's fields, packages and eligible experts; a published
  * offering's changes show in the shop at once.
  */
 @Service
@@ -18,22 +19,27 @@ public class EditConsultationOfferingUseCase {
 
     private final SaveConsultationOfferingPort saveOffering;
 
+    private final LoadExpertsPort loadExperts;
+
     EditConsultationOfferingUseCase(LockConsultationOfferingPort lockOffering,
-            SaveConsultationOfferingPort saveOffering) {
+            SaveConsultationOfferingPort saveOffering, LoadExpertsPort loadExperts) {
         this.lockOffering = lockOffering;
         this.saveOffering = saveOffering;
+        this.loadExperts = loadExperts;
     }
 
     /**
      * @throws NotFoundException if there's no consultation offering with this id
-     * @throws IllegalArgumentException if a package id isn't one of this offering's
+     * @throws IllegalArgumentException if a package id isn't one of this offering's, or an eligible expert id
+     *     isn't an expert's
      */
     @Transactional
     public ConsultationOffering invoke(OfferingId id, ConsultationOfferingCommand command) {
         ConsultationOffering offering = lockOffering.lock(id)
                 .orElseThrow(() -> new NotFoundException("Offering " + id.value() + " not found."));
         ConsultationOffering edited = offering.edit(command.name(), command.description(), command.sessionDuration(),
-                command.cancellationDeadline(), command.packages());
+                command.cancellationDeadline(), command.packages(), command.eligibleExpertIds(),
+                loadExperts.loadExperts());
         saveOffering.update(edited);
         return edited;
     }

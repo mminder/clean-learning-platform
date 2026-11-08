@@ -78,3 +78,20 @@ export function useLogout() {
     onSuccess: () => window.location.assign('/'),
   })
 }
+
+/** The experts an admin can make eligible for an offering (UC-16), sorted by display name. */
+export function useExperts() {
+  return useQuery({
+    queryKey: ['admin', 'experts'],
+    queryFn: async () => {
+      const { data, response } = await client.GET('/api/admin/experts')
+      if (data === undefined) {
+        throw new ApiError(
+          `Loading the experts failed: ${response.status}`,
+          response.status,
+        )
+      }
+      return data
+    },
+  })
+}

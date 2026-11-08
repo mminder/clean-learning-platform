@@ -36,6 +36,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/experts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listExperts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/logout": {
         parameters: {
             query?: never;
@@ -148,6 +164,7 @@ export interface components {
             /** Format: int32 */
             cancellationDeadlineHours: number;
             description: string;
+            eligibleExpertIds: string[];
             name: string;
             packages: components["schemas"]["ConsultationPackageRequest"][];
             /** Format: int32 */
@@ -157,6 +174,7 @@ export interface components {
             /** Format: int32 */
             cancellationDeadlineHours: number;
             description: string;
+            eligibleExpertIds: string[];
             /** Format: uuid */
             id: string;
             name: string;
@@ -193,6 +211,11 @@ export interface components {
         };
         EligibleExpertResponse: {
             bio: string;
+            displayName: string;
+            /** Format: uuid */
+            id: string;
+        };
+        ExpertResponse: {
             displayName: string;
             /** Format: uuid */
             id: string;
@@ -406,6 +429,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConsultationOfferingResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    listExperts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpertResponse"][];
                 };
             };
             /** @description Bad Request */

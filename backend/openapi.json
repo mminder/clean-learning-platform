@@ -197,6 +197,47 @@
         "tags" : [ "consultation-offering-controller" ]
       }
     },
+    "/api/admin/experts" : {
+      "get" : {
+        "operationId" : "listExperts",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ExpertResponse"
+                  }
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "expert-controller" ]
+      }
+    },
     "/api/logout" : {
       "post" : {
         "operationId" : "logOut",
@@ -463,6 +504,13 @@
           "description" : {
             "type" : "string"
           },
+          "eligibleExpertIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
+          },
           "name" : {
             "type" : "string",
             "minLength" : 1
@@ -479,7 +527,7 @@
             "exclusiveMinimum" : 0
           }
         },
-        "required" : [ "cancellationDeadlineHours", "description", "name", "packages", "sessionDurationMinutes" ]
+        "required" : [ "cancellationDeadlineHours", "description", "eligibleExpertIds", "name", "packages", "sessionDurationMinutes" ]
       },
       "ConsultationOfferingResponse" : {
         "type" : "object",
@@ -490,6 +538,13 @@
           },
           "description" : {
             "type" : "string"
+          },
+          "eligibleExpertIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
           },
           "id" : {
             "type" : "string",
@@ -513,7 +568,7 @@
             "enum" : [ "DRAFT", "PUBLISHED", "ARCHIVED" ]
           }
         },
-        "required" : [ "cancellationDeadlineHours", "description", "id", "name", "packages", "sessionDurationMinutes", "status" ]
+        "required" : [ "cancellationDeadlineHours", "description", "eligibleExpertIds", "id", "name", "packages", "sessionDurationMinutes", "status" ]
       },
       "ConsultationOfferingSummaryResponse" : {
         "type" : "object",
@@ -591,6 +646,19 @@
           }
         },
         "required" : [ "bio", "displayName", "id" ]
+      },
+      "ExpertResponse" : {
+        "type" : "object",
+        "properties" : {
+          "displayName" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "displayName", "id" ]
       },
       "MeResponse" : {
         "type" : "object",
