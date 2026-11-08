@@ -24,6 +24,10 @@ PoC (profile poc)                              MVP (OIDC)
 - **`GET /api/me`** returns `{ id, name, email, roles }`, or 401 with an empty body. Name, email and roles are read fresh from the database. The SPA uses it identically in the PoC and the MVP.
 - **Logout:** Spring Security's logout filter at `POST /api/logout` (it needs the CSRF token): it invalidates the session, deletes the `JSESSIONID` and `XSRF-TOKEN` cookies and answers 204. It runs before authorization, so a visitor's logout is a harmless 204. `/logout` is nothing special. `openapi.json` lists the route (`OpenApiConfig`), so the SPA calls it through the generated client. In the MVP it also performs OIDC RP-initiated logout.
 - **PoC login** (`/api/poc/**`) is registered only in the `poc` profile, so it doesn't exist in production. `POST /api/poc/login` does what Spring Security's own logins do: a new session id (session fixation) and a new CSRF token, through the `SessionAuthenticationStrategy` bean, then it saves the authentication through the `SecurityContextRepository` bean, the one the filter chain reads. An OIDC login (MVP) ends in the same session.
+- **Known gaps (hardening, by MVP hosting at the latest):**
+  - The `XSRF-TOKEN` cookie has no `SameSite` attribute.
+  - The public, cacheable `GET /api/images/{id}` response can carry `Set-Cookie: XSRF-TOKEN` on a visitor's first request. Before a CDN or shared cache sits in front, keep the CSRF cookie off `/api/images/**` or keep the cache from storing `Set-Cookie` ([task 07 of increment 02](../tasks/02-manage-consultation-offerings/07-offering-image.md#notes)).
+  - `HEAD /api/images/{id}` answers 401: the public matcher allows only `GET`.
 - **IdP:** Keycloak locally (docker-compose, realm import). The production IdP is open; only standard OIDC is used, so switching needs only configuration.
 
 ### Just-in-time provisioning (MVP)

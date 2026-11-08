@@ -57,6 +57,7 @@ A user can hold several roles. The header shows a section for each of them, and 
 - Per-user time zone, multiple UI languages
 - An availability check before purchase
 - Attendance or no-show tracking
+- A guard for unsaved form edits, e.g. when the admin publishes, unpublishes or archives an offering with a changed form ([UC-16](uc-16-manage-consultation-offering.md))
 
 ## Template
 

@@ -34,6 +34,8 @@ The admin decides who is an expert or an admin.
 
 - May an admin revoke their own `ADMIN` role? Proposal: no, to prevent lock-out.
 - What happens when `EXPERT` is revoked while the expert has future appointments or assigned runs? Proposal: block it until those are handed over.
+- What happens to the offerings a revoked expert is eligible for? Today the offering form hides the expert but still sends their id, so its save answers 400 ([task 05 of increment 02](../tasks/02-manage-consultation-offerings/05-eligible-experts.md#notes)).
+- A session whose user no longer exists: `GET /api/me` answers 404 today; 401 with the session ended fits better.
 
 ## Visibility and authorization
 
