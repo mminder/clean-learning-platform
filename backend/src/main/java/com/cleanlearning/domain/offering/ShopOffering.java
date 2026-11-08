@@ -4,7 +4,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import com.cleanlearning.domain.shared.Money;
+import com.cleanlearning.domain.offering.value.OfferingId;
+import com.cleanlearning.domain.offering.value.OfferingType;
+import com.cleanlearning.domain.shared.value.Money;
 
 /**
  * An offering as a card in the shop (UC-02). The price is what the card shows: for a consultation offering, the price

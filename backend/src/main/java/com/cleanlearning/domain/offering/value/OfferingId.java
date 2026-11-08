@@ -1,4 +1,4 @@
-package com.cleanlearning.domain.offering;
+package com.cleanlearning.domain.offering.value;
 
 import java.util.Objects;
 import java.util.UUID;

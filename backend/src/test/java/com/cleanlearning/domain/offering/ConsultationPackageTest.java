@@ -8,7 +8,8 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
-import com.cleanlearning.domain.shared.Money;
+import com.cleanlearning.domain.offering.value.ConsultationPackageId;
+import com.cleanlearning.domain.shared.value.Money;
 
 class ConsultationPackageTest {
 

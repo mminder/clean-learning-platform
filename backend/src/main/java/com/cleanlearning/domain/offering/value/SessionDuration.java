@@ -1,4 +1,4 @@
-package com.cleanlearning.domain.offering;
+package com.cleanlearning.domain.offering.value;
 
 /**
  * How long one session of a consultation offering takes, in minutes.

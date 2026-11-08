@@ -1,4 +1,4 @@
-package com.cleanlearning.domain.offering;
+package com.cleanlearning.domain.offering.value;
 
 /**
  * How many hours before a session it can still be cancelled for free. Zero means until the session starts.

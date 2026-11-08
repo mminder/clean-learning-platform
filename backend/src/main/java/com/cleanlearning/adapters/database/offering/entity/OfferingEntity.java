@@ -2,7 +2,7 @@ package com.cleanlearning.adapters.database.offering.entity;
 
 import java.util.UUID;
 
-import com.cleanlearning.domain.offering.OfferingType;
+import com.cleanlearning.domain.offering.value.OfferingType;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

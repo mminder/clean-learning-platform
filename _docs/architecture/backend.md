@@ -30,8 +30,8 @@ com.cleanlearning
 │  ├─ availability
 │  ├─ user
 │  └─ image
-├─ domain                     POJOs + value objects, no framework imports
-│  ├─ shared                  Money, CancellationDeadline, TimeRange, ...
+├─ domain                     models + value objects (in value/), no framework imports
+│  ├─ shared                  NotFoundException; value: Money, TimeRange, ...
 │  ├─ consultation            e.g. SlotFinder, CaseCredits, CaseCancellation
 │  ├─ training
 │  ├─ offering
@@ -121,6 +121,7 @@ class BookConsultationAppointmentUseCase {
 - POJOs and `record` value objects without framework imports. All business rules live here and are unit tested.
 - **Value objects** (examples): `Money` (CHF), `CancellationDeadline` (hours), `SessionDuration`, `TimeRange`, `LocalTimeSlot`, `Seats`, `EmailAddress`, typed ids (`CaseId`, `UserId`, …).
 - **Use-case-specific domain objects** are encouraged, e.g. `CaseForBooking` and `CaseForCancellation` instead of one big `Case`.
+- **Models and value objects.** In `domain.<feature>`, the models a use case works with sit at the top, and the value objects in `value`. A value object describes one thing by its value (an amount, a duration, an id, a type) and depends only on Java and other value objects; ArchUnit checks this, so a class that needs a model is a model itself. Typed ids are value objects, so several models can share one, like `OfferingId`. Shared value objects live in `domain.shared.value`.
 - **Derived state is computed, never stored:** `CONSUMED`, `COMPLETED`, open credits, refund eligibility before cancellation, link visibility.
 - **Rules as constants in one place:** slot grid 30 min, minimum notice 24 h, link window 1 h (D-10, D-19).
 - Methods that depend on the current time take a `Clock` or an `Instant now`.

@@ -1,4 +1,4 @@
-package com.cleanlearning.domain.shared;
+package com.cleanlearning.domain.shared.value;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

@@ -11,8 +11,13 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
-import com.cleanlearning.domain.shared.Money;
-import com.cleanlearning.domain.user.UserId;
+import com.cleanlearning.domain.offering.value.CancellationDeadline;
+import com.cleanlearning.domain.offering.value.ConsultationPackageId;
+import com.cleanlearning.domain.offering.value.OfferingId;
+import com.cleanlearning.domain.offering.value.OfferingType;
+import com.cleanlearning.domain.offering.value.SessionDuration;
+import com.cleanlearning.domain.shared.value.Money;
+import com.cleanlearning.domain.user.value.UserId;
 
 class ShopConsultationOfferingTest {
 

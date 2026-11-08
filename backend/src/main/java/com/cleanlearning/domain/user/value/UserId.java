@@ -1,4 +1,4 @@
-package com.cleanlearning.domain.user;
+package com.cleanlearning.domain.user.value;
 
 import java.util.Objects;
 import java.util.UUID;

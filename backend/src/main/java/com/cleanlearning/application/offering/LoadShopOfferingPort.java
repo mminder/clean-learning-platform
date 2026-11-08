@@ -2,8 +2,8 @@ package com.cleanlearning.application.offering;
 
 import java.util.Optional;
 
-import com.cleanlearning.domain.offering.OfferingId;
 import com.cleanlearning.domain.offering.ShopConsultationOffering;
+import com.cleanlearning.domain.offering.value.OfferingId;
 
 public interface LoadShopOfferingPort {
 

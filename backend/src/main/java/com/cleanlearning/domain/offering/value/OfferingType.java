@@ -1,4 +1,4 @@
-package com.cleanlearning.domain.offering;
+package com.cleanlearning.domain.offering.value;
 
 /**
  * What an offering sells. {@code TRAINING} comes with trainings.

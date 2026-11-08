@@ -2,7 +2,8 @@ package com.cleanlearning.domain.offering;
 
 import java.util.Objects;
 
-import com.cleanlearning.domain.shared.Money;
+import com.cleanlearning.domain.offering.value.ConsultationPackageId;
+import com.cleanlearning.domain.shared.value.Money;
 
 /**
  * A package of a consultation offering: a number of sessions for a price, for example 3 sessions for CHF 450.

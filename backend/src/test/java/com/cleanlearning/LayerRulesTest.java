@@ -35,6 +35,7 @@ class LayerRulesTest {
     private static final String API_RESPONSES = "com.cleanlearning.api..response";
     private static final String APPLICATION = "com.cleanlearning.application..";
     private static final String DOMAIN = "com.cleanlearning.domain..";
+    private static final String DOMAIN_VALUES = "com.cleanlearning.domain..value";
     private static final String ADAPTERS_DATABASE = "com.cleanlearning.adapters.database..";
     private static final String ADAPTER_ENTITIES = "com.cleanlearning.adapters.database.*.entity";
     private static final String ADAPTER_ROWS = "com.cleanlearning.adapters.database.*.row";
@@ -57,6 +58,12 @@ class LayerRulesTest {
     static final ArchRule domainDependsOnlyOnJavaAndDomain = classes()
             .that().resideInAPackage(DOMAIN)
             .should().onlyDependOnClassesThat().resideInAnyPackage("java..", DOMAIN);
+
+    /** Models use value objects, never the other way round: a class that needs a model is a model. */
+    @ArchTest
+    static final ArchRule valueObjectsDependOnlyOnJavaAndValueObjects = classes()
+            .that().resideInAPackage(DOMAIN_VALUES)
+            .should().onlyDependOnClassesThat().resideInAnyPackage("java..", DOMAIN_VALUES);
 
     @ArchTest
     static final ArchRule applicationIsFreeOfJpa = noClasses()

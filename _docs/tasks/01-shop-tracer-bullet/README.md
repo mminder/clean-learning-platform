@@ -61,9 +61,11 @@ These major versions are new, and most examples online are for older ones. Check
 | `api.shop` | `ShopController` |
 | `api.shop.response` | `ShopOfferingResponse`, `ShopOfferingDetailResponse`, `ConsultationOfferingDetailResponse`, `ConsultationPackageResponse`, `EligibleExpertResponse` |
 | `application.offering` | `ListShopOfferingsUseCase`, `GetShopOfferingUseCase`, `LoadShopOfferingsPort`, `LoadShopOfferingPort` |
-| `domain.shared` | `Money`, `NotFoundException` |
-| `domain.offering` | `OfferingId`, `OfferingType`, `ShopOffering`, `ShopConsultationOffering`, `ConsultationPackage`, `ConsultationPackageId`, `EligibleExpert`, `SessionDuration`, `CancellationDeadline` |
-| `domain.user` | `UserId` |
+| `domain.shared` | `NotFoundException` |
+| `domain.shared.value` | `Money` |
+| `domain.offering` | `ShopOffering`, `ShopConsultationOffering`, `ConsultationPackage`, `EligibleExpert` |
+| `domain.offering.value` | `OfferingId`, `OfferingType`, `ConsultationPackageId`, `SessionDuration`, `CancellationDeadline` |
+| `domain.user.value` | `UserId` |
 | `adapters.database.offering` | JPA entities, Spring Data repositories, and `ShopOfferingAdapter`, which implements both ports |
 
 Map only what this increment reads. For example, there's no JPA entity for `app_user` until UC-01 needs one. The adapter may join the user tables to load eligible experts ([D-23](../../decisions.md#architecture)).

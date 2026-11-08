@@ -15,16 +15,16 @@ import com.cleanlearning.adapters.database.offering.row.ShopConsultationOffering
 import com.cleanlearning.adapters.database.offering.row.ShopOfferingPriceRow;
 import com.cleanlearning.application.offering.LoadShopOfferingPort;
 import com.cleanlearning.application.offering.LoadShopOfferingsPort;
-import com.cleanlearning.domain.offering.CancellationDeadline;
 import com.cleanlearning.domain.offering.ConsultationPackage;
-import com.cleanlearning.domain.offering.ConsultationPackageId;
 import com.cleanlearning.domain.offering.EligibleExpert;
-import com.cleanlearning.domain.offering.OfferingId;
-import com.cleanlearning.domain.offering.SessionDuration;
 import com.cleanlearning.domain.offering.ShopConsultationOffering;
 import com.cleanlearning.domain.offering.ShopOffering;
-import com.cleanlearning.domain.shared.Money;
-import com.cleanlearning.domain.user.UserId;
+import com.cleanlearning.domain.offering.value.CancellationDeadline;
+import com.cleanlearning.domain.offering.value.ConsultationPackageId;
+import com.cleanlearning.domain.offering.value.OfferingId;
+import com.cleanlearning.domain.offering.value.SessionDuration;
+import com.cleanlearning.domain.shared.value.Money;
+import com.cleanlearning.domain.user.value.UserId;
 
 @Component
 class ShopOfferingAdapter implements LoadShopOfferingsPort, LoadShopOfferingPort {

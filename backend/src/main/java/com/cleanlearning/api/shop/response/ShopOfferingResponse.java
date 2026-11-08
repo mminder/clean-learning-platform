@@ -3,8 +3,8 @@ package com.cleanlearning.api.shop.response;
 import java.util.UUID;
 
 import com.cleanlearning.api.response.MoneyResponse;
-import com.cleanlearning.domain.offering.OfferingType;
 import com.cleanlearning.domain.offering.ShopOffering;
+import com.cleanlearning.domain.offering.value.OfferingType;
 
 /**
  * An offering card in the shop. For a consultation offering, the price is its cheapest package ("from").

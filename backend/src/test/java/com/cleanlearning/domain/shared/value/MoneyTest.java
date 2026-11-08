@@ -1,4 +1,4 @@
-package com.cleanlearning.domain.shared;
+package com.cleanlearning.domain.shared.value;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;

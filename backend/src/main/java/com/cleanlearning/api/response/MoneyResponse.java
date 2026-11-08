@@ -1,6 +1,6 @@
 package com.cleanlearning.api.response;
 
-import com.cleanlearning.domain.shared.Money;
+import com.cleanlearning.domain.shared.value.Money;
 
 /**
  * Money as JSON: the amount is a string with two decimals, for example {@code "450.00"}. Shared by every feature's

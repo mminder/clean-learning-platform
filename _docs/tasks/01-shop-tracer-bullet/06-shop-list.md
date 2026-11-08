@@ -20,7 +20,7 @@ Work in this order, test first:
 1. **A failing REST test** for `GET /api/shop/offerings` that expects Career Coaching at "450.00".
 2. **Schema and seed:** `V1__create_offering.sql` and `V1_1__seed_offering.sql` as in the plan's [schema](README.md#schema). Give Career Coaching a description of a few sentences, so the card has to shorten it.
 3. **Domain**, test first:
-   - `Money` in `domain.shared`: CHF only, two decimals, not negative, compared by value (`450.0` equals `450.00`);
+   - `Money` in `domain.shared.value`: CHF only, two decimals, not negative, compared by value (`450.0` equals `450.00`);
    - `OfferingId` and `OfferingType` (`CONSULTATION`);
    - `ShopOffering` (id, type, name, description, price). A factory for consultation offerings takes the package prices and picks the cheapest, and it rejects an empty list.
 4. **Port and adapter:** `LoadShopOfferingsPort` returns the published offerings sorted by name. `ShopOfferingAdapter` loads them with their package prices in one query (no N+1) and maps them by hand.

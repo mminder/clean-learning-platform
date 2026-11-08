@@ -48,9 +48,9 @@ Work arrives as tasks. Follow [working on a task](_docs/tasks/README.md#working-
 
 Details: [_docs/architecture/backend.md](_docs/architecture/backend.md).
 
-- Root packages `api`, `application`, `domain`, `adapters.database` (plus `config`). Each has the feature sub-packages `user`, `offering`, `consultation`, `training`, `availability`, `image`; `api` also has `shop`, the public catalog endpoints. Shared value objects live in `domain.shared`.
+- Root packages `api`, `application`, `domain`, `adapters.database` (plus `config`). Each has the feature sub-packages `user`, `offering`, `consultation`, `training`, `availability`, `image`; `api` also has `shop`, the public catalog endpoints. Shared value objects live in `domain.shared.value`.
 - Each use case is one `@Service` class named `<Verb><Noun>UseCase` in `application.<feature>`. It has one public method named `invoke`, which is `@Transactional` and contains flow only.
-- Business rules live in `domain` POJOs and records. `domain` has no Spring or JPA imports.
+- Business rules live in `domain` POJOs and records. `domain` has no Spring or JPA imports. In `domain.<feature>`, the models sit at the top and the value objects in `value`; a value object depends only on Java and other value objects.
 - Outgoing ports are interfaces named `<Purpose>Port` in `application.<feature>`. They are narrow and use-case specific, and implemented in `adapters.database.<feature>`. There are no incoming ports: controllers call use cases directly.
 - Controllers pass `CurrentUser` explicitly into use cases. Ownership is enforced by scoped port queries; a resource that isn't yours returns 404.
 - In `api.<feature>`, the controllers sit at the top, the `*Response` records in `response` and the `*Request` records in `request`. Responses that several features return live in `api.response`.

@@ -9,7 +9,9 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
-import com.cleanlearning.domain.shared.Money;
+import com.cleanlearning.domain.offering.value.OfferingId;
+import com.cleanlearning.domain.offering.value.OfferingType;
+import com.cleanlearning.domain.shared.value.Money;
 
 class ShopOfferingTest {
 

@@ -12,7 +12,7 @@ import com.cleanlearning.api.shop.response.ShopOfferingDetailResponse;
 import com.cleanlearning.api.shop.response.ShopOfferingResponse;
 import com.cleanlearning.application.offering.GetShopOfferingUseCase;
 import com.cleanlearning.application.offering.ListShopOfferingsUseCase;
-import com.cleanlearning.domain.offering.OfferingId;
+import com.cleanlearning.domain.offering.value.OfferingId;
 
 /**
  * The public shop (UC-02).
