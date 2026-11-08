@@ -149,6 +149,7 @@ export interface components {
             cancellationDeadlineHours: number;
             description: string;
             name: string;
+            packages: components["schemas"]["ConsultationPackageRequest"][];
             /** Format: int32 */
             sessionDurationMinutes: number;
         };
@@ -159,6 +160,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             name: string;
+            packages: components["schemas"]["ConsultationPackageResponse"][];
             /** Format: int32 */
             sessionDurationMinutes: number;
             /** @enum {string} */
@@ -174,6 +176,13 @@ export interface components {
             packageCount: number;
             /** @enum {string} */
             status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+        };
+        ConsultationPackageRequest: {
+            /** Format: uuid */
+            id?: string;
+            price: string;
+            /** Format: int32 */
+            sessionCount: number;
         };
         ConsultationPackageResponse: {
             /** Format: uuid */

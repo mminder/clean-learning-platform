@@ -467,13 +467,19 @@
             "type" : "string",
             "minLength" : 1
           },
+          "packages" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ConsultationPackageRequest"
+            }
+          },
           "sessionDurationMinutes" : {
             "type" : "integer",
             "format" : "int32",
             "exclusiveMinimum" : 0
           }
         },
-        "required" : [ "cancellationDeadlineHours", "description", "name", "sessionDurationMinutes" ]
+        "required" : [ "cancellationDeadlineHours", "description", "name", "packages", "sessionDurationMinutes" ]
       },
       "ConsultationOfferingResponse" : {
         "type" : "object",
@@ -492,6 +498,12 @@
           "name" : {
             "type" : "string"
           },
+          "packages" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ConsultationPackageResponse"
+            }
+          },
           "sessionDurationMinutes" : {
             "type" : "integer",
             "format" : "int32"
@@ -501,7 +513,7 @@
             "enum" : [ "DRAFT", "PUBLISHED", "ARCHIVED" ]
           }
         },
-        "required" : [ "cancellationDeadlineHours", "description", "id", "name", "sessionDurationMinutes", "status" ]
+        "required" : [ "cancellationDeadlineHours", "description", "id", "name", "packages", "sessionDurationMinutes", "status" ]
       },
       "ConsultationOfferingSummaryResponse" : {
         "type" : "object",
@@ -527,6 +539,25 @@
           }
         },
         "required" : [ "eligibleExpertCount", "id", "name", "packageCount", "status" ]
+      },
+      "ConsultationPackageRequest" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "price" : {
+            "type" : "string",
+            "pattern" : "\\d{1,8}(\\.\\d{1,2})?"
+          },
+          "sessionCount" : {
+            "type" : "integer",
+            "format" : "int32",
+            "exclusiveMinimum" : 0
+          }
+        },
+        "required" : [ "price", "sessionCount" ]
       },
       "ConsultationPackageResponse" : {
         "type" : "object",

@@ -4,7 +4,11 @@ import { isBadRequest, isNotFound } from '@/lib/api-error'
 import { BackToConsultations } from './BackToConsultations'
 import { ConsultationOfferingForm } from './ConsultationOfferingForm'
 import { OfferingStatusBadge } from './OfferingStatusBadge'
-import { useConsultationOffering, useEditConsultationOffering } from './queries'
+import {
+  toRequest,
+  useConsultationOffering,
+  useEditConsultationOffering,
+} from './queries'
 
 /** UC-16 steps 2–4: an existing offering, with its status and its form. */
 export function ConsultationOfferingPage() {
@@ -36,13 +40,7 @@ export function ConsultationOfferingPage() {
     )
   }
 
-  const {
-    name,
-    status,
-    description,
-    sessionDurationMinutes,
-    cancellationDeadlineHours,
-  } = offering.data
+  const { name, status } = offering.data
   return (
     <div className="space-y-6">
       <BackToConsultations />
@@ -53,12 +51,7 @@ export function ConsultationOfferingPage() {
       <ConsultationOfferingForm
         // A new form for another offering; a reload of this one keeps what the admin is typing.
         key={id}
-        defaultValues={{
-          name,
-          description,
-          sessionDurationMinutes,
-          cancellationDeadlineHours,
-        }}
+        defaultValues={toRequest(offering.data)}
         onSave={(changed) => editOffering.mutateAsync(changed)}
       />
     </div>

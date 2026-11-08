@@ -1,12 +1,16 @@
 package com.cleanlearning.adapters.database.offering;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
 import com.cleanlearning.adapters.database.offering.entity.ConsultationOfferingEntity;
+import com.cleanlearning.adapters.database.offering.entity.ConsultationPackageEntity;
 import com.cleanlearning.adapters.database.offering.entity.OfferingEntity;
 import com.cleanlearning.adapters.database.offering.row.ConsultationOfferingSummaryRow;
 import com.cleanlearning.application.offering.LoadConsultationOfferingPort;
@@ -15,11 +19,15 @@ import com.cleanlearning.application.offering.LockConsultationOfferingPort;
 import com.cleanlearning.application.offering.SaveConsultationOfferingPort;
 import com.cleanlearning.domain.offering.ConsultationOffering;
 import com.cleanlearning.domain.offering.ConsultationOfferingSummary;
+import com.cleanlearning.domain.offering.ConsultationPackage;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
+import com.cleanlearning.domain.offering.value.ConsultationPackageId;
 import com.cleanlearning.domain.offering.value.OfferingId;
 import com.cleanlearning.domain.offering.value.OfferingName;
 import com.cleanlearning.domain.offering.value.OfferingType;
+import com.cleanlearning.domain.offering.value.SessionCount;
 import com.cleanlearning.domain.offering.value.SessionDuration;
+import com.cleanlearning.domain.shared.value.Money;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
@@ -72,6 +80,7 @@ class ConsultationOfferingAdapter implements LoadConsultationOfferingSummariesPo
                 offering.description(), offering.status()));
         entityManager.persist(new ConsultationOfferingEntity(id, offering.sessionDuration().minutes(),
                 offering.cancellationDeadline().hours()));
+        offering.packages().forEach(consultationPackage -> entityManager.persist(newEntity(id, consultationPackage)));
     }
 
     /** Changes the managed entities, which the transaction writes when it commits. */
@@ -85,6 +94,32 @@ class ConsultationOfferingAdapter implements LoadConsultationOfferingSummariesPo
         ConsultationOfferingEntity consultationOfferingEntity = existing(ConsultationOfferingEntity.class, id);
         consultationOfferingEntity.setSessionDurationMinutes(offering.sessionDuration().minutes());
         consultationOfferingEntity.setCancellationDeadlineHours(offering.cancellationDeadline().hours());
+        writePackages(id, offering.packages());
+    }
+
+    /**
+     * Writes only the difference to the loaded packages: deletes the dropped ones, updates the kept ones (the
+     * transaction writes a row only if a value changed) and inserts the new ones. A kept package is never deleted
+     * and inserted again.
+     */
+    private void writePackages(UUID offeringId, List<ConsultationPackage> packages) {
+        Map<UUID, ConsultationPackageEntity> loaded = repository.findPackageEntities(offeringId).stream()
+                .collect(Collectors.toMap(ConsultationPackageEntity::getId, Function.identity()));
+        for (ConsultationPackage consultationPackage : packages) {
+            ConsultationPackageEntity entity = loaded.remove(consultationPackage.id().value());
+            if (entity == null) {
+                entityManager.persist(newEntity(offeringId, consultationPackage));
+            } else {
+                entity.setSessionCount(consultationPackage.sessionCount().value());
+                entity.setPrice(consultationPackage.price().amount());
+            }
+        }
+        loaded.values().forEach(entityManager::remove);
+    }
+
+    private static ConsultationPackageEntity newEntity(UUID offeringId, ConsultationPackage consultationPackage) {
+        return new ConsultationPackageEntity(consultationPackage.id().value(), offeringId,
+                consultationPackage.sessionCount().value(), consultationPackage.price().amount());
     }
 
     /** A training offering (UC-17) has no {@code consultation_offering} row, so it isn't found here. */
@@ -101,11 +136,19 @@ class ConsultationOfferingAdapter implements LoadConsultationOfferingSummariesPo
         return entity;
     }
 
-    private static ConsultationOffering toConsultationOffering(OfferingEntity offering,
+    private ConsultationOffering toConsultationOffering(OfferingEntity offering,
             ConsultationOfferingEntity consultationOffering) {
+        List<ConsultationPackage> packages = repository.findPackageEntities(offering.getId()).stream()
+                .map(ConsultationOfferingAdapter::toConsultationPackage).toList();
         return new ConsultationOffering(new OfferingId(offering.getId()), new OfferingName(offering.getName()),
                 offering.getDescription(), new SessionDuration(consultationOffering.getSessionDurationMinutes()),
-                new CancellationDeadline(consultationOffering.getCancellationDeadlineHours()), offering.getStatus());
+                new CancellationDeadline(consultationOffering.getCancellationDeadlineHours()), offering.getStatus(),
+                packages);
+    }
+
+    private static ConsultationPackage toConsultationPackage(ConsultationPackageEntity entity) {
+        return new ConsultationPackage(new ConsultationPackageId(entity.getId()), new SessionCount(entity.getSessionCount()),
+                new Money(entity.getPrice()));
     }
 
     private static ConsultationOfferingSummary toSummary(ConsultationOfferingSummaryRow row) {

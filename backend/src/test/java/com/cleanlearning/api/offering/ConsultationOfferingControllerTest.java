@@ -42,7 +42,8 @@ class ConsultationOfferingControllerTest {
               "name": "Agile Coaching",
               "description": "Coaching for agile teams.",
               "sessionDurationMinutes": 45,
-              "cancellationDeadlineHours": 48
+              "cancellationDeadlineHours": 48,
+              "packages": []
             }
             """;
 
@@ -51,7 +52,8 @@ class ConsultationOfferingControllerTest {
               "name": "Lean Coaching",
               "description": "Coaching for lean teams.",
               "sessionDurationMinutes": 90,
-              "cancellationDeadlineHours": 0
+              "cancellationDeadlineHours": 0,
+              "packages": []
             }
             """;
 
@@ -161,7 +163,8 @@ class ConsultationOfferingControllerTest {
                   "description": "Coaching for agile teams.",
                   "status": "DRAFT",
                   "sessionDurationMinutes": 45,
-                  "cancellationDeadlineHours": 48
+                  "cancellationDeadlineHours": 48,
+                  "packages": []
                 }
                 """.formatted(id);
         assertThat(created).bodyJson().isStrictlyEqualTo(expected);
@@ -205,7 +208,8 @@ class ConsultationOfferingControllerTest {
                   "description": "Coaching for lean teams.",
                   "status": "DRAFT",
                   "sessionDurationMinutes": 90,
-                  "cancellationDeadlineHours": 0
+                  "cancellationDeadlineHours": 0,
+                  "packages": []
                 }
                 """.formatted(id);
         assertThat(edited).hasStatusOk().bodyJson().isStrictlyEqualTo(expected);
@@ -217,7 +221,7 @@ class ConsultationOfferingControllerTest {
     void savesAnEmptyDescription() {
         assertThat(post("""
                 { "name": "Agile Coaching", "description": "", "sessionDurationMinutes": 45,
-                  "cancellationDeadlineHours": 48 }
+                  "cancellationDeadlineHours": 48, "packages": [] }
                 """))
                 .hasStatus(HttpStatus.CREATED)
                 .bodyJson().extractingPath("$.description").isEqualTo("");
@@ -234,7 +238,7 @@ class ConsultationOfferingControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         { "name": " ", "description": "", "sessionDurationMinutes": 0,
-                          "cancellationDeadlineHours": -1 }
+                          "cancellationDeadlineHours": -1, "packages": [] }
                         """)
                 .exchange();
 
@@ -263,13 +267,14 @@ class ConsultationOfferingControllerTest {
         // An empty number field in the form is sent as null.
         assertThat(post("""
                 { "name": null, "description": null, "sessionDurationMinutes": null,
-                  "cancellationDeadlineHours": null }
+                  "cancellationDeadlineHours": null, "packages": null }
                 """))
                 .hasStatus(HttpStatus.BAD_REQUEST)
                 .bodyJson().extractingPath("$.errors").isEqualTo(List.of(
                         error("cancellationDeadlineHours", "must not be null"),
                         error("description", "must not be null"),
                         error("name", "must not be blank"),
+                        error("packages", "must not be null"),
                         error("sessionDurationMinutes", "must not be null")));
     }
 
@@ -279,7 +284,7 @@ class ConsultationOfferingControllerTest {
         // Not cut to 45 and saved: a whole-number field doesn't accept a decimal (accept-float-as-int).
         assertThat(post("""
                 { "name": "Agile Coaching", "description": "", "sessionDurationMinutes": 45.5,
-                  "cancellationDeadlineHours": 48 }
+                  "cancellationDeadlineHours": 48, "packages": [] }
                 """))
                 .hasStatus(HttpStatus.BAD_REQUEST)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
@@ -300,7 +305,8 @@ class ConsultationOfferingControllerTest {
         String id = createAgileCoaching();
 
         assertThat(put(id, """
-                { "name": "", "description": "", "sessionDurationMinutes": -5, "cancellationDeadlineHours": 1 }
+                { "name": "", "description": "", "sessionDurationMinutes": -5, "cancellationDeadlineHours": 1,
+                  "packages": [] }
                 """))
                 .hasStatus(HttpStatus.BAD_REQUEST)
                 .bodyJson().extractingPath("$.errors").isEqualTo(List.of(
@@ -315,7 +321,7 @@ class ConsultationOfferingControllerTest {
         // Bean Validation's @NotBlank lets it through; OfferingName rejects it.
         assertThat(post("""
                 { "name": "\u00A0\u202F", "description": "", "sessionDurationMinutes": 45,
-                  "cancellationDeadlineHours": 48 }
+                  "cancellationDeadlineHours": 48, "packages": [] }
                 """))
                 .hasStatus(HttpStatus.BAD_REQUEST)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
@@ -369,7 +375,13 @@ class ConsultationOfferingControllerTest {
     void editsOfAPublishedOfferingShowInTheShopAtOnce() {
         String agileCoaching = "00000000-0000-0000-0000-000000009003";
 
-        assertThat(put(agileCoaching, LEAN_COACHING)).hasStatusOk()
+        // PUT replaces the packages, too: the request keeps the two it has, or the offering would leave the shop.
+        assertThat(put(agileCoaching, LEAN_COACHING.replace("\"packages\": []", """
+                "packages": [
+                  { "id": "00000000-0000-0000-0000-000000009031", "sessionCount": 1, "price": "250.00" },
+                  { "id": "00000000-0000-0000-0000-000000009032", "sessionCount": 4, "price": "900.00" }
+                ]
+                """))).hasStatusOk()
                 .bodyJson().extractingPath("$.status").isEqualTo("PUBLISHED");
 
         assertThat(mockMvc.get().uri("/api/shop/offerings"))
@@ -394,6 +406,230 @@ class ConsultationOfferingControllerTest {
             assertThat(after.get(table).createdAt()).isEqualTo(before.get(table).createdAt());
             assertThat(after.get(table).updatedAt()).isAfter(before.get(table).updatedAt());
         }
+    }
+
+    // Packages (task 04)
+
+    private static final String PRICE_MESSAGE = "must be an amount in CHF with at most two decimals";
+
+    /** The request body for an offering with these packages, a JSON array. */
+    private static String withPackages(String packages) {
+        return """
+                {
+                  "name": "Agile Coaching",
+                  "description": "Coaching for agile teams.",
+                  "sessionDurationMinutes": 45,
+                  "cancellationDeadlineHours": 48,
+                  "packages": %s
+                }
+                """.formatted(packages);
+    }
+
+    private static String aPackage(String id, int sessionCount, String price) {
+        return """
+                { "id": "%s", "sessionCount": %d, "price": "%s" }""".formatted(id, sessionCount, price);
+    }
+
+    private static String aNewPackage(int sessionCount, String price) {
+        return """
+                { "sessionCount": %d, "price": "%s" }""".formatted(sessionCount, price);
+    }
+
+    private static String json(MvcTestResult result, String path) throws Exception {
+        return JsonPath.read(result.getResponse().getContentAsString(), path);
+    }
+
+    @Test
+    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    void createsAnOfferingWithPackagesFewestSessionsFirst() throws Exception {
+        MvcTestResult created = post(withPackages("[" + aNewPackage(4, "600") + "," + aNewPackage(1, "160.5") + "]"));
+
+        assertThat(created).hasStatus(HttpStatus.CREATED);
+        assertThat(created).bodyJson().extractingPath("$.packages[*].sessionCount").asArray().containsExactly(1, 4);
+        assertThat(created).bodyJson().extractingPath("$.packages[*].price").asArray().containsExactly(
+                Map.of("amount", "160.50", "currency", "CHF"), Map.of("amount", "600.00", "currency", "CHF"));
+        String id = json(created, "$.id");
+        MvcTestResult read = get(id).exchange();
+        assertThat(read.getResponse().getContentAsString()).isEqualTo(created.getResponse().getContentAsString());
+        assertThat(list()).bodyJson().extractingPath("$[0].packageCount").isEqualTo(2);
+    }
+
+    @Test
+    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    void anEditMatchesPackagesByIdAndWritesOnlyTheDifference() throws Exception {
+        MvcTestResult created = post(withPackages(
+                "[" + aNewPackage(1, "160") + "," + aNewPackage(3, "450") + "," + aNewPackage(5, "700") + "]"));
+        String id = json(created, "$.id");
+        String first = json(created, "$.packages[0].id");
+        String second = json(created, "$.packages[1].id");
+        String third = json(created, "$.packages[2].id");
+        List<Timestamps> before = packageTimestamps(id);
+
+        // changes the first, leaves out the second, keeps the third as it is and adds a new one
+        MvcTestResult edited = put(id, withPackages("[" + aPackage(first, 2, "300.00") + ","
+                + aPackage(third, 5, "700") + "," + aNewPackage(10, "1000") + "]"));
+
+        assertThat(edited).hasStatusOk();
+        assertThat(edited).bodyJson().extractingPath("$.packages[*].sessionCount").asArray()
+                .containsExactly(2, 5, 10);
+        assertThat(edited).bodyJson().extractingPath("$.packages[0].id").isEqualTo(first);
+        assertThat(edited).bodyJson().extractingPath("$.packages[0].price.amount").isEqualTo("300.00");
+        assertThat(edited).bodyJson().extractingPath("$.packages[1].id").isEqualTo(third);
+        String added = json(edited, "$.packages[2].id");
+        assertThat(added).isNotIn(first, second, third);
+        assertThat(get(id)).bodyJson().extractingPath("$.packages[*].id").asArray()
+                .containsExactly(first, third, added);
+
+        // The kept packages are updated or left alone, never deleted and inserted again.
+        List<Timestamps> after = packageTimestamps(id);
+        assertThat(after).hasSize(3);
+        assertThat(after.get(0).createdAt()).isEqualTo(before.get(0).createdAt());
+        assertThat(after.get(0).updatedAt()).isAfter(before.get(0).updatedAt());
+        assertThat(after.get(1).createdAt()).isEqualTo(before.get(2).createdAt());
+        assertThat(after.get(1).updatedAt()).isEqualTo(before.get(2).updatedAt());
+    }
+
+    @Test
+    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    void packagesMayShareASessionCountAndAreSortedByIdThen() throws Exception {
+        MvcTestResult created = post(withPackages("[" + aNewPackage(3, "450") + "," + aNewPackage(3, "400") + "]"));
+
+        assertThat(created).hasStatus(HttpStatus.CREATED);
+        List<String> ids = JsonPath.read(created.getResponse().getContentAsString(), "$.packages[*].id");
+        assertThat(ids).isSorted().hasSize(2);
+        assertThat(get(json(created, "$.id"))).bodyJson().extractingPath("$.packages[*].id").asArray()
+                .containsExactlyElementsOf(ids);
+    }
+
+    @Test
+    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    void answersInvalidPackagesWithEachFieldOfEachRow() {
+        String body = withPackages("[" + aNewPackage(1, "160") + "," + aNewPackage(0, "-1") + ","
+                + aNewPackage(2, "12.345") + "," + aNewPackage(3, "123456789") + "," + aNewPackage(4, "") + ","
+                + aNewPackage(5, "1e2") + "," + aNewPackage(6, "12,5") + ","
+                + "{ \"sessionCount\": null, \"price\": null }]");
+
+        assertThat(post(body))
+                .hasStatus(HttpStatus.BAD_REQUEST)
+                .bodyJson().extractingPath("$.errors").isEqualTo(List.of(
+                        error("packages[1].price", PRICE_MESSAGE),
+                        error("packages[1].sessionCount", "must be greater than 0"),
+                        error("packages[2].price", PRICE_MESSAGE),
+                        error("packages[3].price", PRICE_MESSAGE),
+                        error("packages[4].price", PRICE_MESSAGE),
+                        error("packages[5].price", PRICE_MESSAGE),
+                        error("packages[6].price", PRICE_MESSAGE),
+                        error("packages[7].price", "must not be null"),
+                        error("packages[7].sessionCount", "must not be null")));
+        assertThat(list()).bodyJson().extractingPath("$[*].name").asArray().containsExactly("Career Coaching");
+    }
+
+    @Test
+    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    void acceptsTheLargestAndTheSmallestPrice() {
+        assertThat(post(withPackages("[" + aNewPackage(1, "99999999.99") + "," + aNewPackage(2, "0") + "]")))
+                .hasStatus(HttpStatus.CREATED)
+                .bodyJson().extractingPath("$.packages[*].price.amount").asArray()
+                .containsExactly("99999999.99", "0.00");
+    }
+
+    @Test
+    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    void answersAMissingPackageEntryWithBadRequest() {
+        assertThat(post(withPackages("[null]")))
+                .hasStatus(HttpStatus.BAD_REQUEST)
+                .bodyJson().extractingPath("$.errors[*].message").asArray().containsExactly("must not be null");
+    }
+
+    @Test
+    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    void answersAPackageIdOfAnotherOfferingWithBadRequestAndChangesNothing() throws Exception {
+        String id = createAgileCoaching();
+        String foreign = SeedData.CAREER_COACHING_3_SESSIONS.toString();
+
+        assertThat(put(id, withPackages("[" + aPackage(foreign, 3, "1") + "]")))
+                .hasStatus(HttpStatus.BAD_REQUEST)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson().isStrictlyEqualTo("""
+                        {
+                          "title": "Bad Request",
+                          "status": 400,
+                          "detail": "Package %s is not a package of this offering.",
+                          "instance": "%s/%s"
+                        }
+                        """.formatted(foreign, PATH, id));
+        assertThat(put(id, withPackages("[" + aPackage(UNKNOWN_ID, 3, "1") + "]"))).hasStatus(HttpStatus.BAD_REQUEST);
+        // Career Coaching's package is untouched.
+        assertThat(get(SeedData.CAREER_COACHING)).bodyJson().extractingPath("$.packages[*].price.amount").asArray()
+                .containsExactly("450.00", "700.00");
+    }
+
+    @Test
+    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    void answersAPackageNamedTwiceWithBadRequest() throws Exception {
+        String id = json(post(withPackages("[" + aNewPackage(1, "160") + "]")), "$.id");
+        String pkg = json(get(id).exchange(), "$.packages[0].id");
+
+        assertThat(put(id, withPackages("[" + aPackage(pkg, 1, "160") + "," + aPackage(pkg, 2, "300") + "]")))
+                .hasStatus(HttpStatus.BAD_REQUEST);
+        assertThat(get(id)).bodyJson().extractingPath("$.packages[*].price.amount").asArray().containsExactly("160.00");
+    }
+
+    @Test
+    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    void answersAnyPackageIdOnPostWithBadRequest() {
+        assertThat(post(withPackages("[" + aPackage(UNKNOWN_ID, 1, "160") + "]")))
+                .hasStatus(HttpStatus.BAD_REQUEST)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+        assertThat(list()).bodyJson().extractingPath("$[*].name").asArray().containsExactly("Career Coaching");
+    }
+
+    @Test
+    @Sql(SHOP + "more-published-offerings.sql")
+    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    void aChangedPriceOfAPublishedOfferingShowsInTheShopAtOnce() {
+        String agileCoaching = "00000000-0000-0000-0000-000000009003";
+        String cheapest = "00000000-0000-0000-0000-000000009031";
+        String other = "00000000-0000-0000-0000-000000009032";
+
+        assertThat(put(agileCoaching, withPackages("[" + aPackage(cheapest, 1, "199.90") + ","
+                + aPackage(other, 4, "900") + "]"))).hasStatusOk();
+
+        assertThat(mockMvc.get().uri("/api/shop/offerings"))
+                .bodyJson().extractingPath("$[0].price").isEqualTo(Map.of("amount", "199.90", "currency", "CHF"));
+        assertThat(mockMvc.get().uri("/api/shop/offerings/{id}", agileCoaching))
+                .bodyJson().extractingPath("$.consultation.packages[0].price.amount").isEqualTo("199.90");
+    }
+
+    @Test
+    @Sql(SHOP + "more-published-offerings.sql")
+    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    void removingEveryPackageOfAPublishedOfferingHidesItFromTheShop() {
+        String agileCoaching = "00000000-0000-0000-0000-000000009003";
+
+        assertThat(put(agileCoaching, withPackages("[]"))).hasStatusOk()
+                .bodyJson().extractingPath("$.status").isEqualTo("PUBLISHED");
+
+        assertThat(get(agileCoaching)).bodyJson().extractingPath("$.packages").asArray().isEmpty();
+        assertThat(mockMvc.get().uri("/api/shop/offerings"))
+                .bodyJson().extractingPath("$[*].name").asArray().containsExactly("Ärger-Coaching", "Career Coaching");
+        assertThat(mockMvc.get().uri("/api/shop/offerings/{id}", agileCoaching)).hasStatus(HttpStatus.NOT_FOUND);
+
+        // a package added again brings it back
+        assertThat(put(agileCoaching, withPackages("[" + aNewPackage(2, "300") + "]"))).hasStatusOk();
+        assertThat(mockMvc.get().uri("/api/shop/offerings/{id}", agileCoaching)).hasStatusOk();
+    }
+
+    /** The timestamps of the offering's package rows, fewest sessions first. */
+    private List<Timestamps> packageTimestamps(String id) {
+        return jdbc.sql("""
+                select created_at, updated_at from consultation_package
+                where consultation_offering_id = :id order by session_count, id
+                """)
+                .param("id", UUID.fromString(id))
+                .query((row, rowNumber) -> new Timestamps(row.getObject("created_at", OffsetDateTime.class),
+                        row.getObject("updated_at", OffsetDateTime.class)))
+                .list();
     }
 
     /** The timestamps of the offering's {@code offering} and {@code consultation_offering} rows. */

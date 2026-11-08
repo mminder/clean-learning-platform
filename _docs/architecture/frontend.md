@@ -89,7 +89,8 @@ UC-16's `ConsultationOfferingForm` is the pattern ([increment 02](../tasks/02-ma
 - **React Hook Form**, with the generated `*Request` type as the form's values. One form serves the new and the edit page.
 - **No rules in the form.** Inputs have their types (text, number), but no `required` or `min`: the backend's 400 is the one source of the rules, and its messages show next to the fields.
 - **Number inputs** use `valueAsNumber`. An empty one is `NaN`, which JSON sends as `null`, so the backend answers "must not be null" next to the field. A new form starts with `NaN` for an empty number field.
-- **Saving** calls the mutation's `mutateAsync`. When it fails, `showSaveError` (`lib/problem.ts`) puts a 400's field errors on the fields with `setError`, or returns the message to show above the form. After a save, the saved values become the form's defaults (`reset`), and "Saved" shows until the next change.
+- **Saving** calls the mutation's `mutateAsync`. When it fails, `showSaveError` (`lib/problem.ts`) puts a 400's field errors on the fields with `setError`, or returns the message to show above the form. After a save, the saved offering's values become the form's defaults (`reset(toRequest(saved))`), and "Saved" shows until the next change. The saved offering, not the submitted values, because it carries the ids the server gave to new rows.
+- **Lists of rows** (the packages) use `useFieldArray`: one row per entry, **Remove** on each, **Add package** below. A row's server `id` stays in the form's values, unseen, so a save names the rows it keeps; `fields[i].id` is only React's key. A new row starts empty (`NaN` for a number, `''` for a text), not at 0. Field errors land on the row (`packages.1.price`).
 - **Mutations** invalidate what they change and return the invalidation, so they stay pending until the queries on the screen have reloaded.
 
 ## Errors

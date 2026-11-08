@@ -48,7 +48,7 @@ They build one form on one aggregate, so they touch the same controller, use cas
 | `domain.shared` | `BusinessRuleException`: a business rule says no; carries a stable `code` and a message for the user | 06 |
 | `domain.user` | `CurrentUser` (id, roles), `User` (id, name, email, roles), `Expert` (id, display name) | 01, 05 |
 | `domain.user.value` | `Role` (`CUSTOMER`, `EXPERT`, `ADMIN`) | 01 |
-| `domain.offering` | `ConsultationOfferingSummary`, `ConsultationOffering` (the admin's offering: fields, status, packages, eligible expert ids, image id; holds the UC-16 rules) | 02, 03 |
+| `domain.offering` | `ConsultationOfferingSummary`, `ConsultationOffering` (the admin's offering: fields, status, packages, eligible expert ids, image id; holds the UC-16 rules), `ConsultationPackageEntry` (a package as the form entered it: with the id it keeps, or without one for a new package) | 02, 03, 04 |
 | `domain.offering.value` | `OfferingStatus` (`DRAFT`, `PUBLISHED`, `ARCHIVED`) | 02 |
 | `domain.image` | `Image` (id, type, bytes; at most 2 MB, not empty) | 07 |
 | `domain.image.value` | `ImageId`, `ImageType` (`JPEG`, `PNG`, `WEBP`, with the content type and detection from the first bytes) | 07 |
@@ -142,7 +142,7 @@ offering   + image_id uuid null → image
 ```
 
 - **Roles** are listed in the order `CUSTOMER`, `EXPERT`, `ADMIN`.
-- **Price in a request** is a string: an amount in CHF, not negative, with at most two decimals and at most 8 digits before the point (the column is `numeric(10,2)`). One `@Pattern` checks all of it; its message says `must be an amount in CHF with at most two decimals`. Responses keep `MoneyResponse`.
+- **Price in a request** is a string: an amount in CHF, not negative, with at most two decimals and at most 8 digits before the point (the column is `numeric(10,2)`). One `@Pattern` checks all of it; its message says `must be an amount in CHF with at most two decimals`. `@NotNull` comes with it, because a missing price would pass the pattern, and so does `@NotNull` on each list entry. Responses keep `MoneyResponse`.
 - **Numbers in a request** are `Integer` with `@NotNull`, so a missing number is a 400, not a silent 0. A decimal in a whole-number field is a 400 too, not cut off (`spring.jackson.deserialization.accept-float-as-int: false`, API-wide); it's an unreadable body, so the 400 has no `errors` (03).
 - **`PUT` replaces** the fields, the packages and the eligible experts. A package with an id must be one of this offering's packages, otherwise 400; on `POST`, any package id is a 400. Duplicate expert ids count once.
 - **`imageId`** is added to `ShopOfferingResponse` and `ShopOfferingDetailResponse` too, `@Nullable` (07).
@@ -194,7 +194,7 @@ Every 409 in this table without a code of its own is `WRONG_OFFERING_STATUS`. Be
 
 - **Lock first.** Every use case that changes an offering (edit, publish, unpublish, archive, delete, image) loads it with `LockConsultationOfferingPort.lock(id)`: a row lock on its `offering` row, at the start of the transaction. It's JPA's `PESSIMISTIC_WRITE`, which Hibernate sends as `select … for no key update` (03): it waits for every other lock of the row, but not for a foreign key check's key-share lock, so every writer that must wait takes this lock itself ([backend.md](../../architecture/backend.md#concurrency)). An unknown id is a 404. This makes concurrent status changes wait for each other and keeps an archived offering read-only. The lock order is now offering → case → expert → run ([D-27](../../decisions.md#architecture)).
 - **The domain decides, the adapter writes.** `ConsultationOffering` returns the changed offering; `SaveConsultationOfferingPort.update` writes it.
-- **Packages are matched by id** (04). The domain keeps a package whose id the request names (with the new session count and price), creates a package with a new id for each entry without one, and drops the rest. The adapter deletes the dropped packages, updates the changed ones and inserts the new ones. It never deletes and re-inserts a package that's kept.
+- **Packages are matched by id** (04). The domain keeps a package whose id the request names (with the new session count and price), creates a package with a new id for each entry without one, and drops the rest. The adapter deletes the dropped packages, updates the changed ones and inserts the new ones. It never deletes and re-inserts a package that's kept. A package named twice is a 400, too. The domain keeps the packages sorted by session count, then by the id as text, which is the database's uuid order.
 - **Eligible experts** are a set of ids (05). The adapter may replace the offering's `eligible_expert` rows.
 - **New rows are persisted, not merged.** The application sets the ids, so Spring Data's `save()` would treat each new entity as existing and select it first. Insert new rows with `EntityManager.persist` (or make the entity `Persistable`). Entities gain writable fields and a constructor for this; they still map only the columns the adapter uses. `update` changes the managed entities, which the lock loaded in the same transaction (03).
 - **Delete** (06) removes the offering's `eligible_expert`, `consultation_package`, `consultation_offering` and `offering` rows, in that order, and from 07 its `image` row after the `offering` row.
@@ -223,7 +223,7 @@ frontend/src
    ├─ user/            LoginPage, landing.ts (landingPath, safe redirect), queries.ts (useMe, usePocUsers, useLogin, useLogout)
    ├─ offering/        ConsultationOfferingsPage, NewConsultationOfferingPage, ConsultationOfferingPage,
    │                   ConsultationOfferingForm, OfferingStatusBadge (03), BackToConsultations (03),
-   │                   OfferingStatusActions (06), OfferingImageSection (07), queries.ts
+   │                   OfferingStatusActions (06), OfferingImageSection (07), queries.ts (with toRequest: a saved offering as the form's values)
    └─ shop/            the card and the detail page show the image (07)
 ```
 

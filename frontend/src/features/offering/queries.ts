@@ -7,6 +7,33 @@ import { problemOf } from '@/lib/problem'
 export type ConsultationOfferingRequest =
   components['schemas']['ConsultationOfferingRequest']
 
+export type ConsultationOffering =
+  components['schemas']['ConsultationOfferingResponse']
+
+/**
+ * The form's values for a saved offering. A package keeps its `id`, which the form never shows: it travels with the
+ * row, so a save names the packages it keeps (UC-16 step 3).
+ */
+export function toRequest({
+  name,
+  description,
+  sessionDurationMinutes,
+  cancellationDeadlineHours,
+  packages,
+}: ConsultationOffering): ConsultationOfferingRequest {
+  return {
+    name,
+    description,
+    sessionDurationMinutes,
+    cancellationDeadlineHours,
+    packages: packages.map(({ id, sessionCount, price }) => ({
+      id,
+      sessionCount,
+      price: price.amount,
+    })),
+  }
+}
+
 // The list's key is the detail keys' prefix, so invalidating it invalidates every detail, too.
 const consultationOfferingsKey = ['admin', 'consultation-offerings']
 

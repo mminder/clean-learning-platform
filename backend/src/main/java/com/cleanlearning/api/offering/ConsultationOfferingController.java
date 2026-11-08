@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cleanlearning.api.offering.request.ConsultationOfferingRequest;
+import com.cleanlearning.api.offering.request.ConsultationPackageRequest;
 import com.cleanlearning.api.offering.response.ConsultationOfferingResponse;
 import com.cleanlearning.api.offering.response.ConsultationOfferingSummaryResponse;
 import com.cleanlearning.application.offering.ConsultationOfferingCommand;
@@ -24,10 +25,14 @@ import com.cleanlearning.application.offering.EditConsultationOfferingUseCase;
 import com.cleanlearning.application.offering.GetConsultationOfferingUseCase;
 import com.cleanlearning.application.offering.ListConsultationOfferingsUseCase;
 import com.cleanlearning.domain.offering.ConsultationOffering;
+import com.cleanlearning.domain.offering.ConsultationPackageEntry;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
+import com.cleanlearning.domain.offering.value.ConsultationPackageId;
 import com.cleanlearning.domain.offering.value.OfferingId;
 import com.cleanlearning.domain.offering.value.OfferingName;
+import com.cleanlearning.domain.offering.value.SessionCount;
 import com.cleanlearning.domain.offering.value.SessionDuration;
+import com.cleanlearning.domain.shared.value.Money;
 
 import jakarta.validation.Valid;
 
@@ -89,6 +94,14 @@ class ConsultationOfferingController {
     private static ConsultationOfferingCommand toCommand(ConsultationOfferingRequest request) {
         return new ConsultationOfferingCommand(new OfferingName(request.name()), request.description(),
                 new SessionDuration(request.sessionDurationMinutes()),
-                new CancellationDeadline(request.cancellationDeadlineHours()));
+                new CancellationDeadline(request.cancellationDeadlineHours()),
+                request.packages().stream().map(ConsultationOfferingController::toEntry).toList());
+    }
+
+    private static ConsultationPackageEntry toEntry(ConsultationPackageRequest request) {
+        SessionCount sessionCount = new SessionCount(request.sessionCount());
+        Money price = Money.chf(request.price());
+        return request.id() == null ? ConsultationPackageEntry.added(sessionCount, price)
+                : ConsultationPackageEntry.kept(new ConsultationPackageId(request.id()), sessionCount, price);
     }
 }

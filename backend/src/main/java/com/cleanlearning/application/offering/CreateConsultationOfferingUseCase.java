@@ -20,7 +20,7 @@ public class CreateConsultationOfferingUseCase {
     @Transactional
     public ConsultationOffering invoke(ConsultationOfferingCommand command) {
         ConsultationOffering offering = ConsultationOffering.create(command.name(), command.description(),
-                command.sessionDuration(), command.cancellationDeadline());
+                command.sessionDuration(), command.cancellationDeadline(), command.packages());
         saveOffering.create(offering);
         return offering;
     }
