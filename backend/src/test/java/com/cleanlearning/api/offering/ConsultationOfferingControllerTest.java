@@ -415,6 +415,19 @@ class ConsultationOfferingControllerTest {
     }
 
     @Test
+    void answersABodyThatIsNotJsonWithUnsupportedMediaType() {
+        assertThat(mockMvc.post().uri(PATH)
+                .with(LoggedIn.as(SeedData.ADMIN_1, Role.ADMIN))
+                .with(Csrf.token())
+                .contentType(MediaType.TEXT_PLAIN)
+                .content(AGILE_COACHING))
+                .hasStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson().extractingPath("$.status").isEqualTo(415);
+        assertThat(list()).bodyJson().extractingPath("$[*].name").asArray().containsExactly("Career Coaching");
+    }
+
+    @Test
     @Sql(SHOP + "more-published-offerings.sql")
     @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
     void editsOfAPublishedOfferingShowInTheShopAtOnce() {

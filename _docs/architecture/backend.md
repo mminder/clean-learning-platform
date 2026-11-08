@@ -190,14 +190,14 @@ Clients rely only on the status for the second group, never on its body ([D-34](
 
 **In `openapi.json`:** one shared `ProblemDetail` schema (D-34): `title`, `status`, `instance`, `detail`, `errors` for a 400, and `code` for a 409. `type` is optional: Spring leaves it out when it's `about:blank`, as it is for every body so far. `ProblemDetailSchemaCustomizer` builds it as the body is sent; the schema springdoc would derive from Spring's class has a `properties` map and neither `errors` nor `code`. The frontend reads only a 400's and a 409's body ([frontend](frontend.md#errors)).
 
-**Each route lists exactly the error answers it can give** from Spring MVC, as `application/problem+json` with that schema; 401, 403 and 500 stay out (D-34). The controller method declares them next to its mapping, with the meta-annotations of `ProblemResponses` (`api`):
+**Each route lists exactly the error answers it can give** from Spring MVC, as `application/problem+json` with that schema; 401, 403 and 500 stay out (D-34), and so do 405 and 406, which answer a method or an `Accept` header the contract doesn't offer. The controller method declares them next to its mapping, with the meta-annotations of `ProblemResponses` (`api`):
 
 | Annotation | When the route answers it |
 |---|---|
 | `@ProblemResponses.Status400` | 400: a malformed id in the path, an invalid or unreadable body, a value a value object rejects |
 | `@ProblemResponses.Status404` | 404: a `NotFoundException`, such as an unknown id |
 | `@ProblemResponses.Status409` | 409: a `BusinessRuleException` |
-| `@ProblemResponses.Status415` | 415: a body of another type than the route `consumes`, such as an upload that isn't multipart |
+| `@ProblemResponses.Status415` | 415: a body of another type than the route takes, on every route with a body: JSON sent as text, or an upload that isn't multipart |
 
 ```java
 @PostMapping("/{id}/publish")

@@ -120,6 +120,7 @@ class ConsultationOfferingController {
             description = "The new offering's URL, relative",
             schema = @Schema(type = "string", format = "uri-reference")))
     @ProblemResponses.Status400
+    @ProblemResponses.Status415
     ResponseEntity<ConsultationOfferingResponse> createConsultationOffering(
             @Valid @RequestBody ConsultationOfferingRequest request) {
         ConsultationOffering offering = createConsultationOffering.invoke(toCommand(request));
@@ -140,6 +141,7 @@ class ConsultationOfferingController {
     @ProblemResponses.Status400
     @ProblemResponses.Status404
     @ProblemResponses.Status409
+    @ProblemResponses.Status415
     ConsultationOfferingResponse editConsultationOffering(@PathVariable UUID id,
             @Valid @RequestBody ConsultationOfferingRequest request) {
         return ConsultationOfferingResponse.from(editConsultationOffering.invoke(new OfferingId(id),

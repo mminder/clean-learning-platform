@@ -70,6 +70,16 @@
               }
             },
             "description" : "Bad Request"
+          },
+          "415" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Unsupported Media Type"
           }
         },
         "tags" : [ "consultation-offering-controller" ]
@@ -230,6 +240,16 @@
               }
             },
             "description" : "Conflict"
+          },
+          "415" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Unsupported Media Type"
           }
         },
         "tags" : [ "consultation-offering-controller" ]
@@ -707,6 +727,16 @@
               }
             },
             "description" : "Not Found"
+          },
+          "415" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Unsupported Media Type"
           }
         },
         "tags" : [ "poc-login-controller" ]

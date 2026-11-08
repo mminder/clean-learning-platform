@@ -72,6 +72,7 @@ class PocLoginController {
     @ResponseStatus(HttpStatus.OK)
     @ProblemResponses.Status400
     @ProblemResponses.Status404
+    @ProblemResponses.Status415
     MeResponse logIn(@Valid @RequestBody PocLoginRequest login, HttpServletRequest request,
             HttpServletResponse response) {
         User user = logInPocUser.invoke(new UserId(login.userId()));

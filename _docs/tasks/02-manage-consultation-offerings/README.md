@@ -98,7 +98,7 @@ offering   + image_id uuid null unique → image
 | `DELETE /api/admin/consultation-offerings/{id}/image` | 200 `ConsultationOfferingResponse`; 404; 409 | 07 |
 | `GET /api/images/{id}` | 200 with the bytes, their `Content-Type` and `Cache-Control: public, max-age=31536000, immutable`; 404; public | 07 |
 
-A route with an `{id}` also answers 400 for a malformed id. 401 and 403 come from security ([security.md](../../architecture/security.md#roles-by-route-prefix)). Each controller method declares its 400, 404, 409 and 415 in `openapi.json`, and a route without any declares none ([errors](#errors)).
+A route with an `{id}` also answers 400 for a malformed id, and a route with a body 415 for a body of another type. 401 and 403 come from security ([security.md](../../architecture/security.md#roles-by-route-prefix)). Each controller method declares its 400, 404, 409 and 415 in `openapi.json`, and a route without any declares none ([errors](#errors)).
 
 ```jsonc
 // PocUserResponse
