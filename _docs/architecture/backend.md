@@ -83,7 +83,7 @@ Features aren't isolated from each other (D-23). A use case may use domain class
 ## Use cases
 
 - One use case = one class `<Verb><Noun>UseCase` in `application.<feature>`, annotated `@Service`.
-- **One public method, named `invoke`.** It takes the `CurrentUser` (if the use case needs it) and a command `record`, and returns a result `record`.
+- **One public method, named `invoke`** (ArchUnit checks the name and that it is the only one). It takes the `CurrentUser` (if the use case needs it) and a command `record`, and returns a result `record`.
 - `@Transactional` sits on the use-case method. Read-only use cases use `@Transactional(readOnly = true)`.
 - **Flow only:** load through ports, call domain logic, save through ports. Business decisions (is it bookable, refund-eligible, …) live in the domain.
 - There are **no incoming port interfaces**. Controllers call the use case directly.
