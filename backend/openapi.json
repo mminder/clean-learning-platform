@@ -8,6 +8,27 @@
     "url" : "/"
   } ],
   "paths" : {
+    "/api/admin/consultation-offerings" : {
+      "get" : {
+        "operationId" : "list",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ConsultationOfferingSummaryResponse"
+                  }
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "consultation-offering-controller" ]
+      }
+    },
     "/api/logout" : {
       "post" : {
         "operationId" : "logOut",
@@ -162,6 +183,31 @@
           }
         },
         "required" : [ "cancellationDeadlineHours", "eligibleExperts", "packages", "sessionDurationMinutes" ]
+      },
+      "ConsultationOfferingSummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "eligibleExpertCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "packageCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "DRAFT", "PUBLISHED", "ARCHIVED" ]
+          }
+        },
+        "required" : [ "eligibleExpertCount", "id", "name", "packageCount", "status" ]
       },
       "ConsultationPackageResponse" : {
         "type" : "object",

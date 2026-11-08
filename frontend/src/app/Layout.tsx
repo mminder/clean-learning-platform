@@ -1,8 +1,13 @@
-import { Link, Outlet, useNavigate } from 'react-router'
+import { useQueryClient } from '@tanstack/react-query'
+import { useEffect, useRef } from 'react'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { useLogout, useMe } from '@/features/user/queries'
 
 export function Layout() {
+  const me = useMe()
+  const isAdmin = me.data?.roles.includes('ADMIN') ?? false
+
   return (
     <div className="min-h-screen">
       <header className="border-b">
@@ -14,6 +19,14 @@ export function Layout() {
             <Link to="/" className="text-sm font-medium hover:underline">
               Shop
             </Link>
+            {isAdmin && (
+              <Link
+                to="/admin/consultations"
+                className="ml-6 text-sm font-medium hover:underline"
+              >
+                Consultations
+              </Link>
+            )}
           </nav>
           <div className="ml-auto">
             <CurrentUser />
@@ -32,6 +45,19 @@ function CurrentUser() {
   const me = useMe()
   const logout = useLogout()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const { key: locationKey } = useLocation()
+  const resetOnNextLocation = useRef(false)
+
+  // After a logout no data of the user stays; what's on the screen loads again for the visitor. The reset waits for
+  // the new page: it empties `['me']`, and `RequireRole` on the page being left would send the visitor to the login
+  // instead of the shop. Navigation runs in a transition, so the effect is what knows that the page has changed.
+  useEffect(() => {
+    if (resetOnNextLocation.current) {
+      resetOnNextLocation.current = false
+      void queryClient.resetQueries()
+    }
+  }, [locationKey, queryClient])
 
   if (me.isPending || me.isError) {
     return null
@@ -53,7 +79,12 @@ function CurrentUser() {
         size="sm"
         disabled={logout.isPending}
         onClick={() =>
-          logout.mutate(undefined, { onSuccess: () => navigate('/') })
+          logout.mutate(undefined, {
+            onSuccess: () => {
+              resetOnNextLocation.current = true
+              navigate('/')
+            },
+          })
         }
       >
         Log out

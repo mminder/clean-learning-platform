@@ -59,8 +59,11 @@ export function useLogin() {
   })
 }
 
+/**
+ * Ends the session. It doesn't reset the query cache: the caller does that once the page has changed, because a
+ * reset empties `['me']` while a protected page may still be on the screen (`Layout`).
+ */
 export function useLogout() {
-  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async () => {
       const { response } = await client.POST('/api/logout')
@@ -71,7 +74,5 @@ export function useLogout() {
         )
       }
     },
-    // No data of the user stays; what's on the screen loads again for the visitor.
-    onSuccess: () => queryClient.resetQueries(),
   })
 }

@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 
 import com.cleanlearning.adapters.database.offering.entity.OfferingEntity;
+import com.cleanlearning.adapters.database.offering.row.ConsultationOfferingSummaryRow;
 import com.cleanlearning.adapters.database.offering.row.ConsultationPackageRow;
 import com.cleanlearning.adapters.database.offering.row.EligibleExpertRow;
 import com.cleanlearning.adapters.database.offering.row.ShopConsultationOfferingRow;
@@ -24,7 +25,7 @@ interface OfferingRepository extends Repository<OfferingEntity, UUID> {
                 o.id, o.type, o.name, o.description, p.price)
             from OfferingEntity o
             join ConsultationPackageEntity p on p.consultationOfferingId = o.id
-            where o.status = 'PUBLISHED'
+            where o.status = com.cleanlearning.domain.offering.value.OfferingStatus.PUBLISHED
             order by o.name, o.id
             """)
     List<ShopOfferingPriceRow> findPublishedWithPackagePrices();
@@ -34,7 +35,7 @@ interface OfferingRepository extends Repository<OfferingEntity, UUID> {
                 o.id, o.name, o.description, c.sessionDurationMinutes, c.cancellationDeadlineHours)
             from OfferingEntity o
             join ConsultationOfferingEntity c on c.offeringId = o.id
-            where o.id = :id and o.status = 'PUBLISHED'
+            where o.id = :id and o.status = com.cleanlearning.domain.offering.value.OfferingStatus.PUBLISHED
             """)
     Optional<ShopConsultationOfferingRow> findPublishedConsultationOffering(UUID id);
 

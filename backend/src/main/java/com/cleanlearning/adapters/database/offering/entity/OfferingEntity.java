@@ -2,6 +2,7 @@ package com.cleanlearning.adapters.database.offering.entity;
 
 import java.util.UUID;
 
+import com.cleanlearning.domain.offering.value.OfferingStatus;
 import com.cleanlearning.domain.offering.value.OfferingType;
 
 import jakarta.persistence.Entity;
@@ -27,7 +28,8 @@ public class OfferingEntity {
 
     private String description;
 
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private OfferingStatus status;
 
     protected OfferingEntity() {
         // for JPA

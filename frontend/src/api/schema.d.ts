@@ -4,6 +4,22 @@
  */
 
 export interface paths {
+    "/api/admin/consultation-offerings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/logout": {
         parameters: {
             query?: never;
@@ -112,6 +128,17 @@ export interface components {
             /** Format: int32 */
             sessionDurationMinutes: number;
         };
+        ConsultationOfferingSummaryResponse: {
+            /** Format: int32 */
+            eligibleExpertCount: number;
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** Format: int32 */
+            packageCount: number;
+            /** @enum {string} */
+            status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+        };
         ConsultationPackageResponse: {
             /** Format: uuid */
             id: string;
@@ -173,6 +200,26 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsultationOfferingSummaryResponse"][];
+                };
+            };
+        };
+    };
     logOut: {
         parameters: {
             query?: never;

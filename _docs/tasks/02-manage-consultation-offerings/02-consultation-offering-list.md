@@ -5,7 +5,7 @@
 | Increment | [02 Manage consultation offerings](../../specs/02-manage-consultation-offerings.md) |
 | Type | AFK |
 | Blocked by | [01](01-poc-login.md) |
-| Status | Todo |
+| Status | Done |
 
 ## Goal
 
@@ -34,11 +34,11 @@ Work in this order, test first:
 
 ## Acceptance criteria
 
-- [ ] Logging in as Admin 1 opens the list: Career Coaching, Published, 2 packages, 2 experts (Playwright). Expert 2, who has `EXPERT` and `ADMIN`, lands there too.
-- [ ] Draft and archived offerings are listed, sorted alphabetically by name (REST test with `@Sql` and the cleanup from the plan's [tests](README.md#tests)).
-- [ ] A visitor who opens `/admin/consultations` gets the login page and returns to the list after logging in as Admin 1.
-- [ ] Customer 1 at `/admin/consultations` sees "Page not found", and the header shows **Consultations** only to admins.
-- [ ] The role matrix has the new route, and every check passes.
+- [x] Logging in as Admin 1 opens the list: Career Coaching, Published, 2 packages, 2 experts (Playwright). Expert 2, who has `EXPERT` and `ADMIN`, lands there too.
+- [x] Draft and archived offerings are listed, sorted alphabetically by name (REST test with `@Sql` and the cleanup from the plan's [tests](README.md#tests)).
+- [x] A visitor who opens `/admin/consultations` gets the login page and returns to the list after logging in as Admin 1.
+- [x] Customer 1 at `/admin/consultations` sees "Page not found", and the header shows **Consultations** only to admins.
+- [x] The role matrix has the new route, and every check passes.
 
 ## Tests
 
@@ -53,3 +53,9 @@ Work in this order, test first:
 - Filtering or paging the list: the PoC has a handful of offerings.
 
 ## Notes
+
+- **Logout from a protected page** (finding of task 01's review): `useLogout` no longer resets the query cache. `Layout` navigates to `/` and resets once the new location has rendered (an effect on the location key), because the reset empties `['me']` and `RequireRole` on the page being left would send the visitor to `/login?redirect=…`. Navigation runs in a React transition, so calling the reset right after `navigate` could race. Checked in the browser from the list and from the not-found page.
+- **`ConsultationOfferingSummary` has a rule:** the counts can't be negative (`IllegalArgumentException`), so it has a domain test.
+- **Tests reuse the shop's `@Sql` scripts** (`draft-and-archived-offerings.sql`, `more-published-offerings.sql`, `more-experts-and-packages.sql` and their cleanups) by absolute classpath. The shared cleanup script of the plan's [tests](README.md#tests) still comes with 03.
+- **The shadcn CLI worked** from this container: `npx shadcn@latest add table`.
+- **The 401 rule reads `ApiError`:** `queryClient.ts` reacts to an `ApiError` with status 401. A hook that doesn't throw one for a non-2xx answer wouldn't trigger the refetch; every hook so far does.

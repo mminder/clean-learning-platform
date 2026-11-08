@@ -49,6 +49,7 @@ class RoleMatrixTest {
             new Route(GET, "/api/customer/probe", Access.CUSTOMER),
             new Route(GET, "/api/expert/probe", Access.EXPERT),
             new Route(GET, "/api/admin/probe", Access.ADMIN),
+            new Route(GET, "/api/admin/consultation-offerings", Access.ADMIN),
             new Route(GET, "/v3/api-docs", Access.PUBLIC),
             new Route(GET, "/", Access.PUBLIC),
             new Route(GET, "/offerings/anything", Access.PUBLIC));

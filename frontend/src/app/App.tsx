@@ -1,9 +1,11 @@
 import { Route, Routes } from 'react-router'
+import { ConsultationOfferingsPage } from '@/features/offering/ConsultationOfferingsPage'
 import { OfferingDetailPage } from '@/features/shop/OfferingDetailPage'
 import { ShopPage } from '@/features/shop/ShopPage'
 import { LoginPage } from '@/features/user/LoginPage'
 import { Layout } from './Layout'
 import { NotFoundPage } from './NotFoundPage'
+import { RequireRole } from './RequireRole'
 
 export function App() {
   return (
@@ -12,6 +14,12 @@ export function App() {
         <Route index element={<ShopPage />} />
         <Route path="offerings/:id" element={<OfferingDetailPage />} />
         <Route path="login" element={<LoginPage />} />
+        <Route element={<RequireRole role="ADMIN" />}>
+          <Route
+            path="admin/consultations"
+            element={<ConsultationOfferingsPage />}
+          />
+        </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

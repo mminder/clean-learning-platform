@@ -2,10 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { isLocalPath, landingPath, pathAfterLogin } from './landing'
 
 describe('landingPath', () => {
-  it('is the shop for every role, until the landing pages exist', () => {
+  it('is the shop for users without ADMIN, until their landing pages exist', () => {
     expect(landingPath(['CUSTOMER'])).toBe('/')
     expect(landingPath(['CUSTOMER', 'EXPERT'])).toBe('/')
-    expect(landingPath(['ADMIN'])).toBe('/')
+  })
+
+  it('is the consultation offerings for a user with ADMIN', () => {
+    expect(landingPath(['ADMIN'])).toBe('/admin/consultations')
+    expect(landingPath(['EXPERT', 'ADMIN'])).toBe('/admin/consultations')
   })
 })
 
@@ -38,7 +42,7 @@ describe('pathAfterLogin', () => {
   })
 
   it('opens the landing page without a redirect or with another site', () => {
-    expect(pathAfterLogin(null, ['ADMIN'])).toBe('/')
-    expect(pathAfterLogin('//example.com', ['ADMIN'])).toBe('/')
+    expect(pathAfterLogin(null, ['ADMIN'])).toBe('/admin/consultations')
+    expect(pathAfterLogin('//example.com', ['CUSTOMER'])).toBe('/')
   })
 })

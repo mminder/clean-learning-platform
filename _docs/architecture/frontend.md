@@ -60,8 +60,9 @@ A shadcn/ui component is added when a page first uses it: run `npx shadcn@latest
 - On start, the SPA calls `GET /api/me`. A 401 means visitor.
 - The header shows **Shop** plus one section per role the user holds (union navigation, D-03).
 - After login, the SPA redirects to the landing page by priority Expert (`/expert/cases`) → Admin (`/admin/cases`) → Customer (`/my`), or back to the page where login was started (e.g. from **Buy**).
-- Route guards only hide pages. **The backend is the authority**; a 401 from any call sends the user to login.
-- After login and logout, the SPA resets the query cache, so no data of the previous user (or visitor) remains, and the queries on the screen load again.
+- Route guards only hide pages. **The backend is the authority**. `RequireRole` (`app/`) wraps a section's routes: a visitor goes to `/login?redirect=<path>`, a user without the role sees the not-found page.
+- A 401 from any query or mutation other than `useMe` refetches `['me']` (the `QueryClient` in `app/queryClient.ts`), so `RequireRole` then sends the user to the login.
+- After login and logout, the SPA resets the query cache, so no data of the previous user (or visitor) remains, and the queries on the screen load again. After logout, the reset waits until the shop has opened: it empties `['me']`, and `RequireRole` on the page being left would send the visitor to the login.
 - CSRF: a middleware of the API client (`api/client.ts`) reads the `XSRF-TOKEN` cookie on each request and sends it as `X-XSRF-TOKEN` on `POST`, `PUT`, `PATCH` and `DELETE` ([security](security.md#authentication)).
 
 ## Data fetching
