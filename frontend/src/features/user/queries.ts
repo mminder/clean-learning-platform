@@ -60,8 +60,9 @@ export function useLogin() {
 }
 
 /**
- * Ends the session. It doesn't reset the query cache: the caller does that once the page has changed, because a
- * reset empties `['me']` while a protected page may still be on the screen (`Layout`).
+ * Ends the session and loads the shop as a new page, so nothing of the user stays in memory. Not a reset and a
+ * navigation inside the SPA: the reset would empty `['me']` while a protected page is still on the screen, and its
+ * `RequireRole` would send the visitor to the login instead of the shop.
  */
 export function useLogout() {
   return useMutation({
@@ -74,5 +75,6 @@ export function useLogout() {
         )
       }
     },
+    onSuccess: () => window.location.assign('/'),
   })
 }

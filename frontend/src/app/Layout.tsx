@@ -1,6 +1,4 @@
-import { useQueryClient } from '@tanstack/react-query'
-import { useEffect, useRef } from 'react'
-import { Link, Outlet, useLocation, useNavigate } from 'react-router'
+import { Link, Outlet } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { useLogout, useMe } from '@/features/user/queries'
 
@@ -44,20 +42,6 @@ export function Layout() {
 function CurrentUser() {
   const me = useMe()
   const logout = useLogout()
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
-  const { key: locationKey } = useLocation()
-  const resetOnNextLocation = useRef(false)
-
-  // After a logout no data of the user stays; what's on the screen loads again for the visitor. The reset waits for
-  // the new page: it empties `['me']`, and `RequireRole` on the page being left would send the visitor to the login
-  // instead of the shop. Navigation runs in a transition, so the effect is what knows that the page has changed.
-  useEffect(() => {
-    if (resetOnNextLocation.current) {
-      resetOnNextLocation.current = false
-      void queryClient.resetQueries()
-    }
-  }, [locationKey, queryClient])
 
   if (me.isPending || me.isError) {
     return null
@@ -78,14 +62,7 @@ function CurrentUser() {
         variant="outline"
         size="sm"
         disabled={logout.isPending}
-        onClick={() =>
-          logout.mutate(undefined, {
-            onSuccess: () => {
-              resetOnNextLocation.current = true
-              navigate('/')
-            },
-          })
-        }
+        onClick={() => logout.mutate()}
       >
         Log out
       </Button>

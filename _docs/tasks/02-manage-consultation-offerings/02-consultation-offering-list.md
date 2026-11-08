@@ -54,7 +54,7 @@ Work in this order, test first:
 
 ## Notes
 
-- **Logout from a protected page** (finding of task 01's review): `useLogout` no longer resets the query cache. `Layout` navigates to `/` and resets once the new location has rendered (an effect on the location key), because the reset empties `['me']` and `RequireRole` on the page being left would send the visitor to `/login?redirect=…`. Navigation runs in a React transition, so calling the reset right after `navigate` could race. Checked in the browser from the list and from the not-found page.
+- **Logout from a protected page** (finding of task 01's review): a reset of the query cache empties `['me']`, and `RequireRole` on the page being left would send the visitor to `/login?redirect=…` instead of the shop. React Router navigates inside a transition, so a reset right after `navigate('/')` races. `useLogout` therefore loads the shop as a new page (`window.location.assign('/')`), which also leaves nothing of the user in memory, and the MVP's OIDC logout will leave the page anyway (review of task 02; the implementation first reset in an effect on the location key). Checked in the browser from the list, the shop and the not-found page.
 - **`ConsultationOfferingSummary` has a rule:** the counts can't be negative (`IllegalArgumentException`), so it has a domain test.
 - **Tests reuse the shop's `@Sql` scripts** (`draft-and-archived-offerings.sql`, `more-published-offerings.sql`, `more-experts-and-packages.sql` and their cleanups) by absolute classpath. The shared cleanup script of the plan's [tests](README.md#tests) still comes with 03.
 - **The shadcn CLI worked** from this container: `npx shadcn@latest add table`.
