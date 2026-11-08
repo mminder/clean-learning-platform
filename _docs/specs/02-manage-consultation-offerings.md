@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | Ready |
+| Status | Done |
 | Use cases | [UC-01](../use-cases/uc-01-login.md), PoC main flow and log out; [UC-16](../use-cases/uc-16-manage-consultation-offering.md), all steps |
 | Tasks | [tasks/02-manage-consultation-offerings](../tasks/02-manage-consultation-offerings/README.md) |
 
