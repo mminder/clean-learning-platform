@@ -2,6 +2,8 @@ package com.cleanlearning.adapters.database.offering.entity;
 
 import java.util.UUID;
 
+import org.jspecify.annotations.Nullable;
+
 import com.cleanlearning.domain.offering.value.OfferingStatus;
 import com.cleanlearning.domain.offering.value.OfferingType;
 
@@ -31,6 +33,8 @@ public class OfferingEntity {
 
     @Enumerated(EnumType.STRING)
     private OfferingStatus status;
+
+    private @Nullable UUID imageId;
 
     protected OfferingEntity() {
         // for JPA
@@ -70,5 +74,14 @@ public class OfferingEntity {
 
     public void setStatus(OfferingStatus status) {
         this.status = status;
+    }
+
+    /** The offering's image, or {@code null} without one. */
+    public @Nullable UUID getImageId() {
+        return imageId;
+    }
+
+    public void setImageId(@Nullable UUID imageId) {
+        this.imageId = imageId;
     }
 }

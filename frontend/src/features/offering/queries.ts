@@ -154,6 +154,64 @@ export function useChangeConsultationOfferingStatus(id: string) {
 }
 
 /**
+ * Uploads the offering's image, or replaces it, at once and apart from the form's save (UC-16 step 3). The server
+ * detects the type from the file's first bytes; a file it refuses answers 400 with a `detail` for the user.
+ */
+export function useUploadConsultationOfferingImage(id: string) {
+  const invalidateOfferings = useInvalidateOfferings()
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const body = new FormData()
+      body.append('file', file)
+      const { data, error, response } = await client.PUT(
+        '/api/admin/consultation-offerings/{id}/image',
+        {
+          params: { path: { id } },
+          // The contract types the part as a string (format binary), but the browser sends a File in a FormData.
+          // openapi-fetch passes a FormData on as it is and sets no JSON content type, so the browser sets the
+          // multipart one with its boundary; the CSRF middleware adds its header as on any PUT.
+          body: body as unknown as { file: string },
+        },
+      )
+      if (data === undefined) {
+        throw new ApiError(
+          `Uploading the offering's image failed: ${response.status}`,
+          response.status,
+          problemOf(response.status, error),
+        )
+      }
+      return data
+    },
+    onSuccess: invalidateOfferings,
+    // A 409 means the offering was archived meanwhile: reload it.
+    onError: (error) => (isConflict(error) ? invalidateOfferings() : undefined),
+  })
+}
+
+/** Removes the offering's image, at once and apart from the form's save (UC-16 step 3). */
+export function useRemoveConsultationOfferingImage(id: string) {
+  const invalidateOfferings = useInvalidateOfferings()
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error, response } = await client.DELETE(
+        '/api/admin/consultation-offerings/{id}/image',
+        { params: { path: { id } } },
+      )
+      if (data === undefined) {
+        throw new ApiError(
+          `Removing the offering's image failed: ${response.status}`,
+          response.status,
+          problemOf(response.status, error),
+        )
+      }
+      return data
+    },
+    onSuccess: invalidateOfferings,
+    onError: (error) => (isConflict(error) ? invalidateOfferings() : undefined),
+  })
+}
+
+/**
  * Deletes a draft. Its page closes afterwards, so its detail isn't fetched again, which would answer 404: it's only
  * marked stale. The list is dropped from the cache, so it opens freshly loaded, without the deleted offering.
  */

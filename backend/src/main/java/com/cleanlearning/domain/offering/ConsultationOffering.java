@@ -5,10 +5,12 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.cleanlearning.domain.image.value.ImageId;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import com.cleanlearning.domain.offering.value.ConsultationPackageId;
 import com.cleanlearning.domain.offering.value.OfferingId;
@@ -23,7 +25,8 @@ import com.cleanlearning.domain.user.value.UserId;
  * A consultation offering as the admin manages it (UC-16): its fields, its status, its packages and its eligible
  * experts. The description may be empty. The packages come fewest sessions first, then by id, which is the order the
  * shop shows them in; they may share a session count. The eligible experts are a set of user ids and may be empty;
- * each is an expert when the admin chooses them. The image comes with task 07 of increment 02.
+ * each is an expert when the admin chooses them. The image is optional; it changes apart from the form's save
+ * (UC-16 step 3).
  * <p>
  * The status follows UC-16's lifecycle: a draft is published, a published offering is unpublished to a draft again or
  * archived, and only a draft is deleted. An archived offering is final and read-only. A change the status doesn't
@@ -31,7 +34,7 @@ import com.cleanlearning.domain.user.value.UserId;
  */
 public record ConsultationOffering(OfferingId id, OfferingName name, String description,
         SessionDuration sessionDuration, CancellationDeadline cancellationDeadline, OfferingStatus status,
-        List<ConsultationPackage> packages, Set<UserId> eligibleExpertIds) {
+        List<ConsultationPackage> packages, Set<UserId> eligibleExpertIds, Optional<ImageId> imageId) {
 
     /** Publishing an offering without a package or without an eligible expert; the message names what's missing. */
     public static final String OFFERING_INCOMPLETE = "OFFERING_INCOMPLETE";
@@ -53,10 +56,12 @@ public record ConsultationOffering(OfferingId id, OfferingName name, String desc
         Objects.requireNonNull(status, "status");
         packages = packages.stream().sorted(PACKAGE_ORDER).toList();
         eligibleExpertIds = Set.copyOf(eligibleExpertIds);
+        Objects.requireNonNull(imageId, "imageId");
     }
 
     /**
-     * A new offering starts as a draft (UC-16 step 4), with a new id and a new id for each package.
+     * A new offering starts as a draft (UC-16 step 4), with a new id and a new id for each package, and without an
+     * image: it gets one after its first save.
      *
      * @param experts the users who are experts: every eligible expert id must be one of them
      * @throws IllegalArgumentException if a package names an id (a new offering has no packages to keep), or an
@@ -67,13 +72,13 @@ public record ConsultationOffering(OfferingId id, OfferingName name, String desc
             Set<UserId> eligibleExpertIds, List<Expert> experts) {
         return new ConsultationOffering(new OfferingId(UUID.randomUUID()), name, description, sessionDuration,
                 cancellationDeadline, OfferingStatus.DRAFT, matchPackages(List.of(), packages),
-                requireExperts(eligibleExpertIds, experts));
+                requireExperts(eligibleExpertIds, experts), Optional.empty());
     }
 
     /**
      * The offering with new values; id and status stay. The packages are matched by id: an entry with an id keeps that
      * package with its new values, an entry without one is a new package with a new id, and a package that no entry
-     * names is dropped. The eligible experts are replaced.
+     * names is dropped. The eligible experts are replaced. The image stays.
      *
      * @param experts the users who are experts: every eligible expert id must be one of them
      * @throws IllegalArgumentException if an entry names an id that isn't one of this offering's packages, or names a
@@ -85,7 +90,29 @@ public record ConsultationOffering(OfferingId id, OfferingName name, String desc
             Set<UserId> eligibleExpertIds, List<Expert> experts) {
         requireNotArchived();
         return new ConsultationOffering(id, name, description, sessionDuration, cancellationDeadline, status,
-                matchPackages(this.packages, packages), requireExperts(eligibleExpertIds, experts));
+                matchPackages(this.packages, packages), requireExperts(eligibleExpertIds, experts), imageId);
+    }
+
+    /**
+     * The offering with this image instead of the one it had, if any. The caller deletes the old image (D-21: a
+     * replaced image gets a new id).
+     *
+     * @throws BusinessRuleException if the offering is archived
+     */
+    public ConsultationOffering changeImage(ImageId newImageId) {
+        Objects.requireNonNull(newImageId, "newImageId");
+        requireNotArchived();
+        return withImage(Optional.of(newImageId));
+    }
+
+    /**
+     * The offering without an image. The caller deletes the image it had, if any.
+     *
+     * @throws BusinessRuleException if the offering is archived
+     */
+    public ConsultationOffering removeImage() {
+        requireNotArchived();
+        return withImage(Optional.empty());
     }
 
     /**
@@ -173,7 +200,12 @@ public record ConsultationOffering(OfferingId id, OfferingName name, String desc
 
     private ConsultationOffering withStatus(OfferingStatus newStatus) {
         return new ConsultationOffering(id, name, description, sessionDuration, cancellationDeadline, newStatus,
-                packages, eligibleExpertIds);
+                packages, eligibleExpertIds, imageId);
+    }
+
+    private ConsultationOffering withImage(Optional<ImageId> newImageId) {
+        return new ConsultationOffering(id, name, description, sessionDuration, cancellationDeadline, status, packages,
+                eligibleExpertIds, newImageId);
     }
 
     private static Set<UserId> requireExperts(Set<UserId> eligibleExpertIds, List<Expert> experts) {

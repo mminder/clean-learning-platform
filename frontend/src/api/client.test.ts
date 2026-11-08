@@ -45,6 +45,26 @@ describe('client', () => {
     )
   })
 
+  it('sends the CSRF token with a FormData body and leaves its multipart content type', async () => {
+    setCookie('XSRF-TOKEN=7c2b0a5e-token')
+    const fetch = stubFetch()
+    const body = new FormData()
+    body.append('file', new File(['image'], 'agile.png', { type: 'image/png' }))
+
+    await client.PUT('/api/admin/consultation-offerings/{id}/image', {
+      baseUrl,
+      fetch,
+      params: { path: { id: '00000000-0000-0000-0000-000000001001' } },
+      body: body as unknown as { file: string },
+    })
+
+    const request = fetch.mock.calls[0][0]
+    expect(request.headers.get('X-XSRF-TOKEN')).toBe('7c2b0a5e-token')
+    expect(request.headers.get('Content-Type')).toMatch(
+      /^multipart\/form-data; boundary=/,
+    )
+  })
+
   it('sends no CSRF header on a GET', async () => {
     setCookie('XSRF-TOKEN=7c2b0a5e-token')
     const fetch = stubFetch()

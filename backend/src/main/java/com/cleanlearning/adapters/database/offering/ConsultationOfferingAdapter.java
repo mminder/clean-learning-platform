@@ -21,6 +21,7 @@ import com.cleanlearning.application.offering.LoadConsultationOfferingPort;
 import com.cleanlearning.application.offering.LoadConsultationOfferingSummariesPort;
 import com.cleanlearning.application.offering.LockConsultationOfferingPort;
 import com.cleanlearning.application.offering.SaveConsultationOfferingPort;
+import com.cleanlearning.domain.image.value.ImageId;
 import com.cleanlearning.domain.offering.ConsultationOffering;
 import com.cleanlearning.domain.offering.ConsultationOfferingSummary;
 import com.cleanlearning.domain.offering.ConsultationPackage;
@@ -81,6 +82,7 @@ class ConsultationOfferingAdapter implements LoadConsultationOfferingSummariesPo
     public void create(ConsultationOffering offering) {
         UUID id = offering.id().value();
         // offering first: consultation_offering references it.
+        // A new offering has no image yet: it gets one after its first save.
         entityManager.persist(new OfferingEntity(id, OfferingType.CONSULTATION, offering.name().value(),
                 offering.description(), offering.status()));
         entityManager.persist(new ConsultationOfferingEntity(id, offering.sessionDuration().minutes(),
@@ -98,6 +100,7 @@ class ConsultationOfferingAdapter implements LoadConsultationOfferingSummariesPo
         offeringEntity.setName(offering.name().value());
         offeringEntity.setDescription(offering.description());
         offeringEntity.setStatus(offering.status());
+        offeringEntity.setImageId(offering.imageId().map(ImageId::value).orElse(null));
         ConsultationOfferingEntity consultationOfferingEntity = existing(ConsultationOfferingEntity.class, id);
         consultationOfferingEntity.setSessionDurationMinutes(offering.sessionDuration().minutes());
         consultationOfferingEntity.setCancellationDeadlineHours(offering.cancellationDeadline().hours());
@@ -108,7 +111,7 @@ class ConsultationOfferingAdapter implements LoadConsultationOfferingSummariesPo
     /**
      * Removes the managed entities in the order the foreign keys need: the eligible experts, the packages, the
      * {@code consultation_offering} row and then the {@code offering} row. The transaction deletes them in this order
-     * when it commits.
+     * when it commits. The use case deletes the offering's image after them.
      */
     @Override
     public void delete(OfferingId id) {
@@ -185,7 +188,7 @@ class ConsultationOfferingAdapter implements LoadConsultationOfferingSummariesPo
         return new ConsultationOffering(new OfferingId(offering.getId()), new OfferingName(offering.getName()),
                 offering.getDescription(), new SessionDuration(consultationOffering.getSessionDurationMinutes()),
                 new CancellationDeadline(consultationOffering.getCancellationDeadlineHours()), offering.getStatus(),
-                packages, eligibleExpertIds);
+                packages, eligibleExpertIds, Optional.ofNullable(offering.getImageId()).map(ImageId::new));
     }
 
     private static ConsultationPackage toConsultationPackage(ConsultationPackageEntity entity) {

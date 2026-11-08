@@ -47,6 +47,7 @@ class ShopControllerTest {
                             "type": "CONSULTATION",
                             "name": "Career Coaching",
                             "description": "%s",
+                            "imageId": null,
                             "price": { "amount": "450.00", "currency": "CHF" }
                           }
                         ]
@@ -84,6 +85,7 @@ class ShopControllerTest {
                           "type": "CONSULTATION",
                           "name": "Career Coaching",
                           "description": "%s",
+                          "imageId": null,
                           "consultation": {
                             "sessionDurationMinutes": 60,
                             "cancellationDeadlineHours": 24,

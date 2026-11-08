@@ -3,13 +3,14 @@ package com.cleanlearning.application.offering;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.cleanlearning.application.image.ImageStorePort;
 import com.cleanlearning.domain.offering.ConsultationOffering;
 import com.cleanlearning.domain.offering.value.OfferingId;
 import com.cleanlearning.domain.shared.BusinessRuleException;
 import com.cleanlearning.domain.shared.NotFoundException;
 
 /**
- * UC-16 step 5: the admin deletes a draft for good, with its packages and eligible experts.
+ * UC-16 step 5: the admin deletes a draft for good, with its packages, eligible experts and image.
  */
 @Service
 public class DeleteConsultationOfferingUseCase {
@@ -18,10 +19,13 @@ public class DeleteConsultationOfferingUseCase {
 
     private final DeleteConsultationOfferingPort deleteOffering;
 
+    private final ImageStorePort imageStore;
+
     DeleteConsultationOfferingUseCase(LockConsultationOfferingPort lockOffering,
-            DeleteConsultationOfferingPort deleteOffering) {
+            DeleteConsultationOfferingPort deleteOffering, ImageStorePort imageStore) {
         this.lockOffering = lockOffering;
         this.deleteOffering = deleteOffering;
+        this.imageStore = imageStore;
     }
 
     /**
@@ -34,5 +38,7 @@ public class DeleteConsultationOfferingUseCase {
                 .orElseThrow(() -> new NotFoundException("Offering " + id.value() + " not found."));
         offering.requireDeletable();
         deleteOffering.delete(id);
+        // after the offering, which refers to it
+        offering.imageId().ifPresent(imageStore::delete);
     }
 }

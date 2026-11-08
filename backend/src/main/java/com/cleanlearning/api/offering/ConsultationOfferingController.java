@@ -1,11 +1,13 @@
 package com.cleanlearning.api.offering;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,8 +16,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.cleanlearning.api.offering.request.ConsultationOfferingRequest;
 import com.cleanlearning.api.offering.request.ConsultationPackageRequest;
@@ -29,7 +33,9 @@ import com.cleanlearning.application.offering.EditConsultationOfferingUseCase;
 import com.cleanlearning.application.offering.GetConsultationOfferingUseCase;
 import com.cleanlearning.application.offering.ListConsultationOfferingsUseCase;
 import com.cleanlearning.application.offering.PublishConsultationOfferingUseCase;
+import com.cleanlearning.application.offering.RemoveConsultationOfferingImageUseCase;
 import com.cleanlearning.application.offering.UnpublishConsultationOfferingUseCase;
+import com.cleanlearning.application.offering.UploadConsultationOfferingImageUseCase;
 import com.cleanlearning.domain.offering.ConsultationOffering;
 import com.cleanlearning.domain.offering.ConsultationPackageEntry;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
@@ -68,6 +74,10 @@ class ConsultationOfferingController {
 
     private final DeleteConsultationOfferingUseCase deleteConsultationOffering;
 
+    private final UploadConsultationOfferingImageUseCase uploadConsultationOfferingImage;
+
+    private final RemoveConsultationOfferingImageUseCase removeConsultationOfferingImage;
+
     ConsultationOfferingController(ListConsultationOfferingsUseCase listConsultationOfferings,
             GetConsultationOfferingUseCase getConsultationOffering,
             CreateConsultationOfferingUseCase createConsultationOffering,
@@ -75,7 +85,9 @@ class ConsultationOfferingController {
             PublishConsultationOfferingUseCase publishConsultationOffering,
             UnpublishConsultationOfferingUseCase unpublishConsultationOffering,
             ArchiveConsultationOfferingUseCase archiveConsultationOffering,
-            DeleteConsultationOfferingUseCase deleteConsultationOffering) {
+            DeleteConsultationOfferingUseCase deleteConsultationOffering,
+            UploadConsultationOfferingImageUseCase uploadConsultationOfferingImage,
+            RemoveConsultationOfferingImageUseCase removeConsultationOfferingImage) {
         this.listConsultationOfferings = listConsultationOfferings;
         this.getConsultationOffering = getConsultationOffering;
         this.createConsultationOffering = createConsultationOffering;
@@ -84,6 +96,8 @@ class ConsultationOfferingController {
         this.unpublishConsultationOffering = unpublishConsultationOffering;
         this.archiveConsultationOffering = archiveConsultationOffering;
         this.deleteConsultationOffering = deleteConsultationOffering;
+        this.uploadConsultationOfferingImage = uploadConsultationOfferingImage;
+        this.removeConsultationOfferingImage = removeConsultationOfferingImage;
     }
 
     @GetMapping
@@ -132,6 +146,23 @@ class ConsultationOfferingController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void deleteConsultationOffering(@PathVariable UUID id) {
         deleteConsultationOffering.invoke(new OfferingId(id));
+    }
+
+    /**
+     * The image, uploaded or replaced at once, apart from the form's save. The type comes from the file's first bytes,
+     * not from its name or declared content type. A file over 2 MB stops at the multipart limit
+     * ({@code application.yml}) and answers 400, like a file of another type.
+     */
+    @PutMapping(path = "/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    ConsultationOfferingResponse uploadConsultationOfferingImage(@PathVariable UUID id,
+            @RequestPart("file") MultipartFile file) throws IOException {
+        return ConsultationOfferingResponse.from(uploadConsultationOfferingImage.invoke(new OfferingId(id),
+                file.getBytes()));
+    }
+
+    @DeleteMapping("/{id}/image")
+    ConsultationOfferingResponse removeConsultationOfferingImage(@PathVariable UUID id) {
+        return ConsultationOfferingResponse.from(removeConsultationOfferingImage.invoke(new OfferingId(id)));
     }
 
     /** A value object that rejects a value Bean Validation let through throws, and the API answers 400. */

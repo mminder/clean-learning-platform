@@ -40,7 +40,7 @@ class RoleMatrixTest {
 
     // Every new route gets a row here. Until a prefix has a real route, a probe path stands in for it: security
     // decides before routing, so a probe that passes security ends in 404. An allowed caller must not change data, so
-    // a mutating row sends no body (400) or targets an unknown id (404).
+    // a mutating row sends no body (400, or 415 for a multipart route) or targets an unknown id (404).
     private static final List<Route> ROUTES = List.of(
             new Route(GET, "/api/shop/offerings", Access.PUBLIC),
             new Route(GET, "/api/shop/offerings/" + SeedData.CAREER_COACHING, Access.PUBLIC),
@@ -61,7 +61,10 @@ class RoleMatrixTest {
             new Route(POST, "/api/admin/consultation-offerings/" + UNKNOWN_ID + "/unpublish", Access.ADMIN), // unknown id: 404
             new Route(POST, "/api/admin/consultation-offerings/" + UNKNOWN_ID + "/archive", Access.ADMIN), // unknown id: 404
             new Route(DELETE, "/api/admin/consultation-offerings/" + UNKNOWN_ID, Access.ADMIN), // unknown id: 404
+            new Route(PUT, "/api/admin/consultation-offerings/" + UNKNOWN_ID + "/image", Access.ADMIN), // no body: 415
+            new Route(DELETE, "/api/admin/consultation-offerings/" + UNKNOWN_ID + "/image", Access.ADMIN), // unknown id: 404
             new Route(GET, "/api/admin/experts", Access.ADMIN),
+            new Route(GET, "/api/images/" + UNKNOWN_ID, Access.PUBLIC), // unknown id: 404
             new Route(GET, "/v3/api-docs", Access.PUBLIC),
             new Route(GET, "/", Access.PUBLIC),
             new Route(GET, "/offerings/anything", Access.PUBLIC));

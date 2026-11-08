@@ -5,12 +5,14 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 
 import org.junit.jupiter.api.Test;
 
+import com.cleanlearning.domain.image.value.ImageId;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import com.cleanlearning.domain.offering.value.ConsultationPackageId;
 import com.cleanlearning.domain.offering.value.OfferingId;
@@ -26,7 +28,7 @@ import com.cleanlearning.domain.user.value.UserId;
 
 /**
  * The status table of UC-16 (the plan's errors section in _docs/tasks/02-manage-consultation-offerings/README.md),
- * cell by cell: edit, publish, unpublish, archive and delete in each status.
+ * cell by cell: edit, image, publish, unpublish, archive and delete in each status.
  */
 class ConsultationOfferingStatusTest {
 
@@ -36,9 +38,13 @@ class ConsultationOfferingStatusTest {
     private static final ConsultationPackage ONE_SESSION = new ConsultationPackage(
             new ConsultationPackageId(UUID.randomUUID()), new SessionCount(1), Money.chf("160"));
 
+    private static final ImageId IMAGE = new ImageId(UUID.randomUUID());
+
+    private static final ImageId NEW_IMAGE = new ImageId(UUID.randomUUID());
+
     private static final String ARCHIVED_MESSAGE = "The offering is archived and can't be changed any more.";
 
-    /** An offering in this status with a package and an eligible expert. */
+    /** An offering in this status with a package, an eligible expert and an image. */
     private static ConsultationOffering complete(OfferingStatus status) {
         return offering(status, List.of(ONE_SESSION), Set.of(EXPERT_1.id()));
     }
@@ -47,7 +53,7 @@ class ConsultationOfferingStatusTest {
             Set<UserId> eligibleExpertIds) {
         return new ConsultationOffering(new OfferingId(UUID.randomUUID()), new OfferingName("Agile Coaching"),
                 "Coaching for agile teams.", new SessionDuration(45), new CancellationDeadline(48), status, packages,
-                eligibleExpertIds);
+                eligibleExpertIds, Optional.of(IMAGE));
     }
 
     private static ConsultationOffering edit(ConsultationOffering offering) {
@@ -85,7 +91,7 @@ class ConsultationOfferingStatusTest {
 
         assertThat(published).isEqualTo(new ConsultationOffering(draft.id(), draft.name(), draft.description(),
                 draft.sessionDuration(), draft.cancellationDeadline(), OfferingStatus.PUBLISHED, draft.packages(),
-                draft.eligibleExpertIds()));
+                draft.eligibleExpertIds(), draft.imageId()));
         assertThat(draft.status()).as("unchanged").isEqualTo(OfferingStatus.DRAFT);
     }
 
@@ -132,6 +138,12 @@ class ConsultationOfferingStatusTest {
     }
 
     @Test
+    void aDraftsImageMayBeChangedAndRemoved() {
+        assertThat(complete(OfferingStatus.DRAFT).changeImage(NEW_IMAGE).imageId()).contains(NEW_IMAGE);
+        assertThat(complete(OfferingStatus.DRAFT).removeImage().imageId()).isEmpty();
+    }
+
+    @Test
     void aDraftMayBeDeleted() {
         assertThatCode(complete(OfferingStatus.DRAFT)::requireDeletable).doesNotThrowAnyException();
         assertThatCode(offering(OfferingStatus.DRAFT, List.of(), Set.of())::requireDeletable)
@@ -143,6 +155,15 @@ class ConsultationOfferingStatusTest {
     @Test
     void aPublishedOfferingMayBeEdited() {
         assertThat(edit(complete(OfferingStatus.PUBLISHED)).status()).isEqualTo(OfferingStatus.PUBLISHED);
+    }
+
+    @Test
+    void aPublishedOfferingsImageMayBeChangedAndRemoved() {
+        ConsultationOffering changed = complete(OfferingStatus.PUBLISHED).changeImage(NEW_IMAGE);
+
+        assertThat(changed.imageId()).contains(NEW_IMAGE);
+        assertThat(changed.status()).isEqualTo(OfferingStatus.PUBLISHED);
+        assertThat(complete(OfferingStatus.PUBLISHED).removeImage().imageId()).isEmpty();
     }
 
     @Test
@@ -192,6 +213,13 @@ class ConsultationOfferingStatusTest {
     @Test
     void anArchivedOfferingCantBeEdited() {
         assertWrongStatus(complete(OfferingStatus.ARCHIVED), ConsultationOfferingStatusTest::edit, ARCHIVED_MESSAGE);
+    }
+
+    @Test
+    void anArchivedOfferingsImageCantBeChangedOrRemoved() {
+        assertWrongStatus(complete(OfferingStatus.ARCHIVED), offering -> offering.changeImage(NEW_IMAGE),
+                ARCHIVED_MESSAGE);
+        assertWrongStatus(complete(OfferingStatus.ARCHIVED), ConsultationOffering::removeImage, ARCHIVED_MESSAGE);
     }
 
     @Test

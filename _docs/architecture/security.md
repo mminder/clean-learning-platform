@@ -86,7 +86,8 @@ Authorization is tested through REST integration tests against Testcontainers Po
    - the admin case detail contains no notes;
    - the customer case detail contains no private notes;
    - the customer's Teams link is absent outside the link window (fixed `Clock`).
-3. **Profile guard:** `/api/poc/**` returns 404 when the `poc` profile isn't active (`PocLoginProfileTest`, a web slice without a database).
+3. **Public images:** `GET /api/images/{id}` passes security without a login, and its `Cache-Control` stays the controller's (`ImageControllerTest`).
+4. **Profile guard:** `/api/poc/**` returns 404 when the `poc` profile isn't active (`PocLoginProfileTest`, a web slice without a database).
 
 Test helpers: `LoggedIn.as(userId, roles…)` makes a request with the authentication a PoC login keeps in the session. `Csrf.token()` sends a CSRF token the way the SPA does, cookie and header. Spring Security Test's `csrf()` isn't used: it swaps the CSRF filter's token repository for a session-based one in the Spring context all integration tests share.
 

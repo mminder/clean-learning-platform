@@ -5,11 +5,13 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import com.cleanlearning.domain.image.value.ImageId;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import com.cleanlearning.domain.offering.value.ConsultationPackageId;
 import com.cleanlearning.domain.offering.value.OfferingId;
@@ -72,6 +74,7 @@ class ConsultationOfferingTest {
         assertThat(offering.cancellationDeadline()).isEqualTo(new CancellationDeadline(48));
         assertThat(offering.packages()).isEmpty();
         assertThat(offering.eligibleExpertIds()).isEmpty();
+        assertThat(offering.imageId()).isEmpty();
     }
 
     @Test
@@ -88,7 +91,7 @@ class ConsultationOfferingTest {
 
         assertThat(edited).isEqualTo(new ConsultationOffering(offering.id(), new OfferingName("Lean Coaching"), "",
                 new SessionDuration(60), new CancellationDeadline(0), OfferingStatus.DRAFT, List.of(),
-                Set.of(EXPERT_2.id())));
+                Set.of(EXPERT_2.id()), Optional.empty()));
     }
 
     @Test
@@ -96,9 +99,32 @@ class ConsultationOfferingTest {
         ConsultationOffering agileCoaching = agileCoaching();
         ConsultationOffering published = new ConsultationOffering(agileCoaching.id(), agileCoaching.name(),
                 agileCoaching.description(), agileCoaching.sessionDuration(), agileCoaching.cancellationDeadline(),
-                OfferingStatus.PUBLISHED, List.of(), Set.of());
+                OfferingStatus.PUBLISHED, List.of(), Set.of(), Optional.empty());
 
         assertThat(edit(published).status()).isEqualTo(OfferingStatus.PUBLISHED);
+    }
+
+    @Test
+    void aChangedImageReplacesTheOldOneAndLeavesEverythingElse() {
+        ImageId first = new ImageId(UUID.randomUUID());
+        ImageId second = new ImageId(UUID.randomUUID());
+        ConsultationOffering offering = agileCoachingWith(added(1, "160")).changeImage(first);
+
+        ConsultationOffering changed = offering.changeImage(second);
+
+        assertThat(changed.imageId()).contains(second);
+        assertThat(changed).isEqualTo(new ConsultationOffering(offering.id(), offering.name(), offering.description(),
+                offering.sessionDuration(), offering.cancellationDeadline(), offering.status(), offering.packages(),
+                offering.eligibleExpertIds(), Optional.of(second)));
+        assertThat(changed.removeImage().imageId()).isEmpty();
+        assertThat(agileCoaching().removeImage().imageId()).as("without an image").isEmpty();
+    }
+
+    @Test
+    void anEditKeepsTheImage() {
+        ImageId image = new ImageId(UUID.randomUUID());
+
+        assertThat(edit(agileCoaching().changeImage(image)).imageId()).contains(image);
     }
 
     @Test
@@ -139,7 +165,7 @@ class ConsultationOfferingTest {
 
         ConsultationOffering offering = new ConsultationOffering(new OfferingId(UUID.randomUUID()), AGILE_COACHING, "",
                 new SessionDuration(45), new CancellationDeadline(48), OfferingStatus.DRAFT,
-                List.of(three, oneB, oneA), Set.of());
+                List.of(three, oneB, oneA), Set.of(), Optional.empty());
 
         // oneB's id starts with ff: as signed numbers it would sort first, as the database sorts a uuid it's last.
         assertThat(offering.packages()).containsExactly(oneA, oneB, three);

@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { isBadRequest, isNotFound } from '@/lib/api-error'
 import { BackToConsultations } from './BackToConsultations'
 import { ConsultationOfferingForm } from './ConsultationOfferingForm'
+import { OfferingImageSection } from './OfferingImageSection'
 import { OfferingStatusActions } from './OfferingStatusActions'
 import { OfferingStatusBadge } from './OfferingStatusBadge'
 import {
@@ -12,8 +13,8 @@ import {
 } from './queries'
 
 /**
- * UC-16 steps 2–5: an existing offering, with its status, the status changes it allows and its form. An archived
- * offering is read-only.
+ * UC-16 steps 2–5: an existing offering, with its status, the status changes it allows, its image and its form. The
+ * image changes at once, apart from the form's **Save**. An archived offering is read-only.
  */
 export function ConsultationOfferingPage() {
   // The route /admin/consultations/:id always has an id.
@@ -59,6 +60,7 @@ export function ConsultationOfferingPage() {
           This offering is archived and can't be changed any more.
         </p>
       )}
+      <OfferingImageSection offering={offering.data} />
       <ConsultationOfferingForm
         // A new form for another offering; a reload of this one keeps what the admin is typing. Archived, the form
         // starts again from the saved offering: unsaved edits can't be saved any more and mustn't look saved.

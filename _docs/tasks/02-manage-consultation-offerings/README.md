@@ -54,7 +54,7 @@ They build one form on one aggregate, so they touch the same controller, use cas
 | `domain.image.value` | `ImageId`, `ImageType` (`JPEG`, `PNG`, `WEBP`, with the content type and detection from the first bytes) | 07 |
 | `adapters.database.user` | `UserAdapter` (users, roles, experts), its repository; `entity`: `UserEntity`, `UserRoleEntity` | 01, 05 |
 | `adapters.database.offering` | `ConsultationOfferingAdapter`, which implements the admin's offering ports; the repositories it needs. `ShopOfferingAdapter` stays for the shop. | 02–07 |
-| `adapters.database.image` | `ImageAdapter`, its repository; `entity`: `ImageEntity` | 07 |
+| `adapters.database.image` | `ImageAdapter` (through the `EntityManager`, no repository: it only finds, persists and removes by id); `entity`: `ImageEntity` | 07 |
 
 The admin's use cases don't take a `CurrentUser`: an admin may change every offering, and nothing records who did it. `ConsultationPackage` from increment 01 serves the admin too.
 
@@ -68,8 +68,10 @@ The admin's use cases don't take a `CurrentUser`: an admin may change every offe
 ```
 image      id uuid PK, content_type text in ('image/jpeg', 'image/png', 'image/webp'),
            data bytea, 1 to 2097152 bytes (octet_length), created_at, updated_at
-offering   + image_id uuid null → image
+offering   + image_id uuid null unique → image
 ```
+
+- **`offering.image_id` is unique** (07): an image belongs to one offering at most, so replacing or removing it may delete it. The unique index also serves the foreign key check when an image is deleted.
 
 - **`updated_at`** is set by the database, in the trigger, to the transaction's `now()`, like `created_at`'s default. Entities don't map either column. A table created later adds the trigger in its create migration. Task 03 adds this rule to [backend.md](../../architecture/backend.md#persistence).
 - **2 MB** is 2 × 1024 × 1024 bytes, the same as Spring's `2MB`.
@@ -92,7 +94,7 @@ offering   + image_id uuid null → image
 | `POST /api/admin/consultation-offerings/{id}/unpublish` | 200 `ConsultationOfferingResponse`; 404; 409 | 06 |
 | `POST /api/admin/consultation-offerings/{id}/archive` | 200 `ConsultationOfferingResponse`; 404; 409 | 06 |
 | `DELETE /api/admin/consultation-offerings/{id}` | 204; 404; 409 | 06 |
-| `PUT /api/admin/consultation-offerings/{id}/image` | multipart, part `file` → 200 `ConsultationOfferingResponse`; 400; 404; 409 | 07 |
+| `PUT /api/admin/consultation-offerings/{id}/image` | multipart, part `file` → 200 `ConsultationOfferingResponse`; 400 (no `file` part, an empty file, not JPEG, PNG or WebP, over 2 MB); 404; 409; 415 for a body that isn't multipart | 07 |
 | `DELETE /api/admin/consultation-offerings/{id}/image` | 200 `ConsultationOfferingResponse`; 404; 409 | 07 |
 | `GET /api/images/{id}` | 200 with the bytes, their `Content-Type` and `Cache-Control: public, max-age=31536000, immutable`; 404; public | 07 |
 
@@ -276,6 +278,7 @@ shadcn/ui components are added when a task first uses them ([frontend.md](../../
 | CSRF in tests | A mutating request uses `.with(Csrf.token())` (01): the `XSRF-TOKEN` cookie and the `X-XSRF-TOKEN` header, as the SPA sends them. Not Spring Security Test's `csrf()`, which swaps the CSRF filter's token repository for a session-based one in the shared Spring context ([security](../../architecture/security.md#testing)). |
 | Test data | Tests never change seed rows. A writing test creates its own offering, through the API or with `@Sql`, and one shared script, run with `@Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)`, deletes every offering that isn't in the seed, with its packages, eligible experts and (07) image. 03 added it as `delete-test-offerings.sql`, in place of the shop tests' `delete-extra-offerings.sql`; 07 adds the image. |
 | Role matrix | A row per new route. An allowed caller must not change data, so a mutating row targets an unknown id (security passes, then 404) or sends no body (400). |
+| Upload limit | MockMvc builds multipart requests itself and never meets the servlet container's limit. `@IntegrationTest` also starts the server on a random port, and `ImageUploadLimitTest` uploads over HTTP, logged in through the PoC login: 2 MB passes, one byte more answers 400 (07). |
 | Concurrency | One test for the offering lock (06): two status changes on one offering, one succeeds and the other gets 409. It must fail without the lock. |
 | Domain | Every cell of the status table, publishing completeness, matching packages by id, `ImageType` detection, `Image` size. |
 | Frontend | Vitest for logic only ([D-29](../../decisions.md#architecture)): `landingPath` and the redirect check, the CSRF header, `lib/problem.ts`. Pages are checked by hand with Playwright. |

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import com.cleanlearning.domain.shared.BusinessRuleException;
@@ -65,6 +66,18 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
                 .toList();
         exception.getBody().setProperty("errors", errors);
         return super.handleMethodArgumentNotValid(exception, headers, status, request);
+    }
+
+    /**
+     * An upload over the multipart limit of {@code application.yml}, 2 MB for an image (D-21), answers 400 like an
+     * image of another type, not Spring's 413. The servlet container stops reading at the limit, so the use case never
+     * sees the file.
+     */
+    @Override
+    protected ResponseEntity<Object> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException exception,
+            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "An image is at most 2 MB.");
+        return handleExceptionInternal(exception, problem, headers, HttpStatus.BAD_REQUEST, request);
     }
 
     /** An entry of a 400's {@code errors}: the field's path as Spring reports it, like {@code packages[1].price}. */

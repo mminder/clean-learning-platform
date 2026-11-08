@@ -169,7 +169,8 @@ class ConsultationOfferingControllerTest {
                   "sessionDurationMinutes": 45,
                   "cancellationDeadlineHours": 48,
                   "packages": [],
-                  "eligibleExpertIds": []
+                  "eligibleExpertIds": [],
+                  "imageId": null
                 }
                 """.formatted(id);
         assertThat(created).bodyJson().isStrictlyEqualTo(expected);
@@ -215,7 +216,8 @@ class ConsultationOfferingControllerTest {
                   "sessionDurationMinutes": 90,
                   "cancellationDeadlineHours": 0,
                   "packages": [],
-                  "eligibleExpertIds": []
+                  "eligibleExpertIds": [],
+                  "imageId": null
                 }
                 """.formatted(id);
         assertThat(edited).hasStatusOk().bodyJson().isStrictlyEqualTo(expected);

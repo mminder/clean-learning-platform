@@ -20,7 +20,7 @@
 frontend/src
 ├─ app/                 router, providers (QueryClient), layout, header navigation
 ├─ api/                 generated schema types + configured openapi-fetch client
-├─ components/          shared components, e.g. ImagePlaceholder
+├─ components/          shared components, e.g. ImagePlaceholder, OfferingImage
 │  └─ ui/               shadcn/ui components
 ├─ lib/                 date formatting (Zurich), money formatting, error mapping
 └─ features/            mirrors the backend features
@@ -94,6 +94,8 @@ UC-16's `ConsultationOfferingForm` is the pattern ([increment 02](../tasks/02-ma
 - **Mutations** invalidate what they change and return the invalidation, so they stay pending until the queries on the screen have reloaded.
 - **A 409** comes from a stale page. The mutation refetches what it changed (`isConflict` in `lib/api-error.ts`), and the page shows the `detail` above the form (`problemMessage` or `showSaveError` in `lib/problem.ts`). A delete doesn't refetch the deleted resource, whose page closes (a refetch would answer 404).
 - **Read-only:** a form that may not be changed, such as an archived offering's, wraps its fields in a disabled `<fieldset>`, has no **Save**, and the page says why. It shows the saved values: the page gives the form a new `key` when it turns read-only, so unsaved edits, which can't be saved any more, don't look saved.
+- **Uploads** (an offering's image) have their own section and mutation, apart from the form's **Save**, and take effect at once. The file goes through the generated client as a `FormData` body: openapi-fetch passes it on without a JSON content type, so the browser sets the multipart one, and the CSRF middleware adds its header as on any `PUT`. A file input's `accept` only helps the picker; the backend decides, and a 400's `detail` shows next to the section.
+- **Images** are plain `<img src="/api/images/{id}">`, through `OfferingImage` (`components/`), which shows `ImagePlaceholder` in the same frame when there's no image.
 - **Confirmations:** an action with a consequence asks first, with `ConfirmDialog` (`components/`, shadcn `alert-dialog`): a title that names the thing, a text that states the consequence, **Cancel** and the action. Cancel changes nothing.
 
 ## Errors

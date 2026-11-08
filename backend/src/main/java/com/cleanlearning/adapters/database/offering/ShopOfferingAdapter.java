@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import com.cleanlearning.adapters.database.offering.row.ConsultationPackageRow;
@@ -15,6 +16,7 @@ import com.cleanlearning.adapters.database.offering.row.ShopConsultationOffering
 import com.cleanlearning.adapters.database.offering.row.ShopOfferingPriceRow;
 import com.cleanlearning.application.offering.LoadShopOfferingPort;
 import com.cleanlearning.application.offering.LoadShopOfferingsPort;
+import com.cleanlearning.domain.image.value.ImageId;
 import com.cleanlearning.domain.offering.ConsultationPackage;
 import com.cleanlearning.domain.offering.EligibleExpert;
 import com.cleanlearning.domain.offering.ShopConsultationOffering;
@@ -69,7 +71,8 @@ class ShopOfferingAdapter implements LoadShopOfferingsPort, LoadShopOfferingPort
     private static ShopConsultationOffering toShopConsultationOffering(ShopConsultationOfferingRow offering,
             List<ConsultationPackageRow> packages, List<EligibleExpertRow> experts) {
         return new ShopConsultationOffering(new OfferingId(offering.id()), new OfferingName(offering.name()),
-                offering.description(), new SessionDuration(offering.sessionDurationMinutes()),
+                offering.description(), imageId(offering.imageId()),
+                new SessionDuration(offering.sessionDurationMinutes()),
                 new CancellationDeadline(offering.cancellationDeadlineHours()),
                 packages.stream().map(ShopOfferingAdapter::toConsultationPackage).toList(),
                 experts.stream().map(ShopOfferingAdapter::toEligibleExpert).toList());
@@ -89,7 +92,11 @@ class ShopOfferingAdapter implements LoadShopOfferingsPort, LoadShopOfferingPort
         List<Money> packagePrices = rows.stream().map(row -> new Money(row.price())).toList();
         return switch (first.type()) {
             case CONSULTATION -> ShopOffering.consultation(new OfferingId(first.id()), new OfferingName(first.name()),
-                    first.description(), packagePrices);
+                    first.description(), imageId(first.imageId()), packagePrices);
         };
+    }
+
+    private static Optional<ImageId> imageId(@Nullable UUID imageId) {
+        return Optional.ofNullable(imageId).map(ImageId::new);
     }
 }

@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router'
 import type { components } from '@/api/schema'
 import { ImagePlaceholder } from '@/components/ImagePlaceholder'
+import { OfferingImage } from '@/components/OfferingImage'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -39,11 +40,15 @@ export function OfferingDetailPage() {
     )
   }
 
-  const { name, description, consultation } = offering.data
+  const { name, description, imageId, consultation } = offering.data
   return (
     <article className="space-y-8">
       <BackToShop />
       <header className="space-y-3">
+        <OfferingImage
+          imageId={imageId}
+          className="aspect-video w-full max-w-2xl rounded-xl"
+        />
         <Badge variant="secondary">Consultation</Badge>
         <h1 className="text-3xl font-semibold">{name}</h1>
         <p className="max-w-prose whitespace-pre-line text-muted-foreground">

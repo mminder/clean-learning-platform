@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -42,6 +43,8 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(requests -> requests
                         .requestMatchers("/api/shop/**").permitAll()
+                        // images of offerings and experts, which the shop shows (D-21)
+                        .requestMatchers(HttpMethod.GET, "/api/images/**").permitAll()
                         // The PoC login. Its controller exists only in the poc profile, elsewhere the routes are 404.
                         .requestMatchers("/api/poc/**").permitAll()
                         // the OpenAPI document (D-29)
