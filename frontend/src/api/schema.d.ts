@@ -123,7 +123,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["listCustomerConsultationCases"];
         put?: never;
         post: operations["purchaseConsultationPackage"];
         delete?: never;
@@ -332,6 +332,19 @@ export interface components {
             /** Format: int32 */
             openCredits: number;
             purchaseTerms: components["schemas"]["PurchaseTermsResponse"];
+            /** Format: date-time */
+            purchasedAt: string;
+            /** Format: int32 */
+            totalCredits: number;
+        };
+        CustomerConsultationCaseSummaryResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            offeringImageId?: string | null;
+            offeringName: string;
+            /** Format: int32 */
+            openCredits: number;
             /** Format: date-time */
             purchasedAt: string;
             /** Format: int32 */
@@ -929,6 +942,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExpertResponse"][];
+                };
+            };
+        };
+    };
+    listCustomerConsultationCases: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerConsultationCaseSummaryResponse"][];
                 };
             };
         };

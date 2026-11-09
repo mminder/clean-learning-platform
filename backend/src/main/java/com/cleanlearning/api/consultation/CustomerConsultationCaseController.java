@@ -1,6 +1,7 @@
 package com.cleanlearning.api.consultation;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.HttpHeaders;
@@ -18,7 +19,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.cleanlearning.api.ProblemResponses;
 import com.cleanlearning.api.consultation.request.PurchaseConsultationPackageRequest;
 import com.cleanlearning.api.consultation.response.CustomerConsultationCaseResponse;
+import com.cleanlearning.api.consultation.response.CustomerConsultationCaseSummaryResponse;
 import com.cleanlearning.application.consultation.GetCustomerConsultationCaseUseCase;
+import com.cleanlearning.application.consultation.ListCustomerConsultationCasesUseCase;
 import com.cleanlearning.application.consultation.PurchaseConsultationPackageCommand;
 import com.cleanlearning.application.consultation.PurchaseConsultationPackageUseCase;
 import com.cleanlearning.domain.consultation.CustomerConsultationCase;
@@ -48,10 +51,23 @@ class CustomerConsultationCaseController {
 
     private final GetCustomerConsultationCaseUseCase getCustomerConsultationCase;
 
+    private final ListCustomerConsultationCasesUseCase listCustomerConsultationCases;
+
     CustomerConsultationCaseController(PurchaseConsultationPackageUseCase purchaseConsultationPackage,
-            GetCustomerConsultationCaseUseCase getCustomerConsultationCase) {
+            GetCustomerConsultationCaseUseCase getCustomerConsultationCase,
+            ListCustomerConsultationCasesUseCase listCustomerConsultationCases) {
         this.purchaseConsultationPackage = purchaseConsultationPackage;
         this.getCustomerConsultationCase = getCustomerConsultationCase;
+        this.listCustomerConsultationCases = listCustomerConsultationCases;
+    }
+
+    /** UC-05's landing page: the current user's own cases, the oldest purchase first. */
+    @GetMapping
+    @ResponseStatus(HttpStatus.OK)
+    List<CustomerConsultationCaseSummaryResponse> listCustomerConsultationCases(
+            @AuthenticationPrincipal CurrentUser currentUser) {
+        return listCustomerConsultationCases.invoke(currentUser).stream()
+                .map(CustomerConsultationCaseSummaryResponse::from).toList();
     }
 
     /**

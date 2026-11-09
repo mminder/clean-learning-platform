@@ -10,8 +10,31 @@ export type PurchaseConsultationPackageRequest =
 export type CustomerConsultationCase =
   components['schemas']['CustomerConsultationCaseResponse']
 
-// The list's key (task 02) is the detail keys' prefix, so invalidating it invalidates every detail, too.
+export type CustomerConsultationCaseSummary =
+  components['schemas']['CustomerConsultationCaseSummaryResponse']
+
+// The list's key is the detail keys' prefix, so invalidating it invalidates every detail, too.
 const customerConsultationCasesKey = ['customer', 'consultation-cases']
+
+/** The customer's own cases, the oldest purchase first (UC-05's landing page). */
+export function useCustomerConsultationCases() {
+  return useQuery({
+    queryKey: customerConsultationCasesKey,
+    queryFn: async () => {
+      const { data, response } = await client.GET(
+        '/api/customer/consultation-cases',
+      )
+      // not `error`: a 401 has an empty body, and openapi-fetch then returns `error: undefined`
+      if (data === undefined) {
+        throw new ApiError(
+          `Loading the cases failed: ${response.status}`,
+          response.status,
+        )
+      }
+      return data
+    },
+  })
+}
 
 /** One of the customer's cases (UC-05). Another customer's case answers 404, like an unknown one. */
 export function useCustomerConsultationCase(id: string) {

@@ -1,20 +1,24 @@
 package com.cleanlearning.adapters.database.consultation;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
 import com.cleanlearning.adapters.database.consultation.entity.ConsultationCaseEntity;
 import com.cleanlearning.adapters.database.consultation.row.CustomerConsultationCaseRow;
+import com.cleanlearning.adapters.database.consultation.row.CustomerConsultationCaseSummaryRow;
 import com.cleanlearning.adapters.database.offering.entity.ConsultationOfferingEntity;
 import com.cleanlearning.adapters.database.offering.entity.ConsultationPackageEntity;
 import com.cleanlearning.adapters.database.offering.entity.OfferingEntity;
 import com.cleanlearning.application.consultation.port.LoadCustomerConsultationCasePort;
+import com.cleanlearning.application.consultation.port.LoadCustomerConsultationCasesPort;
 import com.cleanlearning.application.consultation.port.LockConsultationOfferingForPurchasePort;
 import com.cleanlearning.application.consultation.port.SaveConsultationCasePort;
 import com.cleanlearning.domain.consultation.ConsultationCase;
 import com.cleanlearning.domain.consultation.ConsultationOfferingForPurchase;
 import com.cleanlearning.domain.consultation.CustomerConsultationCase;
+import com.cleanlearning.domain.consultation.CustomerConsultationCaseSummary;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.consultation.value.PurchaseTerms;
 import com.cleanlearning.domain.image.value.ImageId;
@@ -37,7 +41,7 @@ import jakarta.persistence.LockModeType;
  */
 @Component
 class ConsultationCaseAdapter implements LockConsultationOfferingForPurchasePort, SaveConsultationCasePort,
-        LoadCustomerConsultationCasePort {
+        LoadCustomerConsultationCasePort, LoadCustomerConsultationCasesPort {
 
     private final ConsultationCaseRepository repository;
 
@@ -85,6 +89,12 @@ class ConsultationCaseAdapter implements LockConsultationOfferingForPurchasePort
                 .map(ConsultationCaseAdapter::toCustomerConsultationCase);
     }
 
+    @Override
+    public List<CustomerConsultationCaseSummary> loadAll(UserId customerId) {
+        return repository.findCustomerCases(customerId.value()).stream()
+                .map(ConsultationCaseAdapter::toCustomerConsultationCaseSummary).toList();
+    }
+
     private static ConsultationPackage toConsultationPackage(ConsultationPackageEntity entity) {
         return new ConsultationPackage(new ConsultationPackageId(entity.getId()),
                 new SessionCount(entity.getSessionCount()), new Money(entity.getPrice()));
@@ -97,5 +107,12 @@ class ConsultationCaseAdapter implements LockConsultationOfferingForPurchasePort
                         new SessionDuration(row.sessionDurationMinutes()),
                         new CancellationDeadline(row.cancellationDeadlineHours())),
                 row.purchasedAt());
+    }
+
+    private static CustomerConsultationCaseSummary toCustomerConsultationCaseSummary(
+            CustomerConsultationCaseSummaryRow row) {
+        return new CustomerConsultationCaseSummary(new ConsultationCaseId(row.id()),
+                new OfferingName(row.offeringName()), Optional.ofNullable(row.offeringImageId()).map(ImageId::new),
+                new SessionCount(row.sessionCount()), row.purchasedAt());
     }
 }
