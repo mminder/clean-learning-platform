@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
 import type { components } from '@/api/schema'
 import { Button } from '@/components/ui/button'
@@ -15,10 +16,10 @@ import {
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { usePurchaseConsultationPackage } from '@/features/consultation/queries'
-import { ApiError, isBadRequest, isNotFound } from '@/lib/api-error'
 import { formatMoney } from '@/lib/money'
 import { problemMessage } from '@/lib/problem'
-import { useShopOffering } from './queries'
+import { isOfferingGone, purchaseFailure } from './purchase-failure'
+import { fetchShopOffering, shopOfferingKey, useShopOffering } from './queries'
 
 type ConsultationPackage = components['schemas']['ConsultationPackageResponse']
 
@@ -28,6 +29,10 @@ const NOT_AVAILABLE = 'This offering is no longer available.'
  * UC-03 steps 2–7: the trigger (`children`) opens a dialog in two steps. **Choose** lists the offering's packages;
  * **Confirm** states the package and its price, and **Buy** buys exactly these. Then the new case opens. Closing the
  * dialog at either step (**Cancel**, Escape, the close button) creates nothing, and it opens at **Choose** again.
+ *
+ * After a 409 or 404 the shop reloads only when the dialog closes. Reloading at once would take the offering out of
+ * the shop's list and turn its detail page into "Offering not found", and the dialog, a child of both, would vanish
+ * without its message.
  */
 export function BuyConsultationDialog({
   offeringId,
@@ -38,12 +43,29 @@ export function BuyConsultationDialog({
   offeringName: string
   children: ReactNode
 }) {
+  const queryClient = useQueryClient()
+  const shopStale = useRef(false)
   return (
-    <Dialog>
+    <Dialog
+      onOpenChange={(open) => {
+        // Stale after a failed purchase, or when the dialog couldn't load the offering any more.
+        const offeringGone =
+          queryClient.getQueryState(shopOfferingKey(offeringId))?.status ===
+          'error'
+        if (!open && (shopStale.current || offeringGone)) {
+          shopStale.current = false
+          void queryClient.invalidateQueries({ queryKey: ['shop'] })
+        }
+      }}
+    >
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         {/* The content unmounts when the dialog closes, so the steps start again at Choose. */}
-        <BuySteps offeringId={offeringId} offeringName={offeringName} />
+        <BuySteps
+          offeringId={offeringId}
+          offeringName={offeringName}
+          onShopStale={() => (shopStale.current = true)}
+        />
       </DialogContent>
     </Dialog>
   )
@@ -52,22 +74,28 @@ export function BuyConsultationDialog({
 function BuySteps({
   offeringId,
   offeringName,
+  onShopStale,
 }: {
   offeringId: string
   offeringName: string
+  onShopStale: () => void
 }) {
   // On the detail page the packages are cached already.
   const offering = useShopOffering(offeringId)
   const purchase = usePurchaseConsultationPackage()
+  const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [chosenId, setChosenId] = useState<string>()
   // The package as the confirmation states it: the request sends these values, whatever reloads meanwhile.
   const [confirming, setConfirming] = useState<ConsultationPackage>()
   const [unavailable, setUnavailable] = useState(false)
   const [error, setError] = useState<string>()
+  // The purchase, and after a PACKAGE_CHANGED the reload of the packages.
+  const [busy, setBusy] = useState(false)
 
   async function buy(chosen: ConsultationPackage) {
     setError(undefined)
+    setBusy(true)
     let consultationCase
     try {
       consultationCase = await purchase.mutateAsync({
@@ -77,28 +105,41 @@ function BuySteps({
         sessionCount: chosen.sessionCount,
       })
     } catch (failure) {
-      showPurchaseError(failure)
+      await showPurchaseError(failure)
+      setBusy(false)
       return
     }
     navigate(`/my/cases/${consultationCase.id}`)
   }
 
-  /** The mutation has reloaded the shop before it failed, so the packages are the current ones. */
-  function showPurchaseError(failure: unknown) {
-    const code = failure instanceof ApiError ? failure.problem?.code : undefined
-    if (code === 'PACKAGE_CHANGED') {
-      setError(problemMessage(failure, NOT_AVAILABLE))
-      setChosenId(undefined)
-      setConfirming(undefined)
-    } else if (code === 'OFFERING_NOT_AVAILABLE') {
-      setError(problemMessage(failure, NOT_AVAILABLE))
-      setUnavailable(true)
-    } else if (isNotFound(failure)) {
-      setError(NOT_AVAILABLE)
-      setUnavailable(true)
-    } else {
+  async function showPurchaseError(failure: unknown) {
+    const kind = purchaseFailure(failure)
+    if (kind === 'failed') {
       setError('Buying failed. Please try again.')
+      return
     }
+    onShopStale()
+    if (kind === 'offeringGone') {
+      setError(problemMessage(failure, NOT_AVAILABLE))
+      setUnavailable(true)
+      return
+    }
+    // PACKAGE_CHANGED: the current packages, fetched past the cache, so that an offering that left the shop (its
+    // last package removed) doesn't turn the detail page, and this dialog with it, into "Offering not found".
+    try {
+      const current = await fetchShopOffering(offeringId)
+      queryClient.setQueryData(shopOfferingKey(offeringId), current)
+    } catch (reloadFailure) {
+      if (isOfferingGone(reloadFailure)) {
+        setError(NOT_AVAILABLE)
+        setUnavailable(true)
+        return
+      }
+      // Otherwise Choose keeps the packages it has; buying again tells.
+    }
+    setError(problemMessage(failure, NOT_AVAILABLE))
+    setChosenId(undefined)
+    setConfirming(undefined)
   }
 
   const title = (
@@ -109,9 +150,7 @@ function BuySteps({
 
   // An offering that left the shop (a 404 or a malformed id) can't be bought: only Close is left.
   const gone =
-    unavailable ||
-    (offering.isError &&
-      (isNotFound(offering.error) || isBadRequest(offering.error)))
+    unavailable || (offering.isError && isOfferingGone(offering.error))
   if (gone) {
     return (
       <>
@@ -143,7 +182,7 @@ function BuySteps({
         <DialogFooter>
           <Button
             variant="outline"
-            disabled={purchase.isPending}
+            disabled={busy}
             onClick={() => {
               setError(undefined)
               setConfirming(undefined)
@@ -151,10 +190,7 @@ function BuySteps({
           >
             Back
           </Button>
-          <Button
-            disabled={purchase.isPending}
-            onClick={() => void buy(confirming)}
-          >
+          <Button disabled={busy} onClick={() => void buy(confirming)}>
             Buy
           </Button>
         </DialogFooter>

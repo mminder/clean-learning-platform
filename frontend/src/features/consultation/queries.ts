@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { client } from '@/api/client'
 import type { components } from '@/api/schema'
-import { ApiError, isConflict, isNotFound } from '@/lib/api-error'
+import { ApiError } from '@/lib/api-error'
 import { problemOf } from '@/lib/problem'
 
 export type PurchaseConsultationPackageRequest =
@@ -36,8 +36,7 @@ export function useCustomerConsultationCase(id: string) {
 
 /**
  * Buys a package at the price and session count the dialog's confirmation stated (UC-03). A 409 or 404 means the
- * dialog showed a stale offering, so the shop reloads, the dialog's packages included; the mutation fails only after
- * that, so the dialog then shows the current packages.
+ * dialog showed a stale offering; the dialog reloads its packages, and the shop when it closes (`BuyConsultationDialog`).
  */
 export function usePurchaseConsultationPackage() {
   const queryClient = useQueryClient()
@@ -58,9 +57,5 @@ export function usePurchaseConsultationPackage() {
     },
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: customerConsultationCasesKey }),
-    onError: (error) =>
-      isConflict(error) || isNotFound(error)
-        ? queryClient.invalidateQueries({ queryKey: ['shop'] })
-        : undefined,
   })
 }

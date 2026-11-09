@@ -224,12 +224,12 @@ frontend/src
   | 404 | "This offering is no longer available." | only **Close** is left |
   | anything else | "Buying failed. Please try again." | stays on **Confirm** |
 
-  A 409 or 404 invalidates `['shop']`, so the card, the detail page and the dialog reload: an offering that left the shop shows "Offering not found" on its detail page, and leaves the shop's list.
+  After a 409 `PACKAGE_CHANGED` the dialog fetches the offering past the cache and puts it into `['shop', 'offerings', id]`, so **Choose** and the detail page show the current packages; if that fetch answers 404 (the last package was removed, so the offering left the shop), the dialog shows "This offering is no longer available." with only **Close**. After any 409 or 404, `['shop']` is invalidated when the dialog closes, not before: the dialog is a child of the card and of the detail page, and reloading at once would take the card out of the list or turn the detail page into "Offering not found", so the dialog would vanish without its message. Once it's closed, an offering that left the shop shows "Offering not found" on its detail page, and leaves the shop's list.
 
 ### Queries
 
 - **Query keys:** `['customer', 'consultation-cases']` (list, 02), `['customer', 'consultation-cases', id]` (detail, 01).
-- **`usePurchaseConsultationPackage`** invalidates `['customer', 'consultation-cases']`, which includes every detail; on a 409 or 404, `['shop']` as well.
+- **`usePurchaseConsultationPackage`** invalidates `['customer', 'consultation-cases']`, which includes every detail. On a 409 or 404 the dialog invalidates `['shop']` when it closes ([Buy](#buy)).
 - After login the cache is reset, and after logout the page reloads ([frontend.md](../../architecture/frontend.md#navigation-and-auth)), so no customer's cases stay in memory.
 
 ### Pages
