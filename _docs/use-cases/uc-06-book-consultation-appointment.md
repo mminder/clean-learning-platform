@@ -46,7 +46,7 @@ The customer turns an open credit into an appointment with an expert.
 - Availability ranges and the grid are Zurich wall-clock times, but a session lasts its real duration. On the days of the summer-time changes, a start time is offered only if it exists exactly once on that date, and the session must end, as an instant, at or before the end of its range (D-10, decided 2026-11-09).
 - The session duration comes from the case's purchase terms.
 - There's no buffer between sessions.
-- A customer's appointments never overlap, across all their cases and experts, so a time that overlaps one of them isn't offered. Touching is fine (decided 2026-11-09).
+- A customer's appointments never overlap, across all their cases and experts, so a time that overlaps one of them isn't offered, and a booking of it is refused as a taken slot. Touching is fine. The booking doesn't lock the customer, so two bookings by the same customer at the same instant, on two cases with two different experts, could still overlap; that's accepted (decided 2026-11-09).
 - A customer can book several future appointments, up to the open credits.
 - The assigned expert can't be changed. All appointments of a case are with the same expert.
 - A user with `EXPERT` and `CUSTOMER` may select themself (D-06).

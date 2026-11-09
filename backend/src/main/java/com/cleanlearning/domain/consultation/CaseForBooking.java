@@ -85,9 +85,9 @@ public record CaseForBooking(ConsultationCaseId id, PurchaseTerms purchaseTerms,
     }
 
     /**
-     * The slots the customer can book with the expert whose availability and busy time {@code slotFinder} holds,
-     * soonest first: each start time for the case's session duration, with its end and its free-cancellation time from
-     * the case's cancellation deadline (UC-06 steps 3–5).
+     * The slots the customer can book with the expert, from the expert's availability and the expert's and the
+     * customer's busy time that {@code slotFinder} holds, soonest first: each start time for the case's session
+     * duration, with its end and its free-cancellation time from the case's cancellation deadline (UC-06 steps 3–5).
      */
     public List<BookableSlot> bookableSlots(SlotFinder slotFinder, Instant now) {
         return slotFinder.startTimes(purchaseTerms.sessionDuration(), now).stream()
@@ -100,7 +100,7 @@ public record CaseForBooking(ConsultationCaseId id, PurchaseTerms purchaseTerms,
      * Books a session at {@code start} with the named expert (UC-06 step 7): a new appointment, and on the first
      * booking the expert it assigns. It checks every rule itself, in this order: an open credit, the expert, the slot.
      *
-     * @param slotFinder the named expert's availability and busy time
+     * @param slotFinder the named expert's availability, and the expert's and the customer's busy time
      * @throws BusinessRuleException {@link #NO_OPEN_CREDITS}, {@link #EXPERT_CHANGED}, {@link #EXPERT_NOT_ELIGIBLE},
      *     or {@link #SLOT_NOT_AVAILABLE} if {@code start} isn't a bookable slot
      */

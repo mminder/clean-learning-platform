@@ -107,7 +107,9 @@ public class BookConsultationAppointmentUseCase {
         UserId expertId = consultationCase.expertFor(command.expertId());
         lockExpert.lock(expertId);                                       // D-27: case → expert
         Instant now = clock.instant();
-        SlotFinder slotFinder = new SlotFinder(loadAvailability.load(expertId, today), loadBusyTimes.load(expertId, now));
+        List<BusyTime> busyTimes = Stream.concat(loadBusyTimes.load(expertId, now).stream(),  // the expert's busy time
+                loadCustomerBusyTimes.loadCustomerBusyTimes(user.id(), now).stream()).toList(); // and the customer's
+        SlotFinder slotFinder = new SlotFinder(loadAvailability.load(expertId, today), busyTimes);
         Booking booking = consultationCase.book(expertId, command.start(), slotFinder, now); // the domain decides
         saveBooking.save(booking);
         return booking.appointment().at(now);
