@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | Ready |
+| Status | Done |
 | Use cases | [UC-03](../use-cases/uc-03-purchase-consultation-package.md), all steps except step 7's hint (decision 2); [UC-05](../use-cases/uc-05-view-my-purchases.md), the landing page and the case detail for cases, as far as cases have data yet (decisions 1, 2); [UC-01](../use-cases/uc-01-login.md), login from **Buy** and the customer's landing page; [UC-02](../use-cases/uc-02-browse-shop.md), the **Buy** button; [UC-16](../use-cases/uc-16-manage-consultation-offering.md), the purchase guard on unpublish and delete |
 | Tasks | [tasks/03-buy-consultation-package](../tasks/03-buy-consultation-package/README.md) |
 

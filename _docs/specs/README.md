@@ -89,4 +89,4 @@ What could go wrong, and how the plan addresses it.
 |---|---|---|
 | 01 | [Shop tracer bullet](01-shop-tracer-bullet.md) | Done |
 | 02 | [Manage consultation offerings](02-manage-consultation-offerings.md) | Done |
-| 03 | [Buy a consultation package](03-buy-consultation-package.md) | Ready |
+| 03 | [Buy a consultation package](03-buy-consultation-package.md) | Done |
