@@ -17,6 +17,22 @@ export function formatDateTime(instant: string): string {
   return format(new TZDate(instant, ZURICH), 'd MMM yyyy, HH:mm')
 }
 
+/**
+ * An instant from the API (ISO-8601 with offset) as Zurich's time of the day, for example `10:00`. A slot or an
+ * appointment shows as its start's and end's times, `10:00–11:00`, with "(Zurich time)" once on the page.
+ */
+export function formatTime(instant: string): string {
+  return format(new TZDate(instant, ZURICH), 'HH:mm')
+}
+
+/**
+ * The Zurich calendar date of an instant from the API, as the API writes a local date: `2026-11-17T23:30:00Z` →
+ * `2026-11-18`. The booking dialog groups the slots by it.
+ */
+export function localDateOf(instant: string): string {
+  return format(new TZDate(instant, ZURICH), 'yyyy-MM-dd')
+}
+
 /** A local date from the API (ISO-8601, `yyyy-MM-dd`), a Zurich calendar date, as text: `2026-11-17` → `17 Nov 2026`. */
 export function formatLocalDate(localDate: string): string {
   return format(toCalendarDay(localDate), 'd MMM yyyy')

@@ -148,6 +148,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/customer/consultation-cases/{id}/appointments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["bookConsultationAppointment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/customer/consultation-cases/{id}/bookable-slots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listBookableSlots"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/customer/consultation-cases/{id}/eligible-experts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listEligibleExpertsForCase"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/expert/availability": {
         parameters: {
             query?: never;
@@ -280,6 +328,12 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AssignedExpertResponse: {
+            bio: string;
+            displayName: string;
+            /** Format: uuid */
+            id: string;
+        };
         AvailabilityRequest: {
             dates: string[];
             timeRanges: components["schemas"]["TimeRangeRequest"][];
@@ -287,6 +341,20 @@ export interface components {
         AvailabilityResponse: {
             dates: string[];
             timeRanges: components["schemas"]["TimeRangeResponse"][];
+        };
+        BookConsultationAppointmentRequest: {
+            /** Format: uuid */
+            expertId: string;
+            /** Format: date-time */
+            start: string;
+        };
+        BookableSlotResponse: {
+            /** Format: date-time */
+            end: string;
+            /** Format: date-time */
+            freeCancellationUntil: string;
+            /** Format: date-time */
+            start: string;
         };
         ConsultationOfferingDetailResponse: {
             /** Format: int32 */
@@ -347,7 +415,19 @@ export interface components {
             /** Format: int32 */
             sessionCount: number;
         };
+        CustomerAppointmentResponse: {
+            /** Format: date-time */
+            end: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            start: string;
+            /** @enum {string} */
+            status: "BOOKED" | "CONSUMED";
+        };
         CustomerConsultationCaseResponse: {
+            canBook: boolean;
+            expert?: components["schemas"]["AssignedExpertResponse"] | null;
             /** Format: uuid */
             id: string;
             /** Format: uuid */
@@ -355,11 +435,13 @@ export interface components {
             offeringName: string;
             /** Format: int32 */
             openCredits: number;
+            pastAppointments: components["schemas"]["CustomerAppointmentResponse"][];
             purchaseTerms: components["schemas"]["PurchaseTermsResponse"];
             /** Format: date-time */
             purchasedAt: string;
             /** Format: int32 */
             totalCredits: number;
+            upcomingAppointments: components["schemas"]["CustomerAppointmentResponse"][];
         };
         CustomerConsultationCaseSummaryResponse: {
             /** Format: uuid */
@@ -1082,6 +1164,159 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CustomerConsultationCaseResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    bookConsultationAppointment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookConsultationAppointmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerAppointmentResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    listBookableSlots: {
+        parameters: {
+            query: {
+                expertId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookableSlotResponse"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    listEligibleExpertsForCase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EligibleExpertResponse"][];
                 };
             };
             /** @description Bad Request */

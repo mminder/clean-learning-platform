@@ -1,6 +1,7 @@
 package com.cleanlearning.application.consultation;
 
 import java.time.Clock;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,10 +50,11 @@ public class PurchaseConsultationPackageUseCase {
     public CustomerConsultationCase invoke(CurrentUser user, PurchaseConsultationPackageCommand command) {
         ConsultationOfferingForPurchase offering = lockOffering.lock(command.offeringId())
                 .orElseThrow(() -> new NotFoundException("Offering " + command.offeringId().value() + " not found."));
+        Instant now = clock.instant();
         ConsultationCase consultationCase = offering.purchase(user.id(), command.packageId(), command.price(),
-                command.sessionCount(), clock.instant());
+                command.sessionCount(), now);
         saveCase.create(consultationCase);
-        return loadCase.load(consultationCase.id(), user.id())
+        return loadCase.load(consultationCase.id(), user.id(), now)
                 .orElseThrow(() -> new IllegalStateException(
                         "Case " + consultationCase.id().value() + " was created but isn't found."));
     }

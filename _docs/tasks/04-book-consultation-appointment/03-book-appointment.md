@@ -5,7 +5,7 @@
 | Increment | [04 Book a consultation appointment](../../specs/04-book-consultation-appointment.md) |
 | Type | AFK |
 | Blocked by | [01](01-manage-availability.md), [02](02-bookable-slots.md) |
-| Status | Todo |
+| Status | In progress |
 
 ## Goal
 

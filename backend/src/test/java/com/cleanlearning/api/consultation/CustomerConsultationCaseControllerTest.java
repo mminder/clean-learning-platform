@@ -177,7 +177,11 @@ class CustomerConsultationCaseControllerTest {
                   },
                   "purchasedAt": "%s",
                   "openCredits": 3,
-                  "totalCredits": 3
+                  "totalCredits": 3,
+                  "expert": null,
+                  "upcomingAppointments": [],
+                  "pastAppointments": [],
+                  "canBook": true
                 }
                 """.formatted(id, JsonPath.read(body, "$.purchasedAt"));
         assertThat(bought).bodyJson().isStrictlyEqualTo(expected);

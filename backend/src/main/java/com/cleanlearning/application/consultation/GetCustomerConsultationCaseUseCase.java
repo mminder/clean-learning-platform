@@ -1,5 +1,7 @@
 package com.cleanlearning.application.consultation;
 
+import java.time.Clock;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,17 +19,22 @@ public class GetCustomerConsultationCaseUseCase {
 
     private final LoadCustomerConsultationCasePort loadCase;
 
-    GetCustomerConsultationCaseUseCase(LoadCustomerConsultationCasePort loadCase) {
+    private final Clock clock;
+
+    GetCustomerConsultationCaseUseCase(LoadCustomerConsultationCasePort loadCase, Clock clock) {
         this.loadCase = loadCase;
+        this.clock = clock;
     }
 
     /**
+     * The case as shown now: its appointments' status and the credits are derived from the current time.
+     *
      * @throws NotFoundException if there's no case with this id, or it's another customer's: both answer 404, so
      *     nobody can probe which ids exist
      */
     @Transactional(readOnly = true)
     public CustomerConsultationCase invoke(CurrentUser user, ConsultationCaseId id) {
-        return loadCase.load(id, user.id())
+        return loadCase.load(id, user.id(), clock.instant())
                 .orElseThrow(() -> new NotFoundException("Case " + id.value() + " not found."));
     }
 }

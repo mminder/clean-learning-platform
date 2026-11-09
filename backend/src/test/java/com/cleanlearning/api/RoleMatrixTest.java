@@ -54,6 +54,13 @@ class RoleMatrixTest {
             new Route(POST, "/api/customer/consultation-cases", Access.CUSTOMER), // no body: 400
             new Route(GET, "/api/customer/consultation-cases", Access.CUSTOMER),
             new Route(GET, "/api/customer/consultation-cases/" + UNKNOWN_ID, Access.CUSTOMER), // unknown id: 404
+            // unknown id: 404
+            new Route(GET, "/api/customer/consultation-cases/" + UNKNOWN_ID + "/eligible-experts", Access.CUSTOMER),
+            // unknown id: 404
+            new Route(GET, "/api/customer/consultation-cases/" + UNKNOWN_ID + "/bookable-slots?expertId="
+                    + SeedData.EXPERT_2, Access.CUSTOMER),
+            // no body: 400
+            new Route(POST, "/api/customer/consultation-cases/" + UNKNOWN_ID + "/appointments", Access.CUSTOMER),
             new Route(GET, "/api/admin/consultation-offerings", Access.ADMIN),
             new Route(POST, "/api/admin/consultation-offerings", Access.ADMIN), // no body: 400
             new Route(GET, "/api/admin/consultation-offerings/" + SeedData.CAREER_COACHING, Access.ADMIN),

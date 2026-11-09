@@ -1,9 +1,12 @@
--- Deletes every case, every availability, then every offering that isn't in the poc seed, with its packages, eligible
--- experts and image, so a test's data doesn't leak into other tests. Tests that buy, save availability or write
--- offerings run it after each test method (SeedData.DELETE_TEST_DATA). The seed stays: it has no cases and no
--- availability (spec 04, decision 8), and tests never change seed rows.
+-- Deletes every appointment, every case and every availability, then every offering that isn't in the poc seed,
+-- with its packages, eligible experts and image, so a test's data doesn't leak into other tests. Tests that buy, book,
+-- save availability or write offerings run it after each test method (SeedData.DELETE_TEST_DATA). The seed stays: it
+-- has no cases, no appointments and no availability (spec 04, decision 8), and tests never change seed rows.
 
--- Cases first: they refer to the offerings and the users.
+-- Appointments first: they refer to the cases.
+delete from appointment;
+
+-- Then the cases: they refer to the offerings and the users, and their assigned experts to the expert profiles.
 delete from consultation_case;
 
 -- Every expert's availability: the seed has none.
