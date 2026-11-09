@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -466,6 +467,28 @@ class CustomerConsultationCaseControllerTest {
                 JsonPath.read(body, "$[1].purchasedAt")));
         assertThat(Instant.parse(JsonPath.read(body, "$[0].purchasedAt")))
                 .isBeforeOrEqualTo(Instant.parse(JsonPath.read(body, "$[1].purchasedAt")));
+    }
+
+    /**
+     * The order is the purchase time, then the id, not the insertion order: the later-bought case gets an earlier
+     * purchase time (a test case, never a seed row), and two cases with the same time come by id.
+     */
+    @Test
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
+    void listsByPurchaseTimeThenId() throws Exception {
+        String first = bought(CAREER_COACHING_3_SESSIONS);
+        String second = bought(CAREER_COACHING_3_SESSIONS);
+        jdbc.sql("update consultation_case set purchased_at = purchased_at - interval '1 day' where id = ?::uuid")
+                .param(second).update();
+
+        assertThat(list(SeedData.CUSTOMER_1)).hasStatusOk()
+                .bodyJson().extractingPath("$[*].id").asList().containsExactly(second, first);
+
+        jdbc.sql("update consultation_case set purchased_at = timestamptz '2026-11-09 14:00:00Z'").update();
+        List<String> byId = Stream.of(first, second).sorted().toList();
+
+        assertThat(list(SeedData.CUSTOMER_1)).hasStatusOk()
+                .bodyJson().extractingPath("$[*].id").asList().containsExactlyElementsOf(byId);
     }
 
     @Test
