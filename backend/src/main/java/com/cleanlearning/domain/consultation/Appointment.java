@@ -8,12 +8,14 @@ import java.util.Objects;
 import com.cleanlearning.domain.consultation.value.AppointmentId;
 import com.cleanlearning.domain.consultation.value.AppointmentStatus;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
+import com.cleanlearning.domain.offering.value.SessionCount;
 
 /**
  * A booked appointment of a case (UC-06): one session with the case's assigned expert, from start to end. It holds the
  * appointments' rules at a given time, which the case detail and "My purchases" share (glossary, spec 04 decision 21):
  * it's {@code BOOKED} until its start and {@code CONSUMED} from its start on, and upcoming until its end, so a running
- * appointment is consumed and upcoming at once. The column's check repeats that it ends after it starts (D-36).
+ * appointment is consumed and upcoming at once; and the open credits, which the booking checks, too. The column's
+ * check repeats that it ends after it starts (D-36).
  */
 public record Appointment(AppointmentId id, ConsultationCaseId consultationCaseId, Instant start, Instant end) {
 
@@ -44,6 +46,16 @@ public record Appointment(AppointmentId id, ConsultationCaseId consultationCaseI
     public static List<CustomerAppointment> past(List<Appointment> appointments, Instant asOf) {
         return appointments.stream().filter(appointment -> !appointment.isUpcomingAt(asOf))
                 .sorted(BY_START.reversed()).map(appointment -> appointment.at(asOf)).toList();
+    }
+
+    /**
+     * Computed, never stored (D-11): the open credits of a case with this session count and this many booked
+     * appointments, each of which uses a credit, consumed or not, until forfeited credits (UC-07) and credit
+     * adjustments (UC-18) exist (spec 04, decision 15). The booking's check, the case detail and "My purchases" all
+     * count with this one rule, so what the pages show and what the booking allows can't drift apart.
+     */
+    public static int openCredits(SessionCount sessionCount, int bookedAppointments) {
+        return sessionCount.value() - bookedAppointments;
     }
 
     /** Computed, never stored (D-11): {@code BOOKED} while the start is ahead, {@code CONSUMED} from the start on. */

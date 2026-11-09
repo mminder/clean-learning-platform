@@ -13,10 +13,12 @@ import org.junit.jupiter.api.Test;
 import com.cleanlearning.domain.consultation.value.AppointmentId;
 import com.cleanlearning.domain.consultation.value.AppointmentStatus;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
+import com.cleanlearning.domain.offering.value.SessionCount;
 
 /**
  * A booked appointment at a given time (glossary, spec 04 decision 21): {@code BOOKED} until its start, then
- * {@code CONSUMED}; upcoming until its end, past from its end on. Instants are in UTC; Zurich is UTC+1 in November.
+ * {@code CONSUMED}; upcoming until its end, past from its end on; and the credits the booked appointments use.
+ * Instants are in UTC; Zurich is UTC+1 in November.
  */
 class AppointmentTest {
 
@@ -92,6 +94,14 @@ class AppointmentTest {
             assertThat(Appointment.upcoming(List.of(appointment), asOf).size()
                     + Appointment.past(List.of(appointment), asOf).size()).as("at " + asOf).isOne();
         }
+    }
+
+    @Test
+    void theOpenCreditsAreTheSessionsLessTheBookedAppointmentsConsumedOrNot() {
+        assertThat(Appointment.openCredits(new SessionCount(3), 0)).isEqualTo(3);
+        assertThat(Appointment.openCredits(new SessionCount(3), 2)).isEqualTo(1);
+        assertThat(Appointment.openCredits(new SessionCount(3), 3)).isZero();
+        assertThat(Appointment.openCredits(new SessionCount(5), 1)).isEqualTo(4);
     }
 
     @Test

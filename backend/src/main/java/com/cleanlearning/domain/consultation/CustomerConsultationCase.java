@@ -40,12 +40,9 @@ public record CustomerConsultationCase(ConsultationCaseId id, OfferingName offer
         return purchaseTerms.sessionCount().value();
     }
 
-    /**
-     * Computed, never stored (D-11): every booked appointment uses a credit, consumed or not, until forfeited credits
-     * (UC-07) exist (spec 04, decision 15).
-     */
+    /** Every booked appointment uses a credit, consumed or not, counted as the booking counts them. */
     public int openCredits() {
-        return totalCredits() - appointments.size();
+        return Appointment.openCredits(purchaseTerms.sessionCount(), appointments.size());
     }
 
     /** Whether the customer can book an appointment: an open credit is left. UC-08 adds "and the case is active". */

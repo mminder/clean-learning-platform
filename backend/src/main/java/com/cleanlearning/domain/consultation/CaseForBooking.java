@@ -50,12 +50,9 @@ public record CaseForBooking(ConsultationCaseId id, PurchaseTerms purchaseTerms,
         eligibleExperts = List.copyOf(eligibleExperts);
     }
 
-    /**
-     * Computed, never stored (D-11): the session count less the booked appointments, until forfeited credits (UC-07)
-     * and credit adjustments (UC-18) exist (spec 04, decision 15).
-     */
+    /** The session count less the booked appointments, counted as the case detail counts them. */
     public int openCredits() {
-        return purchaseTerms.sessionCount().value() - bookedAppointments;
+        return Appointment.openCredits(purchaseTerms.sessionCount(), bookedAppointments);
     }
 
     /** @throws BusinessRuleException {@link #NO_OPEN_CREDITS} if every credit is booked */
