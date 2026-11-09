@@ -5,7 +5,7 @@
 | Increment | [04 Book a consultation appointment](../../specs/04-book-consultation-appointment.md) |
 | Type | AFK |
 | Blocked by | [03](03-book-appointment.md) |
-| Status | Todo |
+| Status | Done |
 
 ## Goal
 
@@ -23,11 +23,11 @@ Read first: [D-27](../../decisions.md#architecture), [backend.md](../../architec
 
 ## Acceptance criteria
 
-- [ ] Both tests pass five runs out of five and in `./mvnw verify`.
-- [ ] The first fails without the expert's lock, the second without the case's lock (three runs each, noted).
-- [ ] No request waits beyond the tests' timeout, with or without the locks: each test ends with a clear assertion, not a hang.
-- [ ] [backend.md](../../architecture/backend.md#concurrency) says how the tests make the races certain, if it needs more than the purchase's sentence.
-- [ ] Every check passes.
+- [x] Both tests pass five runs out of five and in `./mvnw verify`.
+- [x] The first fails without the expert's lock, the second without the case's lock (three runs each, noted).
+- [x] No request waits beyond the tests' timeout, with or without the locks: each test ends with a clear assertion, not a hang.
+- [x] [backend.md](../../architecture/backend.md#concurrency) says how the tests make the races certain, if it needs more than the purchase's sentence.
+- [x] Every check passes.
 
 ## Tests
 
@@ -40,3 +40,8 @@ Read first: [D-27](../../decisions.md#architecture), [backend.md](../../architec
 
 ## Notes
 
+- **`ConsultationCaseConcurrencyTest`**, in `api.consultation`, copies the helpers of `ConsultationOfferingConcurrencyTest` (the row locks from the test's own connections, the 10-second `await`, the shut-down that waits for the requests). Both tests set the clock to Mon 9 Nov 2026, 15:00 (Zurich), save the experts' availability on 17 Nov, 09:00–12:00, and buy through the API. A booking answers its status, and for a 409 its code too, so a failure reads, for example, `["201", "201"]`.
+- **Two customers, one slot:** the test holds Expert 2's `app_user` row (`for no key update`) and their `expert_profile` row (`for update`) on two connections, starts both bookings of 17 Nov, 10:00, and waits until `pg_stat_activity` shows two statements on `app_user` or `consultation_case` waiting for a lock (with the lock, the `app_user` lock; without it, the case's update, whose foreign key check of the expert waits). It lets go of `app_user`, waits until two requests wait for a lock that the `expert_profile` connection holds or that neither test connection holds (`pg_blocking_pids`: one waits at the foreign key, the other for it), and only then lets go of `expert_profile`. It asserts 201 and 409 `SLOT_NOT_AVAILABLE`, and one appointment of Expert 2 at 10:00.
+- **Two tabs, one credit:** `one-session-offering.sql` adds Mock Interview, published, 60 minutes, one package of 1 session for CHF 150, Expert 1 and Expert 2 eligible. Customer 1 buys it, and books it twice at once: Expert 1 at 10:00 and Expert 2 at 11:00. The test holds the case's row (`for no key update`) until both wait for a lock, then lets go. It asserts 201 and 409 `NO_OPEN_CREDITS`, and one appointment of the case.
+- **Checked:** with `UserAdapter.lock`'s `find` made plain, the first test failed three runs out of three with `["201", "201"]` (about 1 s each). With `@Lock` removed from `ConsultationCaseRepository.lockCustomerCaseEntity`, the second failed three runs out of three with `["201", "201"]` (about 1 s each). No run hung. With the code restored (`git diff` showed nothing under `src/main`), both passed five runs out of five (about 1.1 s and 0.1 s), and in `./mvnw verify`. The booking needed no change.
+- **Docs:** backend.md's concurrency section has a sentence on how the booking's tests make their races certain.
