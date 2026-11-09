@@ -29,7 +29,10 @@ public record CustomerConsultationCaseSummary(ConsultationCaseId id, OfferingNam
         return sessionCount.value();
     }
 
-    /** Computed, never stored (D-11): every credit is open until appointments exist (UC-06). */
+    /**
+     * Computed, never stored (D-11). TODO task 04 of increment 04: the summary gets its appointments and subtracts
+     * them; until then every credit counts as open here, while the case detail subtracts its booked appointments.
+     */
     public int openCredits() {
         return totalCredits();
     }

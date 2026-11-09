@@ -85,11 +85,13 @@ A shadcn/ui component is added when a page first uses it: run `npx shadcn@latest
   |---|---|
   | `formatDate(instant)` | 9 Nov 2026 |
   | `formatDateTime(instant)` | 9 Nov 2026, 15:03 |
+  | `formatTime(instant)` | 10:00 |
+  | `localDateOf(instant)` | `2026-11-17T23:30:00Z` → 2026-11-18, the Zurich date of an instant (the booking dialog groups the slots by it) |
   | `formatLocalDate(localDate)` | `2026-11-17` → 17 Nov 2026 |
   | `todayInZurich()` | 2026-11-09 |
   | `toCalendarDay(localDate)`, `fromCalendarDay(date)` | `2026-11-17` ↔ the calendar's `Date` for that day in Zurich |
 
-  A page that shows a time adds "(Zurich time)" once, next to it, as the case detail does after its purchase time.
+  A page that shows a time adds "(Zurich time)" once, next to it, as the case detail does after its purchase time and next to its appointments' headings. A slot or an appointment shows as `17 Nov 2026, 10:00–11:00` (`formatDateAndTimes` in `features/consultation/appointment-times.ts`, from `formatDate` and `formatTime`).
 - **The calendar** (shadcn `calendar`, `react-day-picker`) gets `timeZone="Europe/Zurich"`, so its days, today and its disabled days are Zurich's whatever the browser's time zone. Its days are `Date`s at the start of the day in Zurich: `toCalendarDay` turns the API's local dates into them, and `fromCalendarDay` turns a selected day back into a local date (`AvailabilityForm`).
 - Local times from the API (`09:00:00`) go into a time input cut to `HH:mm`; the input sends them as `09:00`, which the API reads as the same time.
 - The frontend never decides a business rule (deadline passed, seats left, link window). It shows what the API returns, for example `canCancel`, `refundIfCancelledNow` and `teamsLink`.

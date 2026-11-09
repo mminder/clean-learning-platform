@@ -252,7 +252,9 @@ frontend/src
 └─ features/
    ├─ availability/   queries.ts: useAvailability, useSaveAvailability; AvailabilityPage, AvailabilityForm (01)
    └─ consultation/   queries.ts: useEligibleExperts, useBookableSlots, useBookConsultationAppointment (03);
-                      BookAppointmentDialog (03); ConsultationCasePage (03); MyPurchasesPage, ConsultationCaseCard (04)
+                      BookAppointmentDialog, with booking-failure.ts (the error table's kinds) and
+                      bookable-slots.ts (slotsByDate) (03); appointment-times.ts: formatTimes, formatDateAndTimes (03);
+                      ConsultationCasePage (03); MyPurchasesPage, ConsultationCaseCard (04)
 ```
 
 | Route | Page | Access | Task |
@@ -280,7 +282,9 @@ frontend/src
 | Time | "Choose a time (Zurich time)."; one radio item per slot of the date: "10:00–11:00" | **Back**; **Continue**, once a time is chosen |
 | Confirm | "Book Expert 2 on 17 Nov 2026, 10:00–11:00 (60 min, Zurich time)?" and "Free cancellation until 16 Nov 2026, 10:00." (spec decision 7) | **Back**; **Book** |
 
-- **The slots** come from `useBookableSlots(caseId, expertId)` once the expert is known; the dialog groups them by `localDateOf(start)`. The duration comes from the case's purchase terms.
+- **The slots** come from `useBookableSlots(caseId, expertId)` once the expert is known; the dialog groups them by `localDateOf(start)` (`slotsByDate`). The duration comes from the case's purchase terms.
+- **The expert step's Continue** loads the picked expert's slots before the dates show (`fetchQuery`), so a 409 of the slots route (`EXPERT_CHANGED`, `EXPERT_NOT_ELIGIBLE`) follows the error table below, as the booking's does; the case, its experts and its slots reload first. Anything else stays on **Expert** with "The times could not be loaded. Please try again." (03)
+- **The expert** the dialog books is the case's as the dialog opened, or the one picked; a reload of the case meanwhile doesn't change it, so the request names the expert the confirmation stated. Only `EXPERT_CHANGED` switches to the reloaded case's expert (03).
 - **After the booking** the dialog closes; the case detail shows the new appointment and the credits.
 - **Errors** show in the dialog (`role="alert"`):
 
@@ -305,7 +309,7 @@ frontend/src
 | **Book appointment** | under the terms; disabled unless `canBook`. While the case has no appointment, "Book your first session" next to it |
 | Your expert | with an expert: `ImagePlaceholder`, name, bio, as the shop's offering detail shows experts (spec decision 3) |
 | Upcoming appointments | each "17 Nov 2026, 10:00–11:00", soonest first, with "(Zurich time)" once; a `CONSUMED` one, which is running, says "Now"; hidden when empty |
-| Past appointments | each with "Consumed", newest first; hidden when empty |
+| Past appointments | each with "Consumed", newest first, with "(Zurich time)" once; hidden when empty |
 
 ### My purchases
 
@@ -315,7 +319,7 @@ frontend/src
 
 - **Query keys:** `['expert', 'availability']` (01). Under the case's key, so that invalidating the cases reloads them too: `['customer', 'consultation-cases', id, 'eligible-experts']` and `['customer', 'consultation-cases', id, 'bookable-slots', expertId]` (03).
 - **`useSaveAvailability`** puts the answer into `['expert', 'availability']`.
-- **`useBookConsultationAppointment(caseId)`** invalidates `['customer', 'consultation-cases']`: the list, every case, its experts and its slots. On a 409 the dialog refetches what the error table says.
+- **`useBookConsultationAppointment(caseId)`** invalidates `['customer', 'consultation-cases']`: the list, every case, its experts and its slots, after a booking and after a 409, as [frontend.md](../../architecture/frontend.md#forms)'s mutations do. So on a 409 the case reloads, and with it what the error table says, before the dialog changes its step.
 
 ### Dates
 

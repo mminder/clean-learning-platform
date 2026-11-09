@@ -97,27 +97,29 @@ Features aren't isolated from each other (D-23). A use case may use domain class
 
 ```java
 @Service
-class BookConsultationAppointmentUseCase {
-    // ports injected via constructor
+public class BookConsultationAppointmentUseCase {
+    // ports and the Clock injected via constructor
     @Transactional
-    BookedAppointment invoke(CurrentUser user, BookAppointmentCommand cmd) {
-        var caseForBooking = loadCase.lockForCustomer(cmd.caseId(), user.id()); // 404 if not theirs
-        var expertId = caseForBooking.expertOr(cmd.expertId());
-        lockExpert.lock(expertId);
-        var busy = loadBusyTimes.forExpert(expertId, ...);
-        var availability = loadAvailability.forExpert(expertId, ...);
-        var appointment = caseForBooking.book(cmd.start(), availability, busy, clock); // domain decides
-        saveAppointment.save(appointment);
-        return BookedAppointment.from(appointment);
+    public CustomerAppointment invoke(CurrentUser user, BookConsultationAppointmentCommand command) {
+        CaseForBooking consultationCase = lockCase.lock(command.consultationCaseId(), user.id()) // scoped: 404 if not theirs
+                .orElseThrow(() -> new NotFoundException(...));
+        consultationCase.requireOpenCredit();
+        UserId expertId = consultationCase.expertFor(command.expertId());
+        lockExpert.lock(expertId);                                       // D-27: case → expert
+        Instant now = clock.instant();
+        SlotFinder slotFinder = new SlotFinder(loadAvailability.load(expertId, today), loadBusyTimes.load(expertId, now));
+        Booking booking = consultationCase.book(expertId, command.start(), slotFinder, now); // the domain decides
+        saveBooking.save(booking);
+        return booking.appointment().at(now);
     }
 }
 ```
 
-*(Illustrative only. It shows the shape, not the final API.)*
+*(Shortened from the real use case: lock, decide, write, answer.)*
 
 ## Ports
 
-- Outgoing ports are interfaces named `<Purpose>Port` (e.g. `LoadCaseForBookingPort`, `LoadExpertBusyTimesPort`, `SaveAppointmentPort`), living in `application.<feature>.port`, below the use cases that need them (D-37). A port's signature uses domain types, never a command; ArchUnit checks that, and that only use cases and adapters use ports. A use case may use another feature's port, such as `LoadExpertsPort` in `application.user.port` (D-23).
+- Outgoing ports are interfaces named `<Purpose>Port` (e.g. `LoadCaseForBookingPort`, `LoadBusyTimesPort`, `SaveBookingPort`), living in `application.<feature>.port`, below the use cases that need them (D-37). A port's signature uses domain types, never a command; ArchUnit checks that, and that only use cases and adapters use ports. A use case may use another feature's port, such as `LoadExpertsPort` in `application.user.port` (D-23).
 - Ports are **narrow and use-case specific**. They return exactly the domain object that use case needs. Two use cases share a port only if they need the identical thing.
 - Ports are implemented in `adapters.database.<feature>`. One adapter class may implement several ports.
 - `ImageStorePort` (`application.image.port`: `save`, `load`, `delete`) is the port for image bytes (D-21). Its implementation, `ImageAdapter`, is a Postgres table, replaceable by S3 later. An image is never changed: a use case that replaces one saves the new image, points its owner at it and deletes the old one, in one transaction (`UploadConsultationOfferingImageUseCase`).
@@ -230,7 +232,7 @@ ConsultationOfferingResponse publishConsultationOffering(@PathVariable UUID id) 
 - **Controller method names** are the `operationId`s in `openapi.json`, so each names its route uniquely: `listConsultationOfferings`, `getConsultationOffering`, `createConsultationOffering`, `editConsultationOffering`.
 - **Uploads** are `multipart/form-data` with one part, `file` (`@RequestPart MultipartFile`, `consumes` multipart, so another body answers 415). The multipart limit is 2 MB per file (`spring.servlet.multipart` in `application.yml`; Spring's default is 1 MB), and a file over it answers 400 like a file of another type (`ApiExceptionHandler`), not Spring's 413. The domain checks the size again, because MockMvc never meets the servlet container's limit.
 - **Images** are served by `GET /api/images/{id}` as a `Resource` (so `openapi.json` says `binary`) with `Cache-Control: public, max-age=31536000, immutable`. A header set by the controller keeps Spring Security's `no-cache` headers off the response.
-- **A `POST` that creates** answers 201 with the new resource and a relative `Location` (`ResponseEntity.created`), plus `@ResponseStatus(HttpStatus.CREATED)` on the method, so springdoc lists 201 instead of 200.
+- **A `POST` that creates** answers 201 with the new resource, plus `@ResponseStatus(HttpStatus.CREATED)` on the method, so springdoc lists 201 instead of 200. When the resource has a route of its own, the answer also has its relative `Location` (`ResponseEntity.created`), as a purchase's case has. The booking's appointment has no route of its own, it's part of its case, so `POST /api/customer/consultation-cases/{id}/appointments` answers 201 without a `Location` ([spec 04](../specs/04-book-consultation-appointment.md#decisions), decision 17).
 - **Request records** carry Bean Validation annotations that repeat the use case's rules, so a 400 names every invalid field ([errors](#errors)); numbers are boxed (`Integer`) with `@NotNull`, so a missing number is a 400, not a silent 0. A decimal in a whole-number field is a 400 as well, without `errors` (`spring.jackson.deserialization.accept-float-as-int: false` in `application.yml`), not cut off. The controller maps the request to the use case's command, building the value objects.
 - JSON with camelCase. Instants are ISO-8601 with offset; local dates and times are ISO-8601 without offset. Money is `{ "amount": "450.00", "currency": "CHF" }`.
 - The API is code-first. springdoc generates `backend/openapi.json`, which is committed. A test fails if the committed file differs from the generated one (D-29).
