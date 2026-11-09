@@ -53,6 +53,7 @@ class RoleMatrixTest {
             new Route(GET, "/api/expert/probe", Access.EXPERT),
             new Route(GET, "/api/admin/probe", Access.ADMIN),
             new Route(POST, "/api/customer/consultation-cases", Access.CUSTOMER), // no body: 400
+            new Route(GET, "/api/customer/consultation-cases", Access.CUSTOMER),
             new Route(GET, "/api/customer/consultation-cases/" + UNKNOWN_ID, Access.CUSTOMER), // unknown id: 404
             new Route(GET, "/api/admin/consultation-offerings", Access.ADMIN),
             new Route(POST, "/api/admin/consultation-offerings", Access.ADMIN), // no body: 400

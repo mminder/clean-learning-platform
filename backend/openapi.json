@@ -586,6 +586,25 @@
       }
     },
     "/api/customer/consultation-cases" : {
+      "get" : {
+        "operationId" : "listCustomerConsultationCases",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/CustomerConsultationCaseSummaryResponse"
+                  }
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "customer-consultation-case-controller" ]
+      },
       "post" : {
         "operationId" : "purchaseConsultationPackage",
         "requestBody" : {
@@ -1158,6 +1177,35 @@
           }
         },
         "required" : [ "id", "offeringName", "openCredits", "purchaseTerms", "purchasedAt", "totalCredits" ]
+      },
+      "CustomerConsultationCaseSummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "offeringImageId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "offeringName" : {
+            "type" : "string"
+          },
+          "openCredits" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "purchasedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "totalCredits" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "id", "offeringName", "openCredits", "purchasedAt", "totalCredits" ]
       },
       "EligibleExpertResponse" : {
         "type" : "object",

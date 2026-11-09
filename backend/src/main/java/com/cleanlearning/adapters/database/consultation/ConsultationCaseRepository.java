@@ -9,6 +9,7 @@ import org.springframework.data.repository.Repository;
 
 import com.cleanlearning.adapters.database.consultation.entity.ConsultationCaseEntity;
 import com.cleanlearning.adapters.database.consultation.row.CustomerConsultationCaseRow;
+import com.cleanlearning.adapters.database.consultation.row.CustomerConsultationCaseSummaryRow;
 import com.cleanlearning.adapters.database.offering.entity.ConsultationPackageEntity;
 
 interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, UUID> {
@@ -26,6 +27,20 @@ interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, 
             where c.id = :id and c.customerId = :customerId
             """)
     Optional<CustomerConsultationCaseRow> findCustomerCase(UUID id, UUID customerId);
+
+    /**
+     * The customer's cases with their offerings, in every status of the offering (UC-16), the oldest purchase first.
+     * Scoped to the customer in SQL (security.md).
+     */
+    @Query("""
+            select new com.cleanlearning.adapters.database.consultation.row.CustomerConsultationCaseSummaryRow(
+                c.id, o.name, o.imageId, c.sessionCount, c.purchasedAt)
+            from ConsultationCaseEntity c
+            join OfferingEntity o on o.id = c.consultationOfferingId
+            where c.customerId = :customerId
+            order by c.purchasedAt, c.id
+            """)
+    List<CustomerConsultationCaseSummaryRow> findCustomerCases(UUID customerId);
 
     /** The offering's packages, which a purchase chooses from (D-23: this adapter may read the offering's tables). */
     @Query("select p from ConsultationPackageEntity p where p.consultationOfferingId = :consultationOfferingId")

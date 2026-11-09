@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useParams } from 'react-router'
+import { Link, useParams } from 'react-router'
 import { OfferingImage } from '@/components/OfferingImage'
 import { Button } from '@/components/ui/button'
 import { isBadRequest, isNotFound } from '@/lib/api-error'
@@ -25,7 +25,12 @@ export function ConsultationCasePage() {
       isNotFound(consultationCase.error) ||
       isBadRequest(consultationCase.error)
     ) {
-      return <h1 className="text-2xl font-semibold">Case not found</h1>
+      return (
+        <div className="space-y-4">
+          <h1 className="text-2xl font-semibold">Case not found</h1>
+          <BackToMyPurchases />
+        </div>
+      )
     }
     return (
       <div role="alert" className="space-y-3">
@@ -47,6 +52,7 @@ export function ConsultationCasePage() {
   } = consultationCase.data
   return (
     <article className="space-y-8">
+      <BackToMyPurchases />
       <header className="space-y-3">
         <OfferingImage
           imageId={offeringImageId}
@@ -76,6 +82,14 @@ export function ConsultationCasePage() {
         </Term>
       </dl>
     </article>
+  )
+}
+
+function BackToMyPurchases() {
+  return (
+    <Link to="/my" className="inline-block text-sm underline">
+      Back to my purchases
+    </Link>
   )
 }
 

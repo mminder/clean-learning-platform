@@ -429,6 +429,79 @@ class CustomerConsultationCaseControllerTest {
                 .query(UUID.class).single()).isEqualTo(SeedData.CUSTOMER_1);
     }
 
+    private MvcTestResult list(UUID customer) {
+        return mockMvc.get().uri(PATH).with(LoggedIn.as(customer, Role.CUSTOMER)).exchange();
+    }
+
+    @Test
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
+    void listsTheCustomersCasesOldestFirst() throws Exception {
+        String first = bought(CAREER_COACHING_3_SESSIONS);
+        String second = bought(purchase(SeedData.CAREER_COACHING, SeedData.CAREER_COACHING_5_SESSIONS, "700.00", 5));
+
+        MvcTestResult listed = list(SeedData.CUSTOMER_1);
+
+        assertThat(listed).hasStatusOk();
+        String body = listed.getResponse().getContentAsString();
+        assertThat(listed).bodyJson().isStrictlyEqualTo("""
+                [
+                  {
+                    "id": "%s",
+                    "offeringName": "Career Coaching",
+                    "offeringImageId": null,
+                    "purchasedAt": "%s",
+                    "openCredits": 3,
+                    "totalCredits": 3
+                  },
+                  {
+                    "id": "%s",
+                    "offeringName": "Career Coaching",
+                    "offeringImageId": null,
+                    "purchasedAt": "%s",
+                    "openCredits": 5,
+                    "totalCredits": 5
+                  }
+                ]
+                """.formatted(first, JsonPath.read(body, "$[0].purchasedAt"), second,
+                JsonPath.read(body, "$[1].purchasedAt")));
+        assertThat(Instant.parse(JsonPath.read(body, "$[0].purchasedAt")))
+                .isBeforeOrEqualTo(Instant.parse(JsonPath.read(body, "$[1].purchasedAt")));
+    }
+
+    @Test
+    void listsNothingWithoutPurchases() {
+        assertThat(list(SeedData.CUSTOMER_2)).hasStatusOk().bodyJson().isStrictlyEqualTo("[]");
+    }
+
+    @Test
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
+    void eachCustomerListsOnlyTheirOwnCases() throws Exception {
+        String ofCustomer1 = bought(CAREER_COACHING_3_SESSIONS);
+        assertThat(mockMvc.post().uri(PATH)
+                .with(LoggedIn.as(SeedData.CUSTOMER_2, Role.CUSTOMER))
+                .with(Csrf.token())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(purchase(SeedData.CAREER_COACHING, SeedData.CAREER_COACHING_5_SESSIONS, "700.00", 5)))
+                .hasStatus(HttpStatus.CREATED);
+
+        assertThat(list(SeedData.CUSTOMER_1)).hasStatusOk()
+                .bodyJson().extractingPath("$[*].id").asList().containsExactly(ofCustomer1);
+        assertThat(list(SeedData.CUSTOMER_2)).hasStatusOk()
+                .bodyJson().extractingPath("$[*].totalCredits").asList().containsExactly(5);
+    }
+
+    @Test
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
+    void listsACaseOfAnArchivedOfferingWithItsName() throws Exception {
+        AgileCoaching offering = publishAgileCoaching();
+        String id = bought(purchase(offering.id(), offering.twoSessions(), "300.00", 2));
+        assertThat(change(offering.id(), "archive")).hasStatusOk();
+
+        assertThat(list(SeedData.CUSTOMER_1)).hasStatusOk().bodyJson().isLenientlyEqualTo("""
+                [{ "id": "%s", "offeringName": "Agile Coaching", "openCredits": 2, "totalCredits": 2 }]
+                """.formatted(id));
+    }
+
     /** Agile Coaching's id and package ids, as the admin's API answered them. */
     private record AgileCoaching(String id, String twoSessions, String fourSessions) {
     }
