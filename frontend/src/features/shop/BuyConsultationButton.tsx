@@ -1,10 +1,12 @@
+import { Link, useLocation } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { useMe } from '@/features/user/queries'
 import { BuyConsultationDialog } from './BuyConsultationDialog'
 
 /**
- * **Buy** for a consultation offering (UC-02, UC-03): a user with `CUSTOMER` opens the buy dialog. While the current
- * user loads, and for a user without `CUSTOMER`, there's no **Buy**.
+ * **Buy** for a consultation offering (UC-02, UC-03): a user with `CUSTOMER` opens the buy dialog, and a visitor
+ * the login, which returns to this page (UC-01). While the current user loads, and for a user without `CUSTOMER`,
+ * there's no **Buy**.
  */
 export function BuyConsultationButton({
   offeringId,
@@ -14,8 +16,17 @@ export function BuyConsultationButton({
   offeringName: string
 }) {
   const me = useMe()
+  const location = useLocation()
 
-  // TODO(task 03 of increment 03): a visitor sees Buy, and it opens the login with a redirect to this page.
+  if (me.data === null) {
+    // The path, search and hash, as RequireRole builds it. The dialog doesn't reopen after the login.
+    const redirect = location.pathname + location.search + location.hash
+    return (
+      <Button asChild>
+        <Link to={`/login?redirect=${encodeURIComponent(redirect)}`}>Buy</Link>
+      </Button>
+    )
+  }
   if (!(me.data?.roles.includes('CUSTOMER') ?? false)) {
     return null
   }

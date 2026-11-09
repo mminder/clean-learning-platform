@@ -5,7 +5,7 @@
 | Increment | [03 Buy a consultation package](../../specs/03-buy-consultation-package.md) |
 | Type | AFK |
 | Blocked by | [01](01-buy-from-detail-page.md) |
-| Status | Todo |
+| Status | Done |
 
 ## Goal
 
@@ -23,11 +23,11 @@ This task is frontend only, in `features/shop/`.
 
 ## Acceptance criteria
 
-- [ ] On the dev server, a visitor clicks **Buy** on Career Coaching's card, logs in as Customer 1, and is back on the shop with the dialog closed; the same from the detail page returns to the detail page (Playwright).
-- [ ] Customer 1 buys from the card: the dialog lists both packages, and the case detail opens after confirming.
-- [ ] A click on the card outside **Buy** still opens the detail page, and keyboard focus reaches both the link and **Buy**.
-- [ ] Admin 1 sees no **Buy** on any card or detail page.
-- [ ] Every check passes.
+- [x] On the dev server, a visitor clicks **Buy** on Career Coaching's card, logs in as Customer 1, and is back on the shop with the dialog closed; the same from the detail page returns to the detail page (Playwright).
+- [x] Customer 1 buys from the card: the dialog lists both packages, and the case detail opens after confirming.
+- [x] A click on the card outside **Buy** still opens the detail page, and keyboard focus reaches both the link and **Buy**.
+- [x] Admin 1 sees no **Buy** on any card or detail page.
+- [x] Every check passes.
 
 ## Tests
 
@@ -38,3 +38,5 @@ This task is frontend only, in `features/shop/`.
 - Reopening the dialog after the login (spec decision 4).
 
 ## Notes
+
+- **The dialog on a card vanishes when its offering leaves the shop.** The dialog is a child of the card. After a 409 `OFFERING_NOT_AVAILABLE` or a 404, the mutation reloads the shop list before it fails, the card leaves the list, and the dialog unmounts with it: the customer clicks **Buy** and the dialog just closes, without the "no longer available" message and its **Close** button (checked in the browser: Customer 2 at the confirmation, Admin 1 unpublishes, Customer 2 clicks **Buy**). Nothing is bought, so the outcome is safe, and the shop is right afterwards, but the message is lost. On the detail page the message shows, because that page stays. A fix needs the dialog's open state above the card (for example in `ShopPage`, with `BuyConsultationDialog` controlled), which changes task 01's component and the shop list: not done here. Decide whether to take it into a follow-up.
