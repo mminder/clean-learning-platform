@@ -51,10 +51,10 @@ Work arrives as tasks. Follow [working on a task](_docs/tasks/README.md#working-
 Details: [_docs/architecture/backend.md](_docs/architecture/backend.md).
 
 - Root packages `api`, `application`, `domain`, `adapters.database` (plus `config`). Each has the feature sub-packages `user`, `offering`, `consultation`, `training`, `availability`, `image`; `api` also has `shop`, the public catalog endpoints. Shared value objects live in `domain.shared.value`.
-- Each use case is one `@Service` class named `<Verb><Noun>UseCase` in `application.<feature>`. It has one public method named `invoke`, which is `@Transactional` and contains flow only.
+- Each use case is one `@Service` class named `<Verb><Noun>UseCase` at the top of `application.<feature>`, next to its command records. It has one public method named `invoke`, which is `@Transactional` and contains flow only.
 - Business rules live in `domain` POJOs and records. `domain` has no Spring or JPA imports. In `domain.<feature>`, the models sit at the top and the value objects in `value`; a value object depends only on Java and other value objects.
 - A domain value with a rule beyond not null, a unit or behavior is a value object, and so is an id. A column that holds one repeats its rule as a check constraint ([D-36](_docs/decisions.md#architecture)).
-- Outgoing ports are interfaces named `<Purpose>Port` in `application.<feature>`. They are narrow and use-case specific, and implemented in `adapters.database.<feature>`. There are no incoming ports: controllers call use cases directly.
+- Outgoing ports are interfaces named `<Purpose>Port` in `application.<feature>.port`. They are narrow and use-case specific, use only domain types, and are implemented in `adapters.database.<feature>`. There are no incoming ports: controllers call use cases directly and never a port; adapters see only the ports, never a use case.
 - Controllers pass `CurrentUser` explicitly into use cases. Ownership is enforced by scoped port queries; a resource that isn't yours returns 404.
 - In `api.<feature>`, the controllers sit at the top, the `*Response` records in `response` and the `*Request` records in `request`. Responses that several features return live in `api.response`.
 - JPA entities never leave `adapters.database`. In `adapters.database.<feature>`, the adapters and Spring Data repositories sit at the top, the entities in `entity`, and the `*Row` records that queries select into in `row`. Mappers are hand-written. No Lombok, no MapStruct. Value objects, commands and DTOs are records.

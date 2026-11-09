@@ -1,4 +1,4 @@
-package com.cleanlearning.application.image;
+package com.cleanlearning.application.image.port;
 
 import java.util.Optional;
 

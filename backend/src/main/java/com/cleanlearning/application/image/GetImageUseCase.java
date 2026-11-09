@@ -3,6 +3,7 @@ package com.cleanlearning.application.image;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.cleanlearning.application.image.port.ImageStorePort;
 import com.cleanlearning.domain.image.Image;
 import com.cleanlearning.domain.image.value.ImageId;
 import com.cleanlearning.domain.shared.NotFoundException;

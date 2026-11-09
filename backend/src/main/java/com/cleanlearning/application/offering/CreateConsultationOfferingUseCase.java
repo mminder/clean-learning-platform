@@ -3,7 +3,8 @@ package com.cleanlearning.application.offering;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.cleanlearning.application.user.LoadExpertsPort;
+import com.cleanlearning.application.offering.port.SaveConsultationOfferingPort;
+import com.cleanlearning.application.user.port.LoadExpertsPort;
 import com.cleanlearning.domain.offering.ConsultationOffering;
 
 /**

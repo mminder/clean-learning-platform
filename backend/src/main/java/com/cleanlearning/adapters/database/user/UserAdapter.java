@@ -12,9 +12,9 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 import com.cleanlearning.adapters.database.user.row.UserRoleRow;
-import com.cleanlearning.application.user.LoadExpertsPort;
-import com.cleanlearning.application.user.LoadUserPort;
-import com.cleanlearning.application.user.LoadUsersPort;
+import com.cleanlearning.application.user.port.LoadExpertsPort;
+import com.cleanlearning.application.user.port.LoadUserPort;
+import com.cleanlearning.application.user.port.LoadUsersPort;
 import com.cleanlearning.domain.user.Expert;
 import com.cleanlearning.domain.user.User;
 import com.cleanlearning.domain.user.value.DisplayName;

@@ -1,4 +1,4 @@
-package com.cleanlearning.application.user;
+package com.cleanlearning.application.user.port;
 
 import java.util.Optional;
 

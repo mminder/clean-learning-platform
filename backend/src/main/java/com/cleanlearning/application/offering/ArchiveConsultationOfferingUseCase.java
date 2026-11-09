@@ -3,6 +3,8 @@ package com.cleanlearning.application.offering;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.cleanlearning.application.offering.port.LockConsultationOfferingPort;
+import com.cleanlearning.application.offering.port.SaveConsultationOfferingPort;
 import com.cleanlearning.domain.offering.ConsultationOffering;
 import com.cleanlearning.domain.offering.value.OfferingId;
 import com.cleanlearning.domain.shared.BusinessRuleException;

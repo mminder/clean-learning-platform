@@ -16,11 +16,11 @@ import com.cleanlearning.adapters.database.offering.entity.ConsultationPackageEn
 import com.cleanlearning.adapters.database.offering.entity.EligibleExpertEntity;
 import com.cleanlearning.adapters.database.offering.entity.OfferingEntity;
 import com.cleanlearning.adapters.database.offering.row.ConsultationOfferingSummaryRow;
-import com.cleanlearning.application.offering.DeleteConsultationOfferingPort;
-import com.cleanlearning.application.offering.LoadConsultationOfferingPort;
-import com.cleanlearning.application.offering.LoadConsultationOfferingSummariesPort;
-import com.cleanlearning.application.offering.LockConsultationOfferingPort;
-import com.cleanlearning.application.offering.SaveConsultationOfferingPort;
+import com.cleanlearning.application.offering.port.DeleteConsultationOfferingPort;
+import com.cleanlearning.application.offering.port.LoadConsultationOfferingPort;
+import com.cleanlearning.application.offering.port.LoadConsultationOfferingSummariesPort;
+import com.cleanlearning.application.offering.port.LockConsultationOfferingPort;
+import com.cleanlearning.application.offering.port.SaveConsultationOfferingPort;
 import com.cleanlearning.domain.image.value.ImageId;
 import com.cleanlearning.domain.offering.ConsultationOffering;
 import com.cleanlearning.domain.offering.ConsultationOfferingSummary;

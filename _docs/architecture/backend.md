@@ -10,7 +10,7 @@ There's no Lombok and no MapStruct. Value objects, commands and DTOs are Java `r
 
 ## Packages
 
-The layers are the root packages (D-22), and the features are sub-packages within each layer (D-23). Within a feature package, the supporting types sit in a sub-package per role (D-37): `entity` and `row` in `adapters.database`, `response` and `request` in `api`, `value` in `domain`.
+The layers are the root packages (D-22), and the features are sub-packages within each layer (D-23). Within a feature package, the supporting types sit in a sub-package per role (D-37): `entity` and `row` in `adapters.database`, `response` and `request` in `api`, `port` in `application`, `value` in `domain`.
 
 ```
 com.cleanlearning
@@ -23,8 +23,8 @@ com.cleanlearning
 │  ├─ offering                admin catalog endpoints
 │  ├─ user                    /api/me, poc login, (MVP) user mgmt
 │  └─ image
-├─ application                use cases + outgoing ports
-│  ├─ consultation            e.g. BookConsultationAppointmentUseCase, LoadCaseForBookingPort
+├─ application                use cases + commands, outgoing ports (in port/)
+│  ├─ consultation            e.g. BookConsultationAppointmentUseCase; port: LoadCaseForBookingPort
 │  ├─ training
 │  ├─ offering
 │  ├─ availability
@@ -65,24 +65,30 @@ UC-10 (join call) has no feature of its own. Link visibility is part of the case
 Enforced by ArchUnit.
 
 ```
- api ──────────► application ──────────► domain
-  │                   ▲                     ▲
-  │                   │ implements ports    │
-  └──────► domain     adapters.database ────┘
+ api ──────────► use cases ──────────► domain
+  │                  │                  ▲  ▲
+  │                  ▼                  │  │
+  │                ports ───────────────┘  │
+  │                  ▲                     │
+  │                  │ implements          │
+  └──────► domain    adapters.database ────┘
 ```
+
+`application` is two layers: the use cases (and their commands) at the top of `application.<feature>`, and the ports in `application.<feature>.port`. Controllers reach only the use cases, adapters only the ports.
 
 | Package | May depend on | Must not depend on |
 |---|---|---|
 | `domain` | `java.*`, other `domain` packages | Spring, JPA, `application`, `api`, `adapters` |
-| `application` | `domain`, Spring (`@Service`, `@Transactional`) | `api`, `adapters`, JPA |
-| `api` | `application`, `domain`, Spring Web | `adapters` |
-| `adapters.database` | `application` (ports), `domain`, JPA | `api` |
+| `application.<feature>` (use cases) | ports, `domain`, Spring (`@Service`, `@Transactional`) | `api`, `adapters`, JPA |
+| `application.<feature>.port` (ports) | `domain` | use cases, `api`, `adapters`, JPA |
+| `api` | use cases, `domain`, Spring Web | ports, `adapters` |
+| `adapters.database` | ports, `domain`, JPA | use cases, `api` |
 
 Features aren't isolated from each other (D-23). A use case may use domain classes of another feature, and a database adapter may join tables of several features.
 
 ## Use cases
 
-- One use case = one class `<Verb><Noun>UseCase` in `application.<feature>`, annotated `@Service`.
+- One use case = one class `<Verb><Noun>UseCase` at the top of `application.<feature>`, annotated `@Service`. Its command `record` sits next to it.
 - **One public method, named `invoke`** (ArchUnit checks the name and that it is the only one). It takes the `CurrentUser` (if the use case needs it) and a command `record`, and returns a result `record`.
 - `@Transactional` sits on the use-case method. Read-only use cases use `@Transactional(readOnly = true)`.
 - **Flow only:** load through ports, call domain logic, save through ports. Business decisions (is it bookable, refund-eligible, …) live in the domain.
@@ -111,10 +117,10 @@ class BookConsultationAppointmentUseCase {
 
 ## Ports
 
-- Outgoing ports are interfaces named `<Purpose>Port` (e.g. `LoadCaseForBookingPort`, `LoadExpertBusyTimesPort`, `SaveAppointmentPort`), living in `application.<feature>` next to the use cases that need them.
+- Outgoing ports are interfaces named `<Purpose>Port` (e.g. `LoadCaseForBookingPort`, `LoadExpertBusyTimesPort`, `SaveAppointmentPort`), living in `application.<feature>.port`, below the use cases that need them (D-37). A port's signature uses domain types, never a command; ArchUnit checks that, and that only use cases and adapters use ports. A use case may use another feature's port, such as `LoadExpertsPort` in `application.user.port` (D-23).
 - Ports are **narrow and use-case specific**. They return exactly the domain object that use case needs. Two use cases share a port only if they need the identical thing.
 - Ports are implemented in `adapters.database.<feature>`. One adapter class may implement several ports.
-- `ImageStorePort` (`application.image`: `save`, `load`, `delete`) is the port for image bytes (D-21). Its implementation, `ImageAdapter`, is a Postgres table, replaceable by S3 later. An image is never changed: a use case that replaces one saves the new image, points its owner at it and deletes the old one, in one transaction (`UploadConsultationOfferingImageUseCase`).
+- `ImageStorePort` (`application.image.port`: `save`, `load`, `delete`) is the port for image bytes (D-21). Its implementation, `ImageAdapter`, is a Postgres table, replaceable by S3 later. An image is never changed: a use case that replaces one saves the new image, points its owner at it and deletes the old one, in one transaction (`UploadConsultationOfferingImageUseCase`).
 
 ## Domain
 

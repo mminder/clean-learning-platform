@@ -40,11 +40,13 @@ They build one form on one aggregate, so they touch the same controller, use cas
 | `api.offering.request` | `ConsultationOfferingRequest`, `ConsultationPackageRequest` | 03–05 |
 | `api.offering.response` | `ConsultationOfferingSummaryResponse` (list item), `ConsultationOfferingResponse` (detail; it gains the packages (04), the eligible expert ids (05) and the image id (07)) | 02–05, 07 |
 | `api.image` | `ImageController` | 07 |
-| `application.user` | `ListPocUsersUseCase`, `LogInPocUserUseCase`, `GetCurrentUserUseCase`, `ListExpertsUseCase`; `LoadUsersPort`, `LoadUserPort`, `LoadExpertsPort` | 01, 05 |
+| `application.user` | `ListPocUsersUseCase`, `LogInPocUserUseCase`, `GetCurrentUserUseCase`, `ListExpertsUseCase` | 01, 05 |
+| `application.user.port` | `LoadUsersPort`, `LoadUserPort`, `LoadExpertsPort` | 01, 05 |
 | `application.offering` | `ListConsultationOfferingsUseCase`, `GetConsultationOfferingUseCase`, `CreateConsultationOfferingUseCase`, `EditConsultationOfferingUseCase`, `PublishConsultationOfferingUseCase`, `UnpublishConsultationOfferingUseCase`, `ArchiveConsultationOfferingUseCase`, `DeleteConsultationOfferingUseCase`, `UploadConsultationOfferingImageUseCase`, `RemoveConsultationOfferingImageUseCase` | 02–07 |
 | `application.offering` (commands) | `ConsultationOfferingCommand`: what the form saves, for create and edit; it gains the packages (04) and the eligible expert ids (05) | 03–05 |
-| `application.offering` (ports) | `LoadConsultationOfferingSummariesPort`, `LoadConsultationOfferingPort`, `LockConsultationOfferingPort`, `SaveConsultationOfferingPort` (`create`, `update`), `DeleteConsultationOfferingPort` | 02, 03, 06 |
-| `application.image` | `GetImageUseCase`, `ImageStorePort` (`save`, `load`, `delete`) | 07 |
+| `application.offering.port` | `LoadConsultationOfferingSummariesPort`, `LoadConsultationOfferingPort`, `LockConsultationOfferingPort`, `SaveConsultationOfferingPort` (`create`, `update`), `DeleteConsultationOfferingPort` | 02, 03, 06 |
+| `application.image` | `GetImageUseCase` | 07 |
+| `application.image.port` | `ImageStorePort` (`save`, `load`, `delete`) | 07 |
 | `domain.shared` | `BusinessRuleException`: a business rule says no; carries a stable `code` and a message for the user | 06 |
 | `domain.user` | `CurrentUser` (id, roles), `User` (id, name, email, roles), `Expert` (id, display name) | 01, 05 |
 | `domain.user.value` | `Role` (`CUSTOMER`, `EXPERT`, `ADMIN`) | 01 |
@@ -56,7 +58,7 @@ They build one form on one aggregate, so they touch the same controller, use cas
 | `adapters.database.offering` | `ConsultationOfferingAdapter`, which implements the admin's offering ports; the repositories it needs. `ShopOfferingAdapter` stays for the shop. | 02–07 |
 | `adapters.database.image` | `ImageAdapter` (through the `EntityManager`, no repository: it only finds, persists and removes by id); `entity`: `ImageEntity` | 07 |
 
-The admin's use cases don't take a `CurrentUser`: an admin may change every offering, and nothing records who did it. `ConsultationPackage` from increment 01 serves the admin too.
+The admin's use cases don't take a `CurrentUser`: an admin may change every offering, and nothing records who did it. The ports moved into a `port` sub-package per feature in the pull request's review ([D-37](../../decisions.md#architecture)); the task files still name the feature package. `ConsultationPackage` from increment 01 serves the admin too.
 
 ### Schema
 

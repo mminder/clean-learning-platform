@@ -5,7 +5,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Component;
 
 import com.cleanlearning.adapters.database.image.entity.ImageEntity;
-import com.cleanlearning.application.image.ImageStorePort;
+import com.cleanlearning.application.image.port.ImageStorePort;
 import com.cleanlearning.domain.image.Image;
 import com.cleanlearning.domain.image.value.ImageId;
 import com.cleanlearning.domain.image.value.ImageType;

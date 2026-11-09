@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.cleanlearning.application.offering.port.LoadShopOfferingsPort;
 import com.cleanlearning.domain.offering.ShopOffering;
 
 /**

@@ -1,4 +1,4 @@
-package com.cleanlearning.application.offering;
+package com.cleanlearning.application.offering.port;
 
 import com.cleanlearning.domain.offering.ConsultationOffering;
 
