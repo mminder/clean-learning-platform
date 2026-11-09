@@ -30,7 +30,8 @@ import com.cleanlearning.domain.user.value.UserId;
  * <p>
  * The status follows UC-16's lifecycle: a draft is published, a published offering is unpublished to a draft again or
  * archived, and only a draft is deleted. An archived offering is final and read-only. A change the status doesn't
- * allow throws a {@link BusinessRuleException} with {@link #WRONG_OFFERING_STATUS}.
+ * allow throws a {@link BusinessRuleException} with {@link #WRONG_OFFERING_STATUS}. An offering with purchases is
+ * neither unpublished nor deleted ({@link #OFFERING_HAS_PURCHASES}, D-07); the status is checked first.
  */
 public record ConsultationOffering(OfferingId id, OfferingName name, String description,
         SessionDuration sessionDuration, CancellationDeadline cancellationDeadline, OfferingStatus status,
@@ -41,6 +42,9 @@ public record ConsultationOffering(OfferingId id, OfferingName name, String desc
 
     /** A change the offering's status doesn't allow, usually from a stale page. */
     public static final String WRONG_OFFERING_STATUS = "WRONG_OFFERING_STATUS";
+
+    /** Unpublishing or deleting an offering that a customer has bought a package of (D-07). */
+    public static final String OFFERING_HAS_PURCHASES = "OFFERING_HAS_PURCHASES";
 
     // The ids compare as text, which sorts a uuid the way the database does; UUID.compareTo compares signed numbers.
     private static final Comparator<ConsultationPackage> PACKAGE_ORDER = Comparator
@@ -138,12 +142,18 @@ public record ConsultationOffering(OfferingId id, OfferingName name, String desc
     }
 
     /**
-     * The published offering, a draft again. Without purchases only (D-07): the check comes with UC-03.
+     * The published offering, a draft again. Without purchases only (D-07): an offering with purchases is archived
+     * instead. The status is checked first.
      *
-     * @throws BusinessRuleException {@link #WRONG_OFFERING_STATUS} if the offering isn't published
+     * @param hasPurchases whether a customer has bought a package of the offering
+     * @throws BusinessRuleException {@link #WRONG_OFFERING_STATUS} if the offering isn't published, or
+     *     {@link #OFFERING_HAS_PURCHASES} if it has purchases
      */
-    public ConsultationOffering unpublish() {
+    public ConsultationOffering unpublish(boolean hasPurchases) {
         requireStatus(OfferingStatus.PUBLISHED, "unpublished");
+        if (hasPurchases) {
+            throw new BusinessRuleException(OFFERING_HAS_PURCHASES, "The offering has purchases. Archive it instead.");
+        }
         return withStatus(OfferingStatus.DRAFT);
     }
 
@@ -158,12 +168,18 @@ public record ConsultationOffering(OfferingId id, OfferingName name, String desc
     }
 
     /**
-     * Only a draft may be deleted (UC-16). Without purchases only (D-07): the check comes with UC-03.
+     * Only a draft may be deleted (UC-16), and only without purchases (D-07). The status is checked first. A draft
+     * can't get purchases while unpublishing needs none, so the purchase check is a safety net.
      *
-     * @throws BusinessRuleException {@link #WRONG_OFFERING_STATUS} if the offering isn't a draft
+     * @param hasPurchases whether a customer has bought a package of the offering
+     * @throws BusinessRuleException {@link #WRONG_OFFERING_STATUS} if the offering isn't a draft, or
+     *     {@link #OFFERING_HAS_PURCHASES} if it has purchases
      */
-    public void requireDeletable() {
+    public void requireDeletable(boolean hasPurchases) {
         requireStatus(OfferingStatus.DRAFT, "deleted");
+        if (hasPurchases) {
+            throw new BusinessRuleException(OFFERING_HAS_PURCHASES, "The offering has purchases and can't be deleted.");
+        }
     }
 
     private void requireStatus(OfferingStatus required, String changed) {

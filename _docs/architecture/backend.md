@@ -152,7 +152,7 @@ class BookConsultationAppointmentUseCase {
 
 Pessimistic row locks through port methods, at the start of the use-case transaction, always in the order **offering → case → expert → run** (D-27). A lock port loads the row with JPA's `PESSIMISTIC_WRITE` (`LockConsultationOfferingPort`, `EntityManager.find` with the lock mode), which Hibernate sends to Postgres as `for no key update`: it waits for every other lock of the row, but not for the key-share lock a foreign key check takes. So every writer that must wait takes the lock itself.
 
-A concurrency test makes its race certain, not likely: it holds the contended row lock in its own transaction (`select … for no key update`), starts both requests, waits until `pg_stat_activity` shows both waiting for a lock, and only then commits. With the lock, both wait at the lock and run one after the other; without it, both read the row at once and wait only at their update. `ConsultationOfferingConcurrencyTest` is the pattern, and it fails without the lock.
+A concurrency test makes its race certain, not likely: it holds the contended row lock in its own transaction (`select … for no key update`), starts both requests, waits until `pg_stat_activity` shows both waiting for a lock, and only then commits. With the lock, both wait at the lock and run one after the other; without it, both read the row at once and wait only at their update. `ConsultationOfferingConcurrencyTest` is the pattern, and it fails without the lock. Where one request writes nothing the other waits for, as a purchase's insert against an unpublish, the test also holds the row that its insert's foreign key checks (`for update`), and lets go of it only after the other request is through or waits for it.
 
 | Use case | Locks |
 |---|---|

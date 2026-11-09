@@ -25,7 +25,8 @@ import com.jayway.jsonpath.JsonPath;
 /**
  * UC-16 step 5: publish, unpublish, archive and delete a consultation offering. Like
  * {@link ConsultationOfferingControllerTest}, a test creates its own offerings and
- * {@link SeedData#DELETE_TEST_DATA} removes them afterwards.
+ * {@link SeedData#DELETE_TEST_DATA} removes them afterwards, with their cases. Unpublish and delete refuse an offering
+ * with purchases (D-07); a test buys through the API as Customer 1.
  */
 @IntegrationTest
 class ConsultationOfferingLifecycleTest {
@@ -113,6 +114,22 @@ class ConsultationOfferingLifecycleTest {
 
     private String status(String id) throws Exception {
         return JsonPath.read(get(id).exchange().getResponse().getContentAsString(), "$.status");
+    }
+
+    /** Customer 1 buys the offering's one package, 1 session for CHF 160, through the API; returns the case's id. */
+    private String buy(String offeringId) throws Exception {
+        String packageId = JsonPath.read(get(offeringId).exchange().getResponse().getContentAsString(),
+                "$.packages[0].id");
+        MvcTestResult bought = mockMvc.post().uri("/api/customer/consultation-cases")
+                .with(LoggedIn.as(SeedData.CUSTOMER_1, Role.CUSTOMER))
+                .with(Csrf.token())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        { "offeringId": "%s", "packageId": "%s", "price": "160.00", "sessionCount": 1 }
+                        """.formatted(offeringId, packageId))
+                .exchange();
+        assertThat(bought).hasStatus(HttpStatus.CREATED);
+        return JsonPath.read(bought.getResponse().getContentAsString(), "$.id");
     }
 
     /** A 409 with this code and detail, as the frontend reads it. */
@@ -204,6 +221,19 @@ class ConsultationOfferingLifecycleTest {
 
     @Test
     @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
+    void unpublishingAnOfferingWithPurchasesAnswersOfferingHasPurchases() throws Exception {
+        String id = createPublished();
+        buy(id);
+
+        assertConflict(change(id, "unpublish"), "OFFERING_HAS_PURCHASES",
+                "The offering has purchases. Archive it instead.", PATH + "/" + id + "/unpublish");
+
+        assertThat(status(id)).isEqualTo("PUBLISHED");
+        assertShopLists("Agile Coaching", "Career Coaching");
+    }
+
+    @Test
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void unpublishingADraftAnswersWrongOfferingStatus() throws Exception {
         String id = createCompleteDraft();
 
@@ -226,6 +256,20 @@ class ConsultationOfferingLifecycleTest {
         assertThat(status(id)).isEqualTo("ARCHIVED");
         assertShopLists("Career Coaching");
         assertThat(mockMvc.get().uri("/api/shop/offerings/{id}", id)).hasStatus(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
+    void archivesAnOfferingWithPurchasesAndTheCaseStillOpens() throws Exception {
+        String id = createPublished();
+        String caseId = buy(id);
+
+        assertThat(change(id, "archive")).hasStatusOk().bodyJson().extractingPath("$.status").isEqualTo("ARCHIVED");
+
+        assertThat(mockMvc.get().uri("/api/customer/consultation-cases/{id}", caseId)
+                .with(LoggedIn.as(SeedData.CUSTOMER_1, Role.CUSTOMER)))
+                .hasStatusOk()
+                .bodyJson().extractingPath("$.offeringName").isEqualTo("Agile Coaching");
     }
 
     @Test
@@ -272,6 +316,20 @@ class ConsultationOfferingLifecycleTest {
                 .bodyJson().extractingPath("$[*].name").asArray().containsExactly("Career Coaching");
         // the experts themselves stay
         assertThat(rows("expert_profile", "user_id", SeedData.EXPERT_2.toString())).isOne();
+    }
+
+    @Test
+    @Sql("/com/cleanlearning/api/offering/draft-with-a-case.sql")
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
+    void deletingADraftWithPurchasesAnswersOfferingHasPurchases() throws Exception {
+        String id = "00000000-0000-0000-0000-000000009006";
+
+        assertConflict(delete(id), "OFFERING_HAS_PURCHASES", "The offering has purchases and can't be deleted.",
+                PATH + "/" + id);
+
+        assertThat(status(id)).isEqualTo("DRAFT");
+        assertThat(get(id)).bodyJson().extractingPath("$.packages").asArray().hasSize(1);
+        assertThat(rows("consultation_case", "consultation_offering_id", id)).isOne();
     }
 
     @Test

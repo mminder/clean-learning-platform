@@ -28,7 +28,9 @@ import com.cleanlearning.domain.user.value.UserId;
 
 /**
  * The status table of UC-16 (the plan's errors section in _docs/tasks/02-manage-consultation-offerings/README.md),
- * cell by cell: edit, image, publish, unpublish, archive and delete in each status.
+ * cell by cell: edit, image, publish, unpublish, archive and delete in each status. Unpublish and delete also check for
+ * purchases (D-07, the purchase guard in _docs/tasks/03-buy-consultation-package/README.md), after the status: a
+ * refusal by status says so with or without purchases.
  */
 class ConsultationOfferingStatusTest {
 
@@ -43,6 +45,8 @@ class ConsultationOfferingStatusTest {
     private static final ImageId NEW_IMAGE = new ImageId(UUID.randomUUID());
 
     private static final String ARCHIVED_MESSAGE = "The offering is archived and can't be changed any more.";
+
+    private static final List<Boolean> WITHOUT_AND_WITH_PURCHASES = List.of(false, true);
 
     /** An offering in this status with a package, an eligible expert and an image. */
     private static ConsultationOffering complete(OfferingStatus status) {
@@ -73,6 +77,13 @@ class ConsultationOfferingStatusTest {
             String message) {
         BusinessRuleException exception = refusal(offering, change);
         assertThat(exception.code()).isEqualTo("WRONG_OFFERING_STATUS");
+        assertThat(exception.getMessage()).isEqualTo(message);
+    }
+
+    private static void assertHasPurchases(ConsultationOffering offering, Consumer<ConsultationOffering> change,
+            String message) {
+        BusinessRuleException exception = refusal(offering, change);
+        assertThat(exception.code()).isEqualTo("OFFERING_HAS_PURCHASES");
         assertThat(exception.getMessage()).isEqualTo(message);
     }
 
@@ -126,9 +137,11 @@ class ConsultationOfferingStatusTest {
     }
 
     @Test
-    void aDraftCantBeUnpublished() {
-        assertWrongStatus(complete(OfferingStatus.DRAFT), ConsultationOffering::unpublish,
-                "The offering is a draft. Only a published offering can be unpublished.");
+    void aDraftCantBeUnpublishedWithOrWithoutPurchases() {
+        for (boolean hasPurchases : WITHOUT_AND_WITH_PURCHASES) {
+            assertWrongStatus(complete(OfferingStatus.DRAFT), offering -> offering.unpublish(hasPurchases),
+                    "The offering is a draft. Only a published offering can be unpublished.");
+        }
     }
 
     @Test
@@ -144,10 +157,17 @@ class ConsultationOfferingStatusTest {
     }
 
     @Test
-    void aDraftMayBeDeleted() {
-        assertThatCode(complete(OfferingStatus.DRAFT)::requireDeletable).doesNotThrowAnyException();
-        assertThatCode(offering(OfferingStatus.DRAFT, List.of(), Set.of())::requireDeletable)
+    void aDraftWithoutPurchasesMayBeDeleted() {
+        assertThatCode(() -> complete(OfferingStatus.DRAFT).requireDeletable(false)).doesNotThrowAnyException();
+        assertThatCode(() -> offering(OfferingStatus.DRAFT, List.of(), Set.of()).requireDeletable(false))
                 .doesNotThrowAnyException();
+    }
+
+    @Test
+    void aDraftWithPurchasesCantBeDeleted() {
+        // A draft can't get purchases while unpublish needs none: a safety net.
+        assertHasPurchases(complete(OfferingStatus.DRAFT), offering -> offering.requireDeletable(true),
+                "The offering has purchases and can't be deleted.");
     }
 
     // PUBLISHED
@@ -173,10 +193,10 @@ class ConsultationOfferingStatusTest {
     }
 
     @Test
-    void aPublishedOfferingIsUnpublishedToADraft() {
+    void aPublishedOfferingWithoutPurchasesIsUnpublishedToADraft() {
         ConsultationOffering published = complete(OfferingStatus.PUBLISHED);
 
-        ConsultationOffering unpublished = published.unpublish();
+        ConsultationOffering unpublished = published.unpublish(false);
 
         assertThat(unpublished.status()).isEqualTo(OfferingStatus.DRAFT);
         assertThat(unpublished.id()).isEqualTo(published.id());
@@ -187,8 +207,14 @@ class ConsultationOfferingStatusTest {
     @Test
     void anIncompletePublishedOfferingMayBeUnpublished() {
         // UC-16 lets an admin remove every package or expert of a published offering.
-        assertThat(offering(OfferingStatus.PUBLISHED, List.of(), Set.of()).unpublish().status())
+        assertThat(offering(OfferingStatus.PUBLISHED, List.of(), Set.of()).unpublish(false).status())
                 .isEqualTo(OfferingStatus.DRAFT);
+    }
+
+    @Test
+    void aPublishedOfferingWithPurchasesCantBeUnpublished() {
+        assertHasPurchases(complete(OfferingStatus.PUBLISHED), offering -> offering.unpublish(true),
+                "The offering has purchases. Archive it instead.");
     }
 
     @Test
@@ -203,9 +229,11 @@ class ConsultationOfferingStatusTest {
     }
 
     @Test
-    void aPublishedOfferingCantBeDeleted() {
-        assertWrongStatus(complete(OfferingStatus.PUBLISHED), ConsultationOffering::requireDeletable,
-                "The offering is published. Only a draft can be deleted.");
+    void aPublishedOfferingCantBeDeletedWithOrWithoutPurchases() {
+        for (boolean hasPurchases : WITHOUT_AND_WITH_PURCHASES) {
+            assertWrongStatus(complete(OfferingStatus.PUBLISHED), offering -> offering.requireDeletable(hasPurchases),
+                    "The offering is published. Only a draft can be deleted.");
+        }
     }
 
     // ARCHIVED: final and read-only
@@ -235,8 +263,11 @@ class ConsultationOfferingStatusTest {
     }
 
     @Test
-    void anArchivedOfferingCantBeUnpublished() {
-        assertWrongStatus(complete(OfferingStatus.ARCHIVED), ConsultationOffering::unpublish, ARCHIVED_MESSAGE);
+    void anArchivedOfferingCantBeUnpublishedWithOrWithoutPurchases() {
+        for (boolean hasPurchases : WITHOUT_AND_WITH_PURCHASES) {
+            assertWrongStatus(complete(OfferingStatus.ARCHIVED), offering -> offering.unpublish(hasPurchases),
+                    ARCHIVED_MESSAGE);
+        }
     }
 
     @Test
@@ -245,8 +276,10 @@ class ConsultationOfferingStatusTest {
     }
 
     @Test
-    void anArchivedOfferingCantBeDeleted() {
-        assertWrongStatus(complete(OfferingStatus.ARCHIVED), ConsultationOffering::requireDeletable,
-                ARCHIVED_MESSAGE);
+    void anArchivedOfferingCantBeDeletedWithOrWithoutPurchases() {
+        for (boolean hasPurchases : WITHOUT_AND_WITH_PURCHASES) {
+            assertWrongStatus(complete(OfferingStatus.ARCHIVED), offering -> offering.requireDeletable(hasPurchases),
+                    ARCHIVED_MESSAGE);
+        }
     }
 }
