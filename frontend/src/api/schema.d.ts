@@ -116,6 +116,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/customer/consultation-cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["purchaseConsultationPackage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/customer/consultation-cases/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getCustomerConsultationCase"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/images/{id}": {
         parameters: {
             query?: never;
@@ -291,6 +323,20 @@ export interface components {
             /** Format: int32 */
             sessionCount: number;
         };
+        CustomerConsultationCaseResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            offeringImageId?: string | null;
+            offeringName: string;
+            /** Format: int32 */
+            openCredits: number;
+            purchaseTerms: components["schemas"]["PurchaseTermsResponse"];
+            /** Format: date-time */
+            purchasedAt: string;
+            /** Format: int32 */
+            totalCredits: number;
+        };
         EligibleExpertResponse: {
             bio: string;
             displayName: string;
@@ -343,6 +389,24 @@ export interface components {
              * @description Left out when it's about:blank.
              */
             type?: string;
+        };
+        PurchaseConsultationPackageRequest: {
+            /** Format: uuid */
+            offeringId: string;
+            /** Format: uuid */
+            packageId: string;
+            price: string;
+            /** Format: int32 */
+            sessionCount: number;
+        };
+        PurchaseTermsResponse: {
+            /** Format: int32 */
+            cancellationDeadlineHours: number;
+            pricePaid: components["schemas"]["MoneyResponse"];
+            /** Format: int32 */
+            sessionCount: number;
+            /** Format: int32 */
+            sessionDurationMinutes: number;
         };
         ShopOfferingDetailResponse: {
             consultation: components["schemas"]["ConsultationOfferingDetailResponse"];
@@ -865,6 +929,108 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExpertResponse"][];
+                };
+            };
+        };
+    };
+    purchaseConsultationPackage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchaseConsultationPackageRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    /** @description The new case's URL, relative */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerConsultationCaseResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    getCustomerConsultationCase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerConsultationCaseResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };

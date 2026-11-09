@@ -25,7 +25,7 @@ import com.jayway.jsonpath.JsonPath;
 /**
  * UC-16 step 5: publish, unpublish, archive and delete a consultation offering. Like
  * {@link ConsultationOfferingControllerTest}, a test creates its own offerings and
- * {@link SeedData#DELETE_TEST_OFFERINGS} removes them afterwards.
+ * {@link SeedData#DELETE_TEST_DATA} removes them afterwards.
  */
 @IntegrationTest
 class ConsultationOfferingLifecycleTest {
@@ -143,7 +143,7 @@ class ConsultationOfferingLifecycleTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void publishesACompleteDraftAndTheShopListsIt() throws Exception {
         String id = createCompleteDraft();
 
@@ -155,7 +155,7 @@ class ConsultationOfferingLifecycleTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void publishingADraftWithoutAnEligibleExpertAnswersOfferingIncomplete() throws Exception {
         String id = JsonPath.read(post(PATH, draft("[{ \"sessionCount\": 1, \"price\": \"160\" }]", "[]"))
                 .getResponse().getContentAsString(), "$.id");
@@ -169,7 +169,7 @@ class ConsultationOfferingLifecycleTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void publishingADraftWithoutAPackageOrAnExpertNamesBoth() throws Exception {
         String id = JsonPath.read(post(PATH, draft("[]", "[]")).getResponse().getContentAsString(), "$.id");
 
@@ -180,7 +180,7 @@ class ConsultationOfferingLifecycleTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void publishingAPublishedOfferingAnswersWrongOfferingStatus() throws Exception {
         String id = createPublished();
 
@@ -189,7 +189,7 @@ class ConsultationOfferingLifecycleTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void unpublishesAPublishedOfferingToADraftAndTheShopDropsIt() throws Exception {
         String id = createPublished();
 
@@ -203,7 +203,7 @@ class ConsultationOfferingLifecycleTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void unpublishingADraftAnswersWrongOfferingStatus() throws Exception {
         String id = createCompleteDraft();
 
@@ -212,7 +212,7 @@ class ConsultationOfferingLifecycleTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void archivesAPublishedOfferingAndTheShopDropsIt() throws Exception {
         String id = createPublished();
 
@@ -229,7 +229,7 @@ class ConsultationOfferingLifecycleTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void archivingADraftAnswersWrongOfferingStatus() throws Exception {
         String id = createCompleteDraft();
 
@@ -238,7 +238,7 @@ class ConsultationOfferingLifecycleTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void anArchivedOfferingIsReadOnly() throws Exception {
         String id = createArchived();
         String archived = "The offering is archived and can't be changed any more.";
@@ -257,7 +257,7 @@ class ConsultationOfferingLifecycleTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void deletesADraftWithItsPackagesAndEligibleExperts() throws Exception {
         String id = createCompleteDraft();
 
@@ -275,7 +275,7 @@ class ConsultationOfferingLifecycleTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void deletingAPublishedOfferingAnswersWrongOfferingStatus() throws Exception {
         String id = createPublished();
 

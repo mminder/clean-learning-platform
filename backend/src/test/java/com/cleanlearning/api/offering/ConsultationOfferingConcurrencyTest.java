@@ -56,7 +56,7 @@ class ConsultationOfferingConcurrencyTest {
 
     @Test
     @Sql("/com/cleanlearning/api/shop/more-published-offerings.sql")
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void archiveAndUnpublishAtOnceCantBothPass() throws Exception {
         ExecutorService requests = Executors.newFixedThreadPool(2);
         List<Integer> statuses;

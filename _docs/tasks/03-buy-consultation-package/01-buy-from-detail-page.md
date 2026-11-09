@@ -5,7 +5,7 @@
 | Increment | [03 Buy a consultation package](../../specs/03-buy-consultation-package.md) |
 | Type | AFK |
 | Blocked by | – |
-| Status | Todo |
+| Status | Done |
 
 ## Goal
 
@@ -43,16 +43,16 @@ Work in this order, test first:
 
 ## Acceptance criteria
 
-- [ ] On the dev server, Customer 1 buys 3 sessions of Career Coaching from its detail page: the dialog lists both packages, the confirmation says "Do you really want to buy Career Coaching, 3 sessions for CHF 450.00?", and the case detail opens with the plan's values and the purchase time in Zurich time (Playwright).
-- [ ] Closing the dialog at either step creates no case.
-- [ ] A visitor and Admin 1 see no **Buy** on the detail page.
-- [ ] Buying twice creates two cases.
-- [ ] An unpublished or archived offering answers 409 `OFFERING_NOT_AVAILABLE`; a changed price, a changed session count or a removed package answers 409 `PACKAGE_CHANGED`; an unknown offering answers 404; each creates no case. In the dialog, `PACKAGE_CHANGED` goes back to the packages, reloaded (Playwright, with a second tab as admin).
-- [ ] An invalid request (no package id, a price of −1 or 12.345, a session count of 0) answers 400 with each field in `errors`.
-- [ ] After a purchase, editing the offering's price, session count, duration and deadline, and removing the bought package, all succeed and leave the case's terms unchanged; a new name shows on the case, and an archived offering's case still opens.
-- [ ] Customer 2 gets 404 for Customer 1's case, and `/my/cases/{id}` says "Case not found".
-- [ ] `formatDate` and `formatDateTime` give Zurich dates and times in summer and winter time and around midnight UTC (Vitest).
-- [ ] `openapi.json` and `schema.d.ts` have both routes; the role matrix has both rows and no customer probe; every check passes.
+- [x] On the dev server, Customer 1 buys 3 sessions of Career Coaching from its detail page: the dialog lists both packages, the confirmation says "Do you really want to buy Career Coaching, 3 sessions for CHF 450.00?", and the case detail opens with the plan's values and the purchase time in Zurich time (Playwright).
+- [x] Closing the dialog at either step creates no case.
+- [x] A visitor and Admin 1 see no **Buy** on the detail page.
+- [x] Buying twice creates two cases.
+- [x] An unpublished or archived offering answers 409 `OFFERING_NOT_AVAILABLE`; a changed price, a changed session count or a removed package answers 409 `PACKAGE_CHANGED`; an unknown offering answers 404; each creates no case. In the dialog, `PACKAGE_CHANGED` goes back to the packages, reloaded (Playwright, with a second tab as admin).
+- [x] An invalid request (no package id, a price of −1 or 12.345, a session count of 0) answers 400 with each field in `errors`.
+- [x] After a purchase, editing the offering's price, session count, duration and deadline, and removing the bought package, all succeed and leave the case's terms unchanged; a new name shows on the case, and an archived offering's case still opens.
+- [x] Customer 2 gets 404 for Customer 1's case, and `/my/cases/{id}` says "Case not found".
+- [x] `formatDate` and `formatDateTime` give Zurich dates and times in summer and winter time and around midnight UTC (Vitest).
+- [x] `openapi.json` and `schema.d.ts` have both routes; the role matrix has both rows and no customer probe; every check passes.
 
 ## Tests
 
@@ -68,3 +68,9 @@ Work in this order, test first:
 - The purchase guard on unpublish and delete, and the concurrency test: [04](04-purchase-guard.md). This task's purchase already locks the offering.
 
 ## Notes
+
+- **Bundle size.** The production bundle grew from 457 kB to 508 kB (`dialog`, `radio-group`, `date-fns` with `@date-fns/tz`), so `npm run build` now prints Vite's warning about chunks over 500 kB. The build passes. Splitting the bundle (for example lazy routes) is a decision of its own, not part of this task.
+- **A 409 `OFFERING_NOT_AVAILABLE` or a 404 on the detail page.** The mutation reloads `['shop']` before it fails, as the plan's buy section says, so the detail page turns into "Offering not found" and the dialog closes with it: its "only **Close** is left" state shows where the page stays, such as the card (task 03). Checked with Playwright.
+- **Until task 04**, an admin can still unpublish an offering with cases, and deleting a draft with cases ends at the foreign key (500), as the plan expects.
+- **Playwright** (by hand, against the dev server): no **Buy** for a visitor and Admin 1; the dialog lists both packages, **Continue** waits for a choice, the confirmation states "Do you really want to buy Career Coaching, 3 sessions for CHF 450.00?"; **Cancel**, Escape and the close button at either step create no case; buying opens the case with the plan's values and the purchase time in Zurich time; buying twice gives two cases; a price changed by Admin 1 in a second browser context answers `PACKAGE_CHANGED`, and the dialog shows the message and the reloaded packages (CHF 500.00) with none chosen; an unpublish meanwhile shows "Offering not found"; Customer 2 sees "Case not found" for Customer 1's case; Admin 1 sees "Page not found" on `/my/cases/{id}`, and a visitor goes to the login.
+- The plan and tasks of increment 02 still name `delete-test-offerings.sql`: they record that increment and stay as they are.

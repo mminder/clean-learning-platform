@@ -55,7 +55,7 @@ class ImageControllerTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void servesAnImageToAVisitorWithItsTypeAndCachesItForGood() throws Exception {
         byte[] png = TestImages.png(100);
         String imageId = uploadedImage(png);

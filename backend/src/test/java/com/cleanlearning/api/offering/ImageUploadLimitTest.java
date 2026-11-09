@@ -78,7 +78,7 @@ class ImageUploadLimitTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void acceptsTwoMegabytesAndAnswersOneByteMoreWithBadRequest() throws Exception {
         HttpResponse<String> accepted = upload(TestImages.jpeg(TestImages.MAX_BYTES));
         assertThat(accepted.statusCode()).isEqualTo(200);

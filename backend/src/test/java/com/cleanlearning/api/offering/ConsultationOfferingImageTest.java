@@ -26,7 +26,7 @@ import com.jayway.jsonpath.JsonPath;
 
 /**
  * UC-16 step 3: the admin uploads, replaces and removes an offering's image (D-21). A test creates its own offerings,
- * and {@link SeedData#DELETE_TEST_OFFERINGS} removes them with their images afterwards.
+ * and {@link SeedData#DELETE_TEST_DATA} removes them with their images afterwards.
  */
 @IntegrationTest
 class ConsultationOfferingImageTest {
@@ -123,7 +123,7 @@ class ConsultationOfferingImageTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void uploadsAnImageThatIsServedWithItsContentType() throws Exception {
         String id = createDraft();
         byte[] png = TestImages.png(100);
@@ -139,7 +139,7 @@ class ConsultationOfferingImageTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void theUploadAnswersTheOfferingWithItsImageId() throws Exception {
         String id = createDraft();
 
@@ -153,7 +153,7 @@ class ConsultationOfferingImageTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void theTypeComesFromTheFirstBytesNotFromTheNameOrTheDeclaredType() throws Exception {
         String id = createDraft();
         byte[] png = TestImages.png(100);
@@ -164,7 +164,7 @@ class ConsultationOfferingImageTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void acceptsJpegAndWebp() throws Exception {
         String id = createDraft();
 
@@ -175,7 +175,7 @@ class ConsultationOfferingImageTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void aReplacedImageGetsANewIdAndTheOldOneIsDeleted() throws Exception {
         String id = createDraft();
         String oldImageId = imageId(upload(id, "first.png", "image/png", TestImages.png(100)));
@@ -193,7 +193,7 @@ class ConsultationOfferingImageTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void removesTheImage() throws Exception {
         String id = createDraftWithImage();
         String imageId = imageId(get(id));
@@ -207,7 +207,7 @@ class ConsultationOfferingImageTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void removingWithoutAnImageChangesNothing() throws Exception {
         String id = createDraft();
 
@@ -215,7 +215,7 @@ class ConsultationOfferingImageTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void answersAnInvalidFileWithBadRequestAndKeepsTheImage() throws Exception {
         String id = createDraftWithImage();
         String imageId = imageId(get(id));
@@ -235,7 +235,7 @@ class ConsultationOfferingImageTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void acceptsAJpegOfExactlyTwoMegabytes() throws Exception {
         String id = createDraft();
         byte[] jpeg = TestImages.jpeg(TestImages.MAX_BYTES);
@@ -247,7 +247,7 @@ class ConsultationOfferingImageTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void answersARequestWithoutAFileWithBadRequest() throws Exception {
         String id = createDraft();
 
@@ -267,7 +267,7 @@ class ConsultationOfferingImageTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void anArchivedOfferingsImageCantBeChanged() throws Exception {
         String id = createDraftWithImage();
         String imageId = imageId(get(id));
@@ -296,7 +296,7 @@ class ConsultationOfferingImageTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void deletingADraftDeletesItsImage() throws Exception {
         String id = createDraftWithImage();
         String imageId = imageId(get(id));
@@ -311,7 +311,7 @@ class ConsultationOfferingImageTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void theShopShowsAPublishedOfferingsImage() throws Exception {
         String id = createDraftWithImage();
         String imageId = imageId(get(id));

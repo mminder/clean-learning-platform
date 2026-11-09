@@ -79,6 +79,14 @@ A shadcn/ui component is added when a page first uses it: run `npx shadcn@latest
 ## Dates, times and money
 
 - All formatting goes through `lib/` helpers, which always use `Europe/Zurich` and show a "(Zurich time)" hint where times appear.
+- `lib/date.ts` is the one place that formats a point in time from the API (an instant, ISO-8601 with offset), in `Europe/Zurich` whatever the browser's time zone (`TZDate` from `@date-fns/tz`, `format` from `date-fns`):
+
+  | Function | Example |
+  |---|---|
+  | `formatDate(instant)` | 9 Nov 2026 |
+  | `formatDateTime(instant)` | 9 Nov 2026, 15:03 |
+
+  A page that shows a time adds "(Zurich time)" once, next to it, as the case detail does after its purchase time.
 - The frontend never decides a business rule (deadline passed, seats left, link window). It shows what the API returns, for example `canCancel`, `refundIfCancelledNow` and `teamsLink`.
 - Money is formatted as `CHF 1,800.00` from the API's `{ amount, currency }`.
 

@@ -1,6 +1,9 @@
--- Deletes every offering that isn't in the poc seed, with its packages, eligible experts and image, so a test's
--- offerings don't leak into other tests. Writing tests run it after each test method (SeedData.DELETE_TEST_OFFERINGS).
--- The seed stays: tests never change seed rows.
+-- Deletes every case, then every offering that isn't in the poc seed, with its packages, eligible experts and image,
+-- so a test's cases and offerings don't leak into other tests. Tests that buy or write offerings run it after each
+-- test method (SeedData.DELETE_TEST_DATA). The seed stays: it has no cases, and tests never change seed rows.
+
+-- Cases first: they refer to the offerings and the users.
+delete from consultation_case;
 
 delete from eligible_expert where consultation_offering_id not in ('00000000-0000-0000-0000-000000001001');
 

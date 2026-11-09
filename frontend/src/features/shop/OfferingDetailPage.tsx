@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { isBadRequest, isNotFound } from '@/lib/api-error'
 import { formatMoney } from '@/lib/money'
+import { BuyConsultationButton } from './BuyConsultationButton'
 import { useShopOffering } from './queries'
 
 type ConsultationOfferingDetail =
@@ -40,7 +41,13 @@ export function OfferingDetailPage() {
     )
   }
 
-  const { name, description, imageId, consultation } = offering.data
+  const {
+    id: offeringId,
+    name,
+    description,
+    imageId,
+    consultation,
+  } = offering.data
   return (
     <article className="space-y-8">
       <BackToShop />
@@ -54,6 +61,7 @@ export function OfferingDetailPage() {
         <p className="max-w-prose whitespace-pre-line text-muted-foreground">
           {description}
         </p>
+        <BuyConsultationButton offeringId={offeringId} offeringName={name} />
       </header>
       <ConsultationDetail consultation={consultation} />
     </article>

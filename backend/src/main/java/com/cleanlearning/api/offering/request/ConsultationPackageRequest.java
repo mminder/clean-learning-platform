@@ -17,7 +17,7 @@ public record ConsultationPackageRequest(
         @NotNull @Pattern(regexp = PRICE_PATTERN, message = PRICE_MESSAGE) String price) {
 
     // Bean Validation matches the whole value; the anchors say so in openapi.json, where a pattern matches anywhere.
-    static final String PRICE_PATTERN = "^\\d{1,8}(\\.\\d{1,2})?$";
+    public static final String PRICE_PATTERN = "^\\d{1,8}(\\.\\d{1,2})?$";
 
-    static final String PRICE_MESSAGE = "must be an amount in CHF with at most two decimals";
+    public static final String PRICE_MESSAGE = "must be an amount in CHF with at most two decimals";
 }
