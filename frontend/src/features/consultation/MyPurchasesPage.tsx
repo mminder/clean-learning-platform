@@ -59,10 +59,13 @@ function Groups() {
     <div className="space-y-8">
       {upcoming.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-lg font-medium">Upcoming</h2>
-          <p className="text-sm text-muted-foreground">
-            Times are in Zurich time.
-          </p>
+          {/* Only an Upcoming card shows a time, so the hint sits next to this heading (frontend.md). */}
+          <h2 className="text-lg font-medium">
+            Upcoming{' '}
+            <span className="text-sm font-normal text-muted-foreground">
+              (Zurich time)
+            </span>
+          </h2>
           <Cards cases={upcoming} />
         </section>
       )}

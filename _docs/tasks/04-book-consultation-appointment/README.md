@@ -313,7 +313,7 @@ frontend/src
 
 ### My purchases
 
-04. `MyPurchasesPage` shows the groups the API returns, in its order: **Upcoming**, **Needs booking**, and **Past** collapsed (`<details>` with the summary "Past (2)"). An empty group isn't shown; without any case, the empty state stays. `ConsultationCaseCard` shows the expert's name or "Not assigned yet", "Next: 17 Nov 2026, 10:00–11:00" with an upcoming appointment, or "Now: …" while it runs, the credits and the purchase date. "Times are in Zurich time." sits under **Upcoming**, the only group with a time on its cards (a Past case shows none).
+04. `MyPurchasesPage` shows the groups the API returns, in its order: **Upcoming**, **Needs booking**, and **Past** collapsed (`<details>` with the summary "Past (2)"). An empty group isn't shown; without any case, the empty state stays. `ConsultationCaseCard` shows the expert's name or "Not assigned yet", "Next: 17 Nov 2026, 10:00–11:00" with an upcoming appointment, or "Now: …" while it runs, the credits and the purchase date. "(Zurich time)" sits next to the **Upcoming** heading, the only group with a time on its cards (a Past case shows none), as the case detail puts it next to its appointments' headings ([frontend.md](../../architecture/frontend.md#dates-times-and-money)).
 
 ### Queries
 
