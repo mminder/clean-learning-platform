@@ -20,8 +20,8 @@ The customer sees everything they bought, what's next, and what they can do.
 
 | Group | Contains | Order |
 |---|---|---|
-| Upcoming | items with a next date (a future `BOOKED` appointment, or a future run day) | next date, ascending |
-| Needs booking | `ACTIVE` cases with open credits and no future booked appointment | purchase date, ascending |
+| Upcoming | items with a next date (an upcoming appointment, one that hasn't ended, or a future run day) | next date, ascending |
+| Needs booking | `ACTIVE` cases with open credits and no upcoming appointment | purchase date, ascending |
 | Past (collapsed) | `COMPLETED` or `CANCELLED` cases and enrollments | last date, descending |
 
 2. A **case card** shows the offering name and image, the assigned expert (if any), the next appointment, and "open / total credits".
@@ -33,8 +33,8 @@ The case detail shows:
 - the offering name and the purchase terms (session duration, cancellation deadline);
 - the assigned expert (name, photo, bio), or "Not assigned yet";
 - open and total credits;
-- upcoming appointments, each with **Cancel** ([UC-07](uc-07-cancel-consultation-appointment.md)) and the call link ([UC-10](uc-10-join-call.md));
-- past appointments: consumed, or cancelled with "credit refunded" / "credit forfeited";
+- upcoming appointments, each with **Cancel** ([UC-07](uc-07-cancel-consultation-appointment.md)) and the call link ([UC-10](uc-10-join-call.md)); one that has started says "Now" until it ends, without **Cancel** (decided 2026-11-09);
+- past appointments: ended ones as consumed, or cancelled with "credit refunded" / "credit forfeited";
 - the expert's public notes, newest first ([UC-15](uc-15-take-consultation-notes.md));
 - the actions **Book appointment** ([UC-06](uc-06-book-consultation-appointment.md)), disabled without open credits, and **Cancel case** ([UC-08](uc-08-cancel-consultation-case.md));
 - the hint "Book your first session" while the case has no appointment ([UC-03](uc-03-purchase-consultation-package.md)).
@@ -56,6 +56,7 @@ The enrollment detail shows:
 ## Business rules
 
 - `COMPLETED` and `CONSUMED` are derived from the current time and never stored (see the [glossary](../glossary.md)).
+- An appointment is upcoming until it ends, though consumed from its start: its credit is used and it can't be cancelled, but it stays under Upcoming, and its case in the Upcoming group, while the session runs (decided 2026-11-09).
 - Cancelled cases and enrollments stay visible under Past.
 
 ## Visibility and authorization

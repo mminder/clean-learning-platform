@@ -32,7 +32,7 @@ The design decisions agreed on 2026-11-07, when the [initial spec](archive/initi
 
 ## Views and calls
 
-- **D-17 List ordering.** "My …" lists are grouped into Upcoming (by next date), then Needs booking (active case with open credits and nothing booked), then Past (completed or cancelled, collapsed). Expert trainings are sorted by next run date. *Why:* unbooked cases don't get lost.
+- **D-17 List ordering.** "My …" lists are grouped into Upcoming (by next date), then Needs booking (active case with open credits and nothing booked), then Past (completed or cancelled, collapsed). Expert trainings are sorted by next run date. An appointment is upcoming until it ends, though consumed from its start, so its case stays under Upcoming while the session runs (added 2026-11-09, with UC-10). *Why:* unbooked cases don't get lost, and a running session is found where the next one is.
 - **D-18 What experts see.** An expert sees only their own runs, with participants (name and email). On cases, the assigned expert sees the customer's name and email. *Why:* experts need to reach participants, and there's no in-app messaging.
 - **D-19 Teams links.** Each run has one Teams link set by the admin. Consultations use the expert's personal Teams link from their profile ([UC-14](use-cases/uc-14-manage-expert-profile.md)). Customers see a link from 1 h before start until the end; experts always see it. *Why:* no MS Graph integration needed.
 

@@ -13,7 +13,7 @@ A customer clicks **Book appointment** on a case, picks the expert on the first 
 
 ## What to build
 
-Read first: [UC-06](../../use-cases/uc-06-book-consultation-appointment.md), the case detail of [UC-05](../../use-cases/uc-05-view-my-purchases.md#main-flow-case-detail), [D-06](../../decisions.md#catalog), [D-07](../../decisions.md#catalog), [D-10](../../decisions.md#consultation), [D-11](../../decisions.md#consultation), [D-27](../../decisions.md#architecture), [security.md](../../architecture/security.md#ownership-in-use-cases), the spec's decisions 2–7, 12 and 15–18, and the plan's [packages and names](README.md#packages-and-names), [schema](README.md#schema), [API](README.md#api), [booking](README.md#booking), [ownership](README.md#ownership), [the case as its customer sees it](README.md#the-case-as-its-customer-sees-it), [booking dialog](README.md#booking-dialog), [case detail](README.md#case-detail), [queries](README.md#queries) and [dates](README.md#dates) sections. Task 01 of [increment 03](../03-buy-consultation-package/01-buy-from-detail-page.md) is the pattern for a customer route, scoped queries and a dialog with steps.
+Read first: [UC-06](../../use-cases/uc-06-book-consultation-appointment.md), the case detail of [UC-05](../../use-cases/uc-05-view-my-purchases.md#main-flow-case-detail), [D-06](../../decisions.md#catalog), [D-07](../../decisions.md#catalog), [D-10](../../decisions.md#consultation), [D-11](../../decisions.md#consultation), [D-27](../../decisions.md#architecture), [security.md](../../architecture/security.md#ownership-in-use-cases), the spec's decisions 2–7, 12, 15–18 and 21, and the plan's [packages and names](README.md#packages-and-names), [schema](README.md#schema), [API](README.md#api), [booking](README.md#booking), [ownership](README.md#ownership), [the case as its customer sees it](README.md#the-case-as-its-customer-sees-it), [booking dialog](README.md#booking-dialog), [case detail](README.md#case-detail), [queries](README.md#queries) and [dates](README.md#dates) sections. Task 01 of [increment 03](../03-buy-consultation-package/01-buy-from-detail-page.md) is the pattern for a customer route, scoped queries and a dialog with steps.
 
 Work in this order, test first:
 
@@ -54,13 +54,13 @@ Work in this order, test first:
 - [ ] A case of an archived offering books.
 - [ ] An invalid booking request (no expert, no start) answers 400 with each field in `errors`; a start that isn't a slot answers 409 `SLOT_NOT_AVAILABLE`.
 - [ ] Customer 2 gets 404 on Customer 1's case from all three routes, and nothing is booked.
-- [ ] With the clock moved past an appointment, the case answers it under `pastAppointments` as `CONSUMED`, and it still counts against the credits.
+- [ ] With the clock moved into an appointment, the case answers it under `upcomingAppointments` as `CONSUMED`, and the page says "Now"; moved to its end, under `pastAppointments`; either way it counts against the credits (spec decision 21).
 - [ ] `openapi.json` and `schema.d.ts` have the three routes and the new fields; the role matrix has the three rows; every check passes.
 
 ## Tests
 
-- Domain: `CaseForBooking` (each code; credits before the expert; the first booking assigns; the end and the free-cancellation time), `CustomerConsultationCase` (credits, `canBook`, upcoming and past at `asOf`), `Appointment`, `BookableSlot`, `CancellationDeadline.freeUntil`
-- REST: the happy path of the three routes and the extended detail; the 409s, 404s and 400s above; the archived offering; self-booking; removing eligibility after the assignment; consumed after moving the clock
+- Domain: `CaseForBooking` (each code; credits before the expert; the first booking assigns; the end and the free-cancellation time), `CustomerConsultationCase` (credits, `canBook`, upcoming and past at `asOf`, at an appointment's start and end), `Appointment`, `BookableSlot`, `CancellationDeadline.freeUntil`
+- REST: the happy path of the three routes and the extended detail; the 409s, 404s and 400s above; the archived offering; self-booking; removing eligibility after the assignment; consumed after moving the clock into and past an appointment
 - Authorization: `RoleMatrixTest` rows; Customer 2 on Customer 1's case → 404 on each route
 - Frontend: `formatTime`, `localDateOf`
 

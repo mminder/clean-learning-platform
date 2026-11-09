@@ -245,6 +245,13 @@ UC-05's case detail and landing page, as far as cases have data now: no cancella
 - **THEN** it shows Expert 2's name, bio and placeholder photo, the credits, the upcoming appointment with its date and start–end, and the past appointment as consumed, each in Zurich time
 - **AND** the past appointment still uses its credit: 1 of 3 credits open
 
+#### Scenario: A running appointment
+
+- **GIVEN** Customer 1's case has 3 credits and one appointment, on 17 Nov 2026, 10:00–11:00, and now is 17 Nov 2026, 10:30
+- **WHEN** they open the case, and **My purchases**
+- **THEN** the case detail shows the appointment under the upcoming ones, marked "Now", with 2 of 3 credits open, and **My purchases** shows the case under **Upcoming** with "Now: 17 Nov 2026, 10:00–11:00" (decision 21)
+- **AND** from 11:00 the appointment is a past one, consumed, and the case is under **Needs booking**
+
 #### Scenario: The groups on My purchases
 
 - **GIVEN** Customer 1 has a case with an upcoming appointment, a case with open credits and nothing upcoming, and a case whose three appointments are all past
@@ -302,6 +309,7 @@ Agreed with the product owner while planning (2026-11-09): the scope, UC-13 and 
 18. **The server computes what the dialog and the pages show** (*planning*), as [frontend.md](../architecture/frontend.md#dates-times-and-money) asks: each slot carries its free-cancellation time, the case detail carries `canBook`, and the list carries each case's group, in the order of **My purchases**. The frontend never computes a deadline, a credit or a group.
 19. **A settable `Clock` in integration tests** (*planning*): consumed appointments, completed cases and the 24 hours' notice need a time the test chooses. `@IntegrationTest` provides a `TestClock` and resets it after each test; until a test sets it, it's the system clock.
 20. **Executed as in [D-33](../decisions.md#scope-and-docs)** (*planning*): tasks 01, 02 and 03 one after the other, each building on the one before; then 04 and 05 in parallel, each in its own git worktree.
+21. **An appointment is upcoming until it ends** (decided 2026-11-09, while drafting [spec 06](06-expert-side-of-consultations.md), question 2). It's consumed from its start, for the credits and, from increment 05, for cancelling. But the case detail lists it among the upcoming appointments, marked "Now" while it runs, and **My purchases** keeps its case under **Upcoming** until it ends. During a session the customer finds it where they expect the next one, and UC-10's **Join** (increment 06) stays within reach until the end. It's in this increment so that the groups aren't built twice. The [glossary](../glossary.md#consultation), [D-17](../decisions.md#views-and-calls), UC-05, UC-10 and UC-11 now say so.
 
 ## Out of scope
 

@@ -99,7 +99,7 @@ UC-07 with its rules. In time means `now < start − cancellation deadline`, wit
 #### Scenario: A started appointment
 
 - **GIVEN** now is Tue 17 Nov 2026, 10:00
-- **THEN** the appointment has no **Cancel**
+- **THEN** the appointment is marked "Now" until 11:00 ([spec 04](04-book-consultation-appointment.md#decisions), decision 21) and has no **Cancel**
 - **AND** a cancellation request answers 409 with code `APPOINTMENT_STARTED` and "This appointment can no longer be cancelled."
 
 #### Scenario: Cancelled in another tab

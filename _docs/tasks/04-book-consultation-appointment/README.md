@@ -143,21 +143,21 @@ indexes                  (consultation_case_id)
 }
 
 // CustomerAppointmentResponse                                                                          03
-{ "id": "…", "start": "2026-11-17T09:00:00Z", "end": "2026-11-17T10:00:00Z", "status": "BOOKED" }  // or CONSUMED
+{ "id": "…", "start": "2026-11-17T09:00:00Z", "end": "2026-11-17T10:00:00Z", "status": "BOOKED" }  // or CONSUMED from the start on
 
 // CustomerConsultationCaseResponse: increment 03's fields, plus                                        03
 {
   "expert": { "id": "…0202", "displayName": "Expert 2", "bio": "…" },  // AssignedExpertResponse; @Nullable:
                                                                         // null before the first booking
-  "upcomingAppointments": [ /* CustomerAppointmentResponse, BOOKED, soonest first */ ],
-  "pastAppointments": [ /* CustomerAppointmentResponse, CONSUMED, newest first */ ],
+  "upcomingAppointments": [ /* CustomerAppointmentResponse, not ended yet, soonest first; a running one is CONSUMED */ ],
+  "pastAppointments": [ /* CustomerAppointmentResponse, ended, CONSUMED, newest first */ ],
   "canBook": true                                                       // an open credit is left
 }
 
 // CustomerConsultationCaseSummaryResponse: increment 03's fields, plus                                 04
 {
   "expertDisplayName": "Expert 2",   // @Nullable: no expert yet
-  "nextAppointment": { /* CustomerAppointmentResponse */ },  // @Nullable: the soonest upcoming one
+  "nextAppointment": { /* CustomerAppointmentResponse */ },  // @Nullable: the soonest upcoming one, CONSUMED while it runs
   "group": "UPCOMING"                // or NEEDS_BOOKING, PAST
 }
 ```
@@ -234,9 +234,9 @@ indexes                  (consultation_case_id)
 03 for the detail, 04 for the list.
 
 - **The time a case is shown at** is a parameter: `LoadCustomerConsultationCasePort.load(id, customerId, Instant asOf)` and `LoadCustomerConsultationCasesPort.loadAll(customerId, Instant asOf)`, with `asOf` from the `Clock`. The adapter only passes it into the domain records, which derive the statuses from it. So the derived states stay in the domain ([D-11](../../decisions.md#consultation)), and a response maps a model without a clock.
-- **`Appointment(AppointmentId, ConsultationCaseId, Instant start, Instant end)`** is the stored, booked appointment. Its status at `asOf` is `BOOKED` while its start is after `asOf`, and `CONSUMED` from its start on ([glossary](../../glossary.md#consultation)); `CustomerAppointment` is the appointment with that status.
-- **`CustomerConsultationCase`** (03) gains `Optional<AssignedExpert> expert`, `List<Appointment> appointments` and `Instant asOf`. `openCredits()` subtracts every booked appointment, consumed or not. `canBook()` is `openCredits() > 0`; UC-08 adds "and active". `upcomingAppointments()` are the `BOOKED` ones, soonest first; `pastAppointments()` the `CONSUMED` ones, newest first.
-- **`CustomerConsultationCaseSummary`** (04) gains `Optional<DisplayName> expertDisplayName`, the appointments and `asOf`. Its `group()`: `UPCOMING` with a future booked appointment; otherwise `NEEDS_BOOKING` with an open credit; otherwise `PAST`, a completed case ([UC-05](../../use-cases/uc-05-view-my-purchases.md), [D-17](../../decisions.md#views-and-calls)). `MY_PURCHASES_ORDER` sorts by group in that order, then Upcoming by the next appointment's start, Needs booking by purchase time, Past by the last appointment's start, newest first, then by id. `ListCustomerConsultationCasesUseCase` sorts with it.
+- **`Appointment(AppointmentId, ConsultationCaseId, Instant start, Instant end)`** is the stored, booked appointment. Its status at `asOf` is `BOOKED` while its start is after `asOf`, and `CONSUMED` from its start on ([glossary](../../glossary.md#consultation)); `CustomerAppointment` is the appointment with that status. It's upcoming while its end is after `asOf`: a running appointment is `CONSUMED` and upcoming at once (spec decision 21).
+- **`CustomerConsultationCase`** (03) gains `Optional<AssignedExpert> expert`, `List<Appointment> appointments` and `Instant asOf`. `openCredits()` subtracts every booked appointment, consumed or not. `canBook()` is `openCredits() > 0`; UC-08 adds "and active". `upcomingAppointments()` are the ones that haven't ended, soonest first, a running one among them as `CONSUMED`; `pastAppointments()` the ones that have ended, newest first.
+- **`CustomerConsultationCaseSummary`** (04) gains `Optional<DisplayName> expertDisplayName`, the appointments and `asOf`. Its `group()`: `UPCOMING` with an upcoming appointment, one that hasn't ended (spec decision 21); otherwise `NEEDS_BOOKING` with an open credit; otherwise `PAST`, a completed case ([UC-05](../../use-cases/uc-05-view-my-purchases.md), [D-17](../../decisions.md#views-and-calls)). `MY_PURCHASES_ORDER` sorts by group in that order, then Upcoming by the next appointment's start (the soonest upcoming one), Needs booking by purchase time, Past by the last appointment's start, newest first, then by id. `ListCustomerConsultationCasesUseCase` sorts with it.
 - **The appointments' rules live once**: the summary and the detail share them (through `Appointment`, or one small model both use), and the review checks there's no copy.
 - **The adapter loads the appointments** of the case, or of all the customer's cases with one query, and groups them in Java; no rule in SQL beyond `status = 'BOOKED'`.
 
@@ -304,12 +304,12 @@ frontend/src
 | Expert, in the terms | the expert's name, or "Not assigned yet" |
 | **Book appointment** | under the terms; disabled unless `canBook`. While the case has no appointment, "Book your first session" next to it |
 | Your expert | with an expert: `ImagePlaceholder`, name, bio, as the shop's offering detail shows experts (spec decision 3) |
-| Upcoming appointments | each "17 Nov 2026, 10:00–11:00", soonest first, with "(Zurich time)" once; hidden when empty |
+| Upcoming appointments | each "17 Nov 2026, 10:00–11:00", soonest first, with "(Zurich time)" once; a `CONSUMED` one, which is running, says "Now"; hidden when empty |
 | Past appointments | each with "Consumed", newest first; hidden when empty |
 
 ### My purchases
 
-04. `MyPurchasesPage` shows the groups the API returns, in its order: **Upcoming**, **Needs booking**, and **Past** collapsed (`<details>` with the summary "Past (2)"). An empty group isn't shown; without any case, the empty state stays. `ConsultationCaseCard` shows the expert's name or "Not assigned yet", "Next: 17 Nov 2026, 10:00–11:00" with an upcoming appointment, the credits and the purchase date.
+04. `MyPurchasesPage` shows the groups the API returns, in its order: **Upcoming**, **Needs booking**, and **Past** collapsed (`<details>` with the summary "Past (2)"). An empty group isn't shown; without any case, the empty state stays. `ConsultationCaseCard` shows the expert's name or "Not assigned yet", "Next: 17 Nov 2026, 10:00–11:00" with an upcoming appointment, or "Now: …" while it runs, the credits and the purchase date.
 
 ### Queries
 
@@ -345,7 +345,7 @@ shadcn/ui: `calendar` (01), added with the CLI and then `npm run format`. It bri
 | Role matrix | Rows for the two availability routes, `EXPERT` (01); the `GET /api/expert/probe` row goes. Rows for the three case routes, `CUSTOMER`, on an unknown case (03). `PUT` and `POST` send no body (400). |
 | Ownership | Expert 2's `GET` doesn't show Expert 1's availability (01). Customer 2 on Customer 1's case: the experts, the slots and the booking answer 404, and nothing is booked (03). Customer 2's list doesn't show Customer 1's appointments (04). |
 | Concurrency | Two tests (05), deterministic as `ConsultationOfferingConcurrencyTest`: two customers book one expert's slot at once, and must fail without the expert's lock; two bookings on a case's last credit at once, with different experts so that only the case's lock can order them, and must fail without the case's lock. Where a request without its lock would wait nowhere, the test also holds the row a foreign key check of the request waits for, as the purchase's test does. |
-| Domain | `TimeRange`, `Availability` (overlap, touch, past dates) (01). `SlotFinder`: the grid, the fit, two ranges, the notice, busy time with and without touching, the session durations 30, 60 and 90 minutes, a range not on the grid, both days of the summer-time changes, no availability (02). `CaseForBooking`: each code, credits before the expert, the first booking assigns the expert, the slot's end and free-cancellation time (03). `CustomerConsultationCase`: credits, `canBook`, upcoming and past at a given time (03). `CustomerConsultationCaseSummary`: each group and the order (04). |
+| Domain | `TimeRange`, `Availability` (overlap, touch, past dates) (01). `SlotFinder`: the grid, the fit, two ranges, the notice, busy time with and without touching, the session durations 30, 60 and 90 minutes, a range not on the grid, both days of the summer-time changes, no availability (02). `CaseForBooking`: each code, credits before the expert, the first booking assigns the expert, the slot's end and free-cancellation time (03). `CustomerConsultationCase`: credits, `canBook`, upcoming and past at a given time, also at an appointment's start and end (03). `CustomerConsultationCaseSummary`: each group and the order, also at an appointment's start and end (04). |
 | Frontend | Vitest for logic only ([D-29](../../decisions.md#architecture)): the new `lib/date.ts` functions (01, 03), and the dialog's grouping of slots by date if it's a function of its own (03). Pages and the dialog are checked by hand with Playwright. |
 
 ## Commands
