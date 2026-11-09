@@ -36,7 +36,8 @@ The case detail shows:
 - upcoming appointments, each with **Cancel** ([UC-07](uc-07-cancel-consultation-appointment.md)) and the call link ([UC-10](uc-10-join-call.md));
 - past appointments: consumed, or cancelled with "credit refunded" / "credit forfeited";
 - the expert's public notes, newest first ([UC-15](uc-15-take-consultation-notes.md));
-- the actions **Book appointment** ([UC-06](uc-06-book-consultation-appointment.md)) and **Cancel case** ([UC-08](uc-08-cancel-consultation-case.md)).
+- the actions **Book appointment** ([UC-06](uc-06-book-consultation-appointment.md)), disabled without open credits, and **Cancel case** ([UC-08](uc-08-cancel-consultation-case.md));
+- the hint "Book your first session" while the case has no appointment ([UC-03](uc-03-purchase-consultation-package.md)).
 
 ## Main flow: enrollment detail
 

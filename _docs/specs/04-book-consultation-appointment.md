@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| Status | Draft |
-| Use cases | [UC-13](../use-cases/uc-13-manage-availability.md), all steps; [UC-06](../use-cases/uc-06-book-consultation-appointment.md), all steps, with busy time from appointments only (question 14); [UC-05](../use-cases/uc-05-view-my-purchases.md), the assigned expert, the appointments and **Book appointment** on the case detail, and the Upcoming and Past groups on **My purchases** (question 6); [UC-03](../use-cases/uc-03-purchase-consultation-package.md), step 7's hint "Book your first session" |
-| Tasks | Not planned yet: they're written once the open questions are answered |
+| Status | Ready |
+| Use cases | [UC-13](../use-cases/uc-13-manage-availability.md), all steps; [UC-06](../use-cases/uc-06-book-consultation-appointment.md), all steps, with busy time from appointments only (decision 14); [UC-05](../use-cases/uc-05-view-my-purchases.md), the assigned expert, the appointments and **Book appointment** on the case detail, and the Upcoming and Past groups on **My purchases** (decision 6); [UC-03](../use-cases/uc-03-purchase-consultation-package.md), step 7's hint "Book your first session" |
+| Tasks | [tasks/04-book-consultation-appointment](../tasks/04-book-consultation-appointment/README.md) |
 
 ## Why
 
@@ -46,13 +46,11 @@ UC-13 comes in the same increment: without it, availability would have to come f
 
 ## Requirements
 
-The requirements assume the recommended answer to each [open question](#open-questions). An answer that differs changes them.
-
 In the scenarios, Career Coaching has 60-minute sessions and a 24-hour cancellation deadline, and both experts are eligible, as seeded. "Now" is Mon 9 Nov 2026, 15:00 (Zurich time), unless a scenario says otherwise; tests fix it with the `Clock`.
 
 ### Requirement: Manage availability
 
-UC-13 steps 1–5, with its rules. Dates are Zurich calendar dates, and time ranges are Zurich wall-clock times (question 11).
+UC-13 steps 1–5, with its rules. Dates are Zurich calendar dates, and time ranges are Zurich wall-clock times (decision 11).
 
 #### Scenario: Set availability
 
@@ -63,13 +61,13 @@ UC-13 steps 1–5, with its rules. Dates are Zurich calendar dates, and time ran
 
 #### Scenario: Invalid time ranges
 
-- **WHEN** the expert saves a range 12:00–09:00, or the ranges 09:00–12:00 and 11:00–14:00, or 09:00–12:00 and 12:00–15:00 (question 9)
+- **WHEN** the expert saves a range 12:00–09:00, or the ranges 09:00–12:00 and 11:00–14:00, or 09:00–12:00 and 12:00–15:00 (decision 9)
 - **THEN** the response is 400, the page shows a message next to each invalid range, and nothing is saved
 
 #### Scenario: Past dates can't be changed
 
 - **WHEN** the expert opens **Availability**
-- **THEN** the days before today (Zurich) can't be toggled, and today can (question 9)
+- **THEN** the days before today (Zurich) can't be toggled, and today can (decision 9)
 - **AND** a request with a date before today answers 400
 
 #### Scenario: Removing availability keeps appointments
@@ -93,7 +91,7 @@ UC-06 step 2 and its rules on eligible and assigned experts.
 
 - **GIVEN** Customer 1 has a case of Career Coaching without an assigned expert
 - **WHEN** they click **Book appointment**
-- **THEN** the dialog lists Expert 1 and Expert 2, sorted by display name, each with the name, the bio and the placeholder photo the shop shows (question 3)
+- **THEN** the dialog lists Expert 1 and Expert 2, sorted by display name, each with the name, the bio and the placeholder photo the shop shows (decision 3)
 
 #### Scenario: An expert books themself
 
@@ -104,7 +102,7 @@ UC-06 step 2 and its rules on eligible and assigned experts.
 
 - **GIVEN** a case of an offering that has no eligible experts
 - **WHEN** the customer clicks **Book appointment**
-- **THEN** the dialog says "No experts are available for this offering yet. Please try again later." (question 2)
+- **THEN** the dialog says "No experts are available for this offering yet. Please try again later." (decision 2)
 
 #### Scenario: The expert is no longer eligible
 
@@ -122,11 +120,11 @@ UC-06 step 2 and its rules on eligible and assigned experts.
 
 - **GIVEN** a case without an assigned expert is open in two tabs
 - **WHEN** the customer books Expert 1 in one tab and then Expert 2 in the other
-- **THEN** the second answers 409 with code `EXPERT_CHANGED`, the dialog reloads the case and continues with Expert 1, and all of the case's appointments are with Expert 1 (question 12)
+- **THEN** the second answers 409 with code `EXPERT_CHANGED`, the dialog reloads the case and continues with Expert 1, and all of the case's appointments are with Expert 1 (decision 12)
 
 ### Requirement: Bookable slots
 
-UC-06 steps 3–4 and the bookable slot of [D-10](../decisions.md#consultation): a start time on the 30-minute grid, the whole session inside one availability range, no overlap with the expert's busy time, and at least 24 hours from now. Busy time is the expert's booked appointments, of every case (question 14).
+UC-06 steps 3–4 and the bookable slot of [D-10](../decisions.md#consultation): a start time on the 30-minute grid, the whole session inside one availability range, no overlap with the expert's busy time, and at least 24 hours from now. Busy time is the expert's booked appointments, of every case (decision 14).
 
 #### Scenario: Grid and fit
 
@@ -154,7 +152,7 @@ UC-06 steps 3–4 and the bookable slot of [D-10](../decisions.md#consultation):
 #### Scenario: The summer-time change
 
 - **GIVEN** Expert 2 is available on Sun 28 Mar 2027, 01:00–05:00, when the clocks jump from 02:00 to 03:00
-- **THEN** no start time between 02:00 and 03:00 is offered, and 01:30 is offered as 01:30–03:30, a session of 60 real minutes (question 11)
+- **THEN** no start time between 02:00 and 03:00 is offered, and 01:30 is offered as 01:30–03:30, a session of 60 real minutes (decision 11)
 - **AND** with the same range on Sun 31 Oct 2027, when 02:00–03:00 happens twice, the start times 02:00 and 02:30 aren't offered
 
 #### Scenario: No free times
@@ -165,7 +163,7 @@ UC-06 steps 3–4 and the bookable slot of [D-10](../decisions.md#consultation):
 
 ### Requirement: Book an appointment
 
-UC-06 steps 1 and 5–8 and its error flows. The booking dialog has steps, like the buy dialog: expert (first booking only), date, time, confirmation (question 4).
+UC-06 steps 1 and 5–8 and its error flows. The booking dialog has steps, like the buy dialog: expert (first booking only), date, time, confirmation (decision 4).
 
 #### Scenario: The first booking
 
@@ -177,7 +175,7 @@ UC-06 steps 1 and 5–8 and its error flows. The booking dialog has steps, like 
 #### Scenario: The confirmation states the terms
 
 - **WHEN** the customer picks Expert 2, 17 Nov 2026 and 10:00–11:00, and continues
-- **THEN** the dialog asks "Book Expert 2 on 17 Nov 2026, 10:00–11:00 (60 min, Zurich time)?" and says "Free cancellation until 16 Nov 2026, 10:00." (question 7)
+- **THEN** the dialog asks "Book Expert 2 on 17 Nov 2026, 10:00–11:00 (60 min, Zurich time)?" and says "Free cancellation until 16 Nov 2026, 10:00." (decision 7)
 
 #### Scenario: The customer changes their mind
 
@@ -251,7 +249,7 @@ UC-05's case detail and landing page, as far as cases have data now: no cancella
 
 - **GIVEN** Customer 1 has a case with an upcoming appointment, a case with open credits and nothing upcoming, and a case whose three appointments are all past
 - **WHEN** they open **My purchases**
-- **THEN** the first is under **Upcoming**, the second under **Needs booking**, and the third under **Past**, which is collapsed (question 6)
+- **THEN** the first is under **Upcoming**, the second under **Needs booking**, and the third under **Past**, which is collapsed (decision 6)
 - **AND** Upcoming is sorted by the next appointment, Needs booking by purchase time, and Past by the last appointment, newest first
 
 #### Scenario: The case card
@@ -280,40 +278,39 @@ UC-05's case detail and landing page, as far as cases have data now: no cancella
 - **THEN** the header shows **Availability**
 - **AND** the landing pages stay as they are until the expert's **My cases** exists (UC-11)
 
-## Open questions
-
-Each question has a recommended answer. The product owner decides; until then this spec stays a draft. The ones marked *technical* change no behavior a user sees, but other tasks rely on them.
-
-Agreed with the product owner while planning (2026-11-09): the scope, UC-13 and UC-06 together, with UC-07 and UC-08 in the next increment.
-
-1. **Experts don't see their bookings yet.** The expert's cases and appointments are UC-11, which isn't in this increment. Until then, an expert sees a booking only as a slot that's gone. *Recommended:* accept it; UC-11 comes with the expert's side (UC-11, UC-14, UC-10, UC-15) in a later increment. *Alternative:* add UC-11's list read-only here.
-2. **An offering without eligible experts** (left to this increment by [spec 03](03-buy-consultation-package.md#decisions), decision 7). *Recommended:* **Book appointment** stays enabled, and the dialog says "No experts are available for this offering yet. Please try again later." The customer bought in good faith, and the button explains itself. *Alternative:* disable **Book appointment** with the same text next to it.
-3. **Expert photos.** `expert_profile` has no photo yet; it comes with UC-14. *Recommended:* the picker and the case detail show the same `ImagePlaceholder` as the shop's offering detail.
-4. **The booking flow is a dialog with steps**: expert (first booking only), date, time, confirmation, opened from the case detail like the buy dialog. The date step is a month calendar where only dates with bookable slots can be picked, opening on the month of the first one; the time step lists that date's slots. *Recommended:* yes. *Alternative:* a page of its own, `/my/cases/:id/book`.
-5. **Which slots the dialog loads.** *Recommended:* one request returns all of the expert's bookable slots for the case, from now on, with no horizon. Availability is a list of selected dates, so the result stays small at PoC scale, and the calendar needs no request per month.
-6. **The Past group arrives now.** Without cancellations, a case becomes `COMPLETED` once its credits are booked and every appointment has started ([glossary](../glossary.md#purchases)). It's neither Upcoming nor Needs booking, so without Past it would vanish from **My purchases**. *Recommended:* Past (collapsed) arrives here with completed cases; cancelled ones join it with UC-08. This changes [spec 03](03-buy-consultation-package.md#decisions)'s expectation (decision 1) that Past comes with UC-08.
-7. **The confirmation states the free-cancellation deadline** as UC-06 step 5 says, although cancelling comes only with the next increment. *Recommended:* show it. It's a term of the purchase, true from the moment of booking, and no button promises anything. *Alternative:* leave it out until UC-07, which changes UC-06 for one increment.
-8. **No seed availability.** [backend.md](../architecture/backend.md#persistence) plans seeded availability for both experts, with dates relative to the migration date. Those dates are fixed when the database is first migrated, so they go stale in a database that's kept for weeks. And tests have to set the seeded experts' availability anyway, because they're the only experts. *Recommended:* no seed availability: tests set it through the API, and the test cleanup deletes all availability and appointments, as it deletes all cases. The demo starts with the experts setting theirs. backend.md's seed content changes accordingly.
-9. **Availability input rules** beyond UC-13's. *Recommended:* a date before today (Zurich) is past and can't be changed; today can. The save replaces the expert's dates from today on and never touches earlier ones; the page shows dates from today on. Time ranges may start and end at any minute (the grid does the rest) and may be empty (then nothing is bookable). Ranges that touch, such as 09:00–12:00 and 12:00–15:00, are refused like overlapping ones: a session must fit inside one range, so 11:30–12:30 would silently be missing, and one range 09:00–15:00 says the same.
-10. **The expert's menu entry.** *Recommended:* **Availability** in the header for every user with `EXPERT`, between **My purchases** and **Consultations**. The landing pages don't change: no seeded user is only an expert, and an expert's landing page is **My cases** (UC-11).
-11. **The days of the summer-time changes** (*technical*). Ranges and the grid are wall-clock times, but a session lasts its real duration. *Recommended:* a start time is offered only if it exists exactly once on that date: in spring, 02:00–02:59 doesn't exist; in autumn, 02:00–02:59 happens twice and isn't offered. A session must end, as an instant, at or before the end of its range. So 01:30 on 28 Mar 2027 is the session 01:30–03:30, which lasts 60 minutes. Nobody is expected to coach at 2 a.m.; the rule only has to be correct and simple.
-12. **The booking request names the expert** (*technical*). *Recommended:* the request carries the start and the expert the customer saw: the one they picked, or the case's. If the case has no expert, the server checks that the named one is eligible (409 `EXPERT_NOT_ELIGIBLE`) and assigns them; if it has one and it's another, 409 `EXPERT_CHANGED`. As with the confirmed price in spec 03 (decision 3), the server never books something the customer didn't see.
-13. **Saving availability locks the expert's row** (*technical*), the same lock a booking takes after the case. *Recommended:* yes. Two saves at once, from two tabs, would otherwise interleave their deletes and inserts and fail with a 500, and a booking then always sees either the old or the new availability. A booking that comes just before a removal is still valid: removing availability never cancels anything.
-14. **Busy time without runs** (*technical*). Runs don't exist yet. *Recommended:* busy time is the expert's booked appointments; the trainings increment adds the time slots of the expert's runs to the same port, and assigning an expert to a run checks the appointments ([D-09](../decisions.md#consultation)).
-15. **Only what exists is stored** (*technical*), as in spec 03 (decision 12). *Recommended:* the case gets its assigned expert now, and the appointment its start, end and status `BOOKED`. The case's status and the appointment's `CANCELLED` and `creditRefunded` come with UC-07 and UC-08. Open credits are the session count minus the booked appointments, until forfeited credits (UC-07) and credit adjustments (UC-18) exist.
-
 ## Decisions
 
-None yet besides the scope above. Once the open questions are answered, their answers move here with the reason, and the durable ones go into [decisions.md](../decisions.md), the use cases and the architecture docs in the same commit ([planning an increment](README.md#planning-an-increment)).
+Agreed with the product owner while planning (2026-11-09): the scope, UC-13 and UC-06 together, with UC-07 and UC-08 in the next increment; then decisions 1 to 15, each as recommended. The ones marked *planning* were taken while writing the [plan](../tasks/04-book-consultation-appointment/README.md), following the docs; object to them before the first task starts.
+
+1. **Experts don't see their bookings yet.** Their cases and appointments are UC-11, which isn't in this increment; until then, an expert sees a booking only as a time that's gone. UC-11 comes with the expert's side (UC-11, UC-14, UC-10, UC-15) in a later increment.
+2. **An offering without eligible experts** (left to this increment by [spec 03](03-buy-consultation-package.md#decisions), decision 7): **Book appointment** stays enabled, and the dialog says "No experts are available for this offering yet. Please try again later." The customer bought in good faith, and the dialog explains itself. [UC-06](../use-cases/uc-06-book-consultation-appointment.md) now says so.
+3. **Expert photos:** `expert_profile` has no photo until UC-14, so the picker and the case detail show the same `ImagePlaceholder` as the shop's offering detail.
+4. **The booking flow is a dialog with steps**, opened from the case detail like the buy dialog: expert (first booking only), date, time, confirmation. The date step is a month calendar where only dates with bookable slots can be picked, opening on the month of the first one; the time step lists that date's slots.
+5. **One request loads all slots:** the expert's bookable slots for the case, from now on, with no horizon. Availability is a list of selected dates, so the result stays small at PoC scale, and the calendar needs no request per month.
+6. **The Past group arrives now.** Without cancellations, a case is `COMPLETED` once its credits are booked and every appointment has started ([glossary](../glossary.md#purchases)). It's neither Upcoming nor Needs booking, so without Past it would vanish from **My purchases**. Cancelled cases join Past with UC-08. This replaces spec 03's expectation (its decision 1) that Past comes with UC-08.
+7. **The confirmation states the free-cancellation deadline**, as UC-06 step 5 says, although cancelling comes with the next increment. It's a term of the purchase, true from the moment of booking, and no button promises anything.
+8. **No seed availability.** Seed dates relative to the migration date are fixed when the database is first migrated, so they go stale in a database that's kept for weeks; and tests have to set the seeded experts' availability anyway, because they're the only experts. Tests set it through the API, the test cleanup deletes all availability and appointments as it deletes all cases, and the demo starts with the experts setting theirs. [backend.md](../architecture/backend.md#persistence)'s seed content now says so.
+9. **Availability input rules** beyond UC-13's: a date before today (Zurich) is past and can't be changed; today can. The save replaces the expert's dates from today on and never touches earlier ones, and the page shows dates from today on. Time ranges may start and end at any minute (the grid does the rest) and may be empty (then nothing is bookable). Ranges that touch, such as 09:00–12:00 and 12:00–15:00, are refused like overlapping ones: a session must fit inside one range, so 11:30–12:30 would silently be missing, and one range 09:00–15:00 says the same. [UC-13](../use-cases/uc-13-manage-availability.md) now says so.
+10. **Availability in the header** for every user with `EXPERT`, between **My purchases** and **Consultations**. The landing pages don't change: no seeded user is only an expert, and an expert's landing page will be **My cases** (UC-11).
+11. **The days of the summer-time changes.** Ranges and the grid are wall-clock times, but a session lasts its real duration. A start time is offered only if it exists exactly once on that date: in spring, 02:00–02:59 doesn't exist; in autumn, 02:00–02:59 happens twice and isn't offered. A session must end, as an instant, at or before the end of its range, so 01:30 on 28 Mar 2027 is the session 01:30–03:30, which lasts 60 minutes. Nobody is expected to coach at 2 a.m.; the rule only has to be correct and simple. [D-10](../decisions.md#consultation) and UC-06 now say so.
+12. **The booking request names the expert**, the one the customer saw: the one they picked, or the case's. If the case has no expert, the server checks that the named one is eligible (409 `EXPERT_NOT_ELIGIBLE`) and assigns them; if it has one and it's another, the answer is 409 `EXPERT_CHANGED`. As with the confirmed price in spec 03 (decision 3), the server never books something the customer didn't see. UC-06 now says so.
+13. **Saving availability locks the expert's row**, the same lock a booking takes after the case. Two saves at once, from two tabs, would otherwise interleave their deletes and inserts and fail with a 500, and a booking always sees either the old or the new availability. A booking just before a removal is still valid: removing availability never cancels anything. [D-27](../decisions.md#architecture) now says so.
+14. **Busy time is the expert's booked appointments.** Runs don't exist yet; the trainings increment adds the time slots of the expert's runs to the same port, and assigning an expert to a run checks the appointments ([D-09](../decisions.md#consultation)).
+15. **Only what exists is stored**, as in spec 03 (decision 12): the case gets its assigned expert, and the appointment its start, end and status `BOOKED`. The case's status and the appointment's `CANCELLED` and `creditRefunded` come with UC-07 and UC-08. The status column exists from the start so that every query of appointments already filters by `BOOKED`, and UC-07 only adds a value. Open credits are the session count minus the booked appointments, until forfeited credits (UC-07) and credit adjustments (UC-18) exist.
+16. **The picker's experts come from the case** (*planning*), `GET /api/customer/consultation-cases/{id}/eligible-experts`, not from the shop: an archived offering's case can still book, and the shop doesn't show archived offerings.
+17. **The booking answers 201 with the new appointment, without a `Location`** (*planning*): an appointment has no route of its own; it's part of its case, which the page reloads.
+18. **The server computes what the dialog and the pages show** (*planning*), as [frontend.md](../architecture/frontend.md#dates-times-and-money) asks: each slot carries its free-cancellation time, the case detail carries `canBook`, and the list carries each case's group, in the order of **My purchases**. The frontend never computes a deadline, a credit or a group.
+19. **A settable `Clock` in integration tests** (*planning*): consumed appointments, completed cases and the 24 hours' notice need a time the test chooses. `@IntegrationTest` provides a `TestClock` and resets it after each test; until a test sets it, it's the system clock.
+20. **Executed as in [D-33](../decisions.md#scope-and-docs)** (*planning*): tasks 01, 02 and 03 one after the other, each building on the one before; then 04 and 05 in parallel, each in its own git worktree.
 
 ## Out of scope
 
 - Cancelling an appointment, and the forfeited credit: UC-07, next increment.
 - Cancelling a case, and cancelled cases under Past: UC-08, next increment.
 - The **Join** button and the Teams link: UC-10, with the expert profile's link (UC-14).
-- Expert photos and editing the expert profile: UC-14 (question 3).
-- The expert's cases and appointments, and the expert's landing page: UC-11 (question 1). Notes: UC-15.
-- Busy time from training runs: with the trainings (UC-17) (question 14).
+- Expert photos and editing the expert profile: UC-14 (decision 3).
+- The expert's cases and appointments, and the expert's landing page: UC-11 (decision 1). Notes: UC-15.
+- Busy time from training runs: with the trainings (UC-17) (decision 14).
 - The admin's case list and credit adjustments: UC-18.
 - Rescheduling, changing the expert, recurring appointments, an approval step by the expert: UC-06's out of scope.
 - Time ranges per date or weekday, recurring weekly patterns, calendar sync: UC-13's out of scope.
@@ -360,12 +357,12 @@ cd backend && ./mvnw -Pfrontend package && java -jar target/clean-learning-platf
 
 | Risk | Mitigation |
 |---|---|
-| The slot rule gets the time zone wrong: wrong times around midnight UTC or on the days of the summer-time changes. | One domain class computes slots from wall-clock ranges, with unit tests in summer and winter time and on both change days (question 11). The frontend groups and formats slots only through `lib/date.ts`, with Vitest tests around midnight UTC. |
+| The slot rule gets the time zone wrong: wrong times around midnight UTC or on the days of the summer-time changes. | One domain class computes slots from wall-clock ranges, with unit tests in summer and winter time and on both change days (decision 11). The frontend groups and formats slots only through `lib/date.ts`, with Vitest tests around midnight UTC. |
 | An expert is booked twice at the same time from two cases. | The booking locks the expert's row after the case's ([D-27](../decisions.md#architecture)) and re-checks the slot under the lock. A concurrency test makes the race certain, as `ConsultationOfferingConcurrencyTest` does, and fails without the expert lock. |
 | A case gets more appointments than credits from two tabs. | The booking locks the case first. A second concurrency test, which fails without the case lock. |
-| Rules that depend on time passing (consumed, completed, Past) can't be reached through the API: a booking is at least 24 hours ahead. | Tests set the time with a `Clock` they control: book, then move the clock past the appointment. The technical plan defines the test clock. |
-| Tests now change the seeded experts' availability and add appointments to them. | No seed availability (question 8). The cleanup script deletes all appointments and availability before the cases. |
+| Rules that depend on time passing (consumed, completed, Past) can't be reached through the API: a booking is at least 24 hours ahead. | Tests set the time with a `Clock` they control: book, then move the clock past the appointment (decision 19). |
+| Tests now change the seeded experts' availability and add appointments to them. | No seed availability (decision 8). The cleanup script deletes all appointments and availability before the cases. |
 | An admin removes an expert from the offering while a customer's first booking picks them, and the booking doesn't lock the offering. | The booking checks eligibility when it runs. One that passes just before the removal is valid: removing eligibility never affects an assigned expert (UC-06). No offering lock, so bookings never wait for an admin's edit. |
 | Local dates and times (availability) and instants (appointments, slots) get mixed up between the backend and the frontend. | The API keeps them apart by type: availability as `LocalDate` and `LocalTime` without offset, slots and appointments as instants with offset ([backend.md](../architecture/backend.md#rest-conventions)). |
 | The month calendar is a new kind of UI component for both pages. | shadcn's `calendar` supports picking several dates (availability) and disabling dates (booking). One component, added with the CLI. |
-| The increment is larger than 03: two use cases, two roles and two races. | The technical plan cuts it into thin vertical tasks: availability, then the slot rule, the first booking, later bookings, the case detail and My purchases, and the races, with as much as possible in parallel. |
+| The increment is larger than 03: two use cases, two roles and two races. | The [plan](../tasks/04-book-consultation-appointment/README.md) cuts it into five tasks: availability, the slot rule, booking with the case detail, My purchases, and the races. The slot rule is a domain task of its own, and booking, the largest, sets the pattern and gets the most careful review. |

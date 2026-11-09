@@ -138,7 +138,7 @@ class BookConsultationAppointmentUseCase {
 - **One PostgreSQL schema** for all features (D-23). JPA entities live only in `adapters.database` and are mapped to domain objects by hand-written mappers.
 - **Entities and rows.** `adapters.database.<feature>` holds the adapter classes and the Spring Data repositories. Its `entity` sub-package holds the JPA entities, one per table, mapping only the columns the queries read. Its `row` sub-package holds the `*Row` records a query selects into with `select new` (a DTO projection): shaped for that one query, possibly spanning several tables, and never managed by JPA. The adapter maps rows to domain objects. Entities and rows are public so the parent package can use them; the layer rules keep them inside `adapters.database`, and ArchUnit checks both sub-packages.
 - **Flyway:** the schema is in `db/migration`. Seed data in `db/seed` is only on the Flyway path in the `poc` and `dev` profiles. Seed dates are relative to the migration date (e.g. `current_date + 14`), so the demo data stays in the future. A seed migration is numbered right after the schema migration it needs (`V2__create_user.sql` in `db/migration`, then `V2_1__seed_user.sql` in `db/seed`). Merged migrations, schema and seed alike, are never edited; a change is a new migration.
-- **Seed content:** the six users from [UC-01](../use-cases/uc-01-login.md); Career Coaching (packages 3 × CHF 450 and 5 × CHF 700, 60 min, 24 h deadline, both experts eligible); Software Architecture (2 days) and AI-Augmented Software Engineering (1 day), each with time slots 09:00–12:00 and 13:00–17:00, a 168 h deadline and two future runs; availability for both experts.
+- **Seed content:** the six users from [UC-01](../use-cases/uc-01-login.md); Career Coaching (packages 3 × CHF 450 and 5 × CHF 700, 60 min, 24 h deadline, both experts eligible); Software Architecture (2 days) and AI-Augmented Software Engineering (1 day), each with time slots 09:00–12:00 and 13:00–17:00, a 168 h deadline and two future runs. No availability, cases or appointments: the experts set their availability in the demo, and tests set it through the API and delete it afterwards ([spec 04](../specs/04-book-consultation-appointment.md#decisions), decision 8).
 - **Ids:** UUIDs generated in the application. Seed rows use fixed, readable UUIDs that tests refer to.
 - **Tables:** singular snake_case names. The user table is `app_user`, because `user` is reserved in PostgreSQL.
 - **Columns:** points in time are `timestamptz`, local times are `time`, dates are `date`, money is `numeric(10,2)` (currency is always CHF). Every table has `created_at` and `updated_at` (D-20).
@@ -159,6 +159,7 @@ A concurrency test makes its race certain, not likely: it holds the contended ro
 | Edit an offering, change its status or image, delete it (UC-16, UC-17) | offering |
 | Purchase consultation package (UC-03) | offering |
 | Book appointment (UC-06) | case → expert (user row) |
+| Save availability (UC-13) | expert (user row) |
 | Cancel appointment / case (UC-07, UC-08) | case |
 | Adjust credits (UC-18) | case |
 | Assign expert to run (UC-17) | expert → run |
