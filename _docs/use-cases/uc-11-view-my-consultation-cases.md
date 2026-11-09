@@ -21,15 +21,15 @@ The expert sees every case they're assigned to and what's coming up.
 
 | Group | Contains | Order |
 |---|---|---|
-| Upcoming | cases with a future `BOOKED` appointment | next appointment, ascending |
-| Needs booking | `ACTIVE` cases with open credits and no future booked appointment | first booking date, ascending |
+| Upcoming | cases with an upcoming appointment, one that hasn't ended ([glossary](../glossary.md#consultation)) | next appointment, ascending |
+| Needs booking | `ACTIVE` cases with open credits and no upcoming appointment | first booking date, ascending |
 | Past (collapsed) | `COMPLETED` or `CANCELLED` cases | last appointment, descending |
 
 3. Each card shows the customer's name, the offering, the next booked appointment (date and time), the open (bookable) credits, and the total credits.
 4. The expert opens a case. The detail shows:
    - the customer's name and email;
    - the offering and the purchase terms;
-   - all appointments: upcoming (with the Join link, [UC-10](uc-10-join-call.md)), consumed, and cancelled (refunded or forfeited);
+   - all appointments: upcoming until they end (with the Join link, [UC-10](uc-10-join-call.md)), consumed, and cancelled (refunded or forfeited);
    - all notes, private and public ([UC-15](uc-15-take-consultation-notes.md)).
 
 ## Alternative and error flows

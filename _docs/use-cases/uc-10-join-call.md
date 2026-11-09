@@ -33,6 +33,7 @@ Participants find the right Teams link at the right time.
 | Training day | the run's Teams link (the same for all days) | from the day's first slot start − 1 h until its last slot end |
 
 - Experts always see their links.
+- A consultation appointment stays among the upcoming ones, with **Join**, until it ends, though it's consumed from its start ([UC-05](uc-05-view-my-purchases.md), decided 2026-11-09).
 - The API only returns the link to customers inside the window.
 
 ## Visibility and authorization
