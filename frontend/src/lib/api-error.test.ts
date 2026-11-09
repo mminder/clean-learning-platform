@@ -3,6 +3,7 @@ import {
   ApiError,
   isBadRequest,
   isClientError,
+  isConflict,
   isNotFound,
   retryUnlessClientError,
 } from './api-error'
@@ -14,6 +15,18 @@ describe('ApiError', () => {
     expect(error).toBeInstanceOf(Error)
     expect(error.status).toBe(404)
     expect(error.message).toBe('Loading the offering failed')
+    expect(error.problem).toBeUndefined()
+  })
+
+  it('carries the problem of a 400', () => {
+    const problem = {
+      title: 'Bad Request',
+      status: 400,
+      instance: '/api/admin/consultation-offerings',
+      errors: [{ field: 'name', message: 'must not be blank' }],
+    }
+
+    expect(new ApiError('Saving failed', 400, problem).problem).toBe(problem)
   })
 })
 
@@ -32,6 +45,14 @@ describe('isBadRequest', () => {
     expect(isBadRequest(new ApiError('Bad request', 400))).toBe(true)
     expect(isBadRequest(new ApiError('Not found', 404))).toBe(false)
     expect(isBadRequest(new Error('Network down'))).toBe(false)
+  })
+})
+
+describe('isConflict', () => {
+  it('is true only for an API error with status 409', () => {
+    expect(isConflict(new ApiError('Conflict', 409))).toBe(true)
+    expect(isConflict(new ApiError('Bad request', 400))).toBe(false)
+    expect(isConflict(new Error('Network down'))).toBe(false)
   })
 })
 

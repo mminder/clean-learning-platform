@@ -2,6 +2,7 @@ package com.cleanlearning.api.shop.response;
 
 import java.util.List;
 
+import com.cleanlearning.api.response.ConsultationPackageResponse;
 import com.cleanlearning.domain.offering.ShopConsultationOffering;
 
 /**

@@ -3,11 +3,14 @@ package com.cleanlearning.api.shop;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.cleanlearning.api.ProblemResponses;
 import com.cleanlearning.api.shop.response.ShopOfferingDetailResponse;
 import com.cleanlearning.api.shop.response.ShopOfferingResponse;
 import com.cleanlearning.application.offering.GetShopOfferingUseCase;
@@ -36,6 +39,9 @@ class ShopController {
     }
 
     @GetMapping("/offerings/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    @ProblemResponses.Status400
+    @ProblemResponses.Status404
     ShopOfferingDetailResponse getOffering(@PathVariable UUID id) {
         return ShopOfferingDetailResponse.from(getShopOffering.invoke(new OfferingId(id)));
     }

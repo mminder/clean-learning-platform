@@ -1,3 +1,10 @@
+server:
+  servlet:
+    session:
+      # The login's session (D-25). Secure comes with production (MVP); see _docs/architecture/security.md.
+      cookie:
+        http-only: true
+        same-site: lax
 spring:
   application:
     name: clean-learning-platform
@@ -7,11 +14,28 @@ spring:
       ddl-auto: validate
   flyway:
     locations: classpath:db/migration
+  servlet:
+    multipart:
+      # An image is at most 2 MB (D-21); Spring's default is 1 MB. A larger file answers 400 (ApiExceptionHandler).
+      # The request has room for the multipart framing around a file of 2 MB.
+      max-file-size: 2MB
+      max-request-size: 3MB
+  jackson:
+    deserialization:
+      # A whole-number field answers 400 for a decimal, instead of cutting 45.5 to 45 and saving it.
+      accept-float-as-int: false
+  web:
+    # The UI is English only (D-20): validation messages ignore the browser's Accept-Language.
+    locale: en
+    locale-resolver: fixed
 springdoc:
   # The committed backend/openapi.json must not change unless the API does: pretty-printed, keys sorted.
   writer-with-default-pretty-printer: true
   writer-with-order-by-keys: true
   default-produces-media-type: application/json
+  # Each controller method declares the error answers it can give (ProblemResponses); the answers of
+  # ApiExceptionHandler aren't added to every route.
+  override-with-generic-response: false
   model-converters:
     # A response field annotated with @Nullable is nullable, and so not required (RequiredResponseFieldsCustomizer).
     java-nullable-property-customizer:

@@ -21,20 +21,20 @@ interface OfferingRepository extends Repository<OfferingEntity, UUID> {
      */
     @Query("""
             select new com.cleanlearning.adapters.database.offering.row.ShopOfferingPriceRow(
-                o.id, o.type, o.name, o.description, p.price)
+                o.id, o.type, o.name, o.description, o.imageId, p.price)
             from OfferingEntity o
             join ConsultationPackageEntity p on p.consultationOfferingId = o.id
-            where o.status = 'PUBLISHED'
+            where o.status = com.cleanlearning.domain.offering.value.OfferingStatus.PUBLISHED
             order by o.name, o.id
             """)
     List<ShopOfferingPriceRow> findPublishedWithPackagePrices();
 
     @Query("""
             select new com.cleanlearning.adapters.database.offering.row.ShopConsultationOfferingRow(
-                o.id, o.name, o.description, c.sessionDurationMinutes, c.cancellationDeadlineHours)
+                o.id, o.name, o.description, o.imageId, c.sessionDurationMinutes, c.cancellationDeadlineHours)
             from OfferingEntity o
             join ConsultationOfferingEntity c on c.offeringId = o.id
-            where o.id = :id and o.status = 'PUBLISHED'
+            where o.id = :id and o.status = com.cleanlearning.domain.offering.value.OfferingStatus.PUBLISHED
             """)
     Optional<ShopConsultationOfferingRow> findPublishedConsultationOffering(UUID id);
 

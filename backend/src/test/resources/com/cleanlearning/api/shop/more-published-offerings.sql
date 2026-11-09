@@ -1,6 +1,6 @@
 -- Two more published consultation offerings around the seeded Career Coaching. Sorted alphabetically, regardless of
 -- case and umlauts, they come out as Agile Coaching, Ärger-Coaching, Career Coaching; a byte-wise sort would put
--- Ärger-Coaching last. delete-extra-offerings.sql removes them.
+-- Ärger-Coaching last. The shared delete-test-offerings.sql removes them.
 
 insert into offering (id, type, name, description, status)
 values ('00000000-0000-0000-0000-000000009003', 'CONSULTATION', 'Agile Coaching', 'Coaching for agile teams.',

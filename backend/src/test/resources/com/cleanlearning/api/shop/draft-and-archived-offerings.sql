@@ -1,4 +1,4 @@
--- A DRAFT and an ARCHIVED consultation offering besides the seed. delete-extra-offerings.sql removes them.
+-- A DRAFT and an ARCHIVED consultation offering besides the seed. The shared delete-test-offerings.sql removes them.
 
 insert into offering (id, type, name, description, status)
 values ('00000000-0000-0000-0000-000000009001', 'CONSULTATION', 'Draft Coaching', 'Not published yet.', 'DRAFT'),

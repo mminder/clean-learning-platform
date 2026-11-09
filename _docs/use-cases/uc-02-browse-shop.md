@@ -22,7 +22,7 @@ None. No login is required.
    - a type badge: **Consultation** or **Training**;
    - the price: "from CHF x" (the cheapest package) for a consultation, the price for a training;
    - a **Buy** button.
-3. The visitor opens an offering's detail page.
+3. The visitor opens an offering's detail page. It shows the offering's image above its name, or a placeholder without one.
 4. For a **consultation**, the detail page shows the description, session duration, cancellation deadline, the packages (sessions and price), and the eligible experts (name, photo, bio).
 5. For a **training**, the detail page shows the description, price, cancellation deadline, the day template (days with time slots), and the buyable runs. Each run shows its dates, "N seats left" or "Sold out", and the expert's name or "to be announced".
 6. **Buy** on the card or the detail page starts [UC-03](uc-03-purchase-consultation-package.md) or [UC-04](uc-04-purchase-training-run.md).

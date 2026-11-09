@@ -2,7 +2,7 @@
 
 A web platform where customers buy and book consultations and training courses, experts deliver them, and admins manage the offerings. It's being built as a PoC first, then refined into an MVP.
 
-**Status:** the first increment, [01 Shop tracer bullet](_docs/specs/01-shop-tracer-bullet.md), is complete. The shop list and the consultation offering detail work end to end: the seeded Career Coaching offering goes from Postgres through the Spring Boot API to the React shop, served by the Vite dev server or by the single jar.
+**Status:** the second increment, [02 Manage consultation offerings](_docs/specs/02-manage-consultation-offerings.md), is complete, after [01 Shop tracer bullet](_docs/specs/01-shop-tracer-bullet.md). A visitor logs in as one of the seeded users; an admin creates and edits consultation offerings with their packages, eligible experts and image, and publishes, unpublishes, archives and deletes them; the shop follows at once, served by the Vite dev server or by the single jar. No next increment is planned yet.
 
 ## Docs
 

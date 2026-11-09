@@ -33,7 +33,10 @@ class LayerRulesTest {
     private static final String CONFIG = "com.cleanlearning.config..";
     private static final String API = "com.cleanlearning.api..";
     private static final String API_RESPONSES = "com.cleanlearning.api..response";
+    private static final String API_REQUESTS = "com.cleanlearning.api..request";
     private static final String APPLICATION = "com.cleanlearning.application..";
+    private static final String USE_CASES = "com.cleanlearning.application.*";
+    private static final String PORTS = "com.cleanlearning.application.*.port";
     private static final String DOMAIN = "com.cleanlearning.domain..";
     private static final String DOMAIN_VALUES = "com.cleanlearning.domain..value";
     private static final String ADAPTERS_DATABASE = "com.cleanlearning.adapters.database..";
@@ -45,13 +48,15 @@ class LayerRulesTest {
             .consideringOnlyDependenciesInLayers()
             .layer("config").definedBy(CONFIG)
             .layer("api").definedBy(API)
-            .layer("application").definedBy(APPLICATION)
+            .layer("use cases").definedBy(USE_CASES)
+            .layer("ports").definedBy(PORTS)
             .layer("domain").definedBy(DOMAIN)
             .layer("adapters.database").definedBy(ADAPTERS_DATABASE)
             .whereLayer("config").mayNotBeAccessedByAnyLayer()
             .whereLayer("api").mayOnlyBeAccessedByLayers("config")
-            .whereLayer("application").mayOnlyBeAccessedByLayers("config", "api", "adapters.database")
-            .whereLayer("domain").mayOnlyBeAccessedByLayers("config", "api", "application", "adapters.database")
+            .whereLayer("use cases").mayOnlyBeAccessedByLayers("config", "api")
+            .whereLayer("ports").mayOnlyBeAccessedByLayers("use cases", "adapters.database")
+            .whereLayer("domain").mayOnlyBeAccessedByLayers("config", "api", "use cases", "ports", "adapters.database")
             .whereLayer("adapters.database").mayOnlyBeAccessedByLayers("config");
 
     @ArchTest
@@ -86,6 +91,11 @@ class LayerRulesTest {
             .should().haveSimpleNameEndingWith("UseCase");
 
     @ArchTest
+    static final ArchRule useCasesLiveAtTheTopOfTheirFeature = classes()
+            .that().resideInAPackage(APPLICATION).and().areAnnotatedWith(Service.class)
+            .should().resideInAPackage(USE_CASES);
+
+    @ArchTest
     static final ArchRule useCasesHaveOnlyInvokeAsPublicMethod = classes()
             .that().resideInAPackage(APPLICATION).and().areAnnotatedWith(Service.class)
             .should(haveExactlyOnePublicMethodNamedInvoke());
@@ -94,13 +104,23 @@ class LayerRulesTest {
     static final ArchRule portsEndInPort = classes()
             .that().resideInAPackage(APPLICATION).and().areInterfaces()
             .and().doNotHaveSimpleName("package-info") // compiled as a synthetic interface
-            .should().haveSimpleNameEndingWith("Port");
+            .should().haveSimpleNameEndingWith("Port")
+            .andShould().resideInAPackage(PORTS);
 
-    /** A request rule follows with the first request record: every rule must match a class. */
+    @ArchTest
+    static final ArchRule portPackagesHoldOnlyPorts = classes()
+            .that().resideInAPackage(PORTS)
+            .should().beInterfaces().andShould().haveSimpleNameEndingWith("Port");
+
     @ArchTest
     static final ArchRule responsesLiveInAResponsePackage = classes()
             .that().resideInAPackage(API).and().haveSimpleNameEndingWith("Response")
             .should().resideInAPackage(API_RESPONSES);
+
+    @ArchTest
+    static final ArchRule requestsLiveInARequestPackage = classes()
+            .that().resideInAPackage(API).and().haveSimpleNameEndingWith("Request")
+            .should().resideInAPackage(API_REQUESTS);
 
     /** springdoc names an OpenAPI schema after the simple class name, so two records with one name share a schema. */
     @ArchTest

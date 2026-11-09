@@ -15,11 +15,19 @@ PoC (profile poc)                              MVP (OIDC)
                                                  │ GET /api/me ─►│ user + roles from DB   │
 ```
 
-- **Session cookie:** `HttpOnly`, `Secure` (outside local development), `SameSite=Lax`.
-- **CSRF:** Spring Security's SPA support. The token is sent in the `XSRF-TOKEN` cookie and returned in the `X-XSRF-TOKEN` header on state-changing requests.
-- **`GET /api/me`** returns `{ id, name, email, roles }`, or 401. The SPA uses it identically in the PoC and the MVP.
-- **Logout:** `POST /api/logout` invalidates the session. In the MVP it also performs OIDC RP-initiated logout.
-- **PoC login** (`/api/poc/**`) is registered only in the `poc` profile, so it doesn't exist in production.
+- **Session cookie:** `JSESSIONID`, `HttpOnly`, `SameSite=Lax` (`server.servlet.session.cookie` in `application.yml`); `Secure` comes with production (MVP).
+- **Principal:** the session holds an authenticated token whose principal is a `CurrentUser` (id and roles) and whose authorities are `ROLE_CUSTOMER`, `ROLE_EXPERT` and `ROLE_ADMIN` (`CurrentUserAuthentication`). Controllers take it with `@AuthenticationPrincipal CurrentUser`. The roles are read from the database at login and kept for the session.
+- **CSRF:** Spring Security 7's SPA support, `csrf.spa()` in `SecurityConfig`:
+  - The token is in the `XSRF-TOKEN` cookie, which JavaScript can read (`CookieCsrfTokenRepository`, not `HttpOnly`, path `/`). Every `POST`, `PUT`, `PATCH` and `DELETE` sends it back in the `X-XSRF-TOKEN` header; without it, or with another value, the answer is 403.
+  - The token isn't deferred: any response to a request without the cookie sets it, a 401 included. The SPA's first call, `GET /api/me`, gets it before the first mutating request.
+  - A login replaces the token, and a logout deletes the cookie; the next response sets a new one. The SPA reads the cookie on each request ([frontend](frontend.md#navigation-and-auth)).
+- **`GET /api/me`** returns `{ id, name, email, roles }`, or 401 with an empty body. Name, email and roles are read fresh from the database. The SPA uses it identically in the PoC and the MVP.
+- **Logout:** Spring Security's logout filter at `POST /api/logout` (it needs the CSRF token): it invalidates the session, deletes the `JSESSIONID` and `XSRF-TOKEN` cookies and answers 204. It runs before authorization, so a visitor's logout is a harmless 204. `/logout` is nothing special. `openapi.json` lists the route (`OpenApiConfig`), so the SPA calls it through the generated client. In the MVP it also performs OIDC RP-initiated logout.
+- **PoC login** (`/api/poc/**`) is registered only in the `poc` profile, so it doesn't exist in production. `POST /api/poc/login` does what Spring Security's own logins do: a new session id (session fixation) and a new CSRF token, through the `SessionAuthenticationStrategy` bean, then it saves the authentication through the `SecurityContextRepository` bean, the one the filter chain reads. An OIDC login (MVP) ends in the same session.
+- **Known gaps (hardening, by MVP hosting at the latest):**
+  - The `XSRF-TOKEN` cookie has no `SameSite` attribute.
+  - The public, cacheable `GET /api/images/{id}` response can carry `Set-Cookie: XSRF-TOKEN` on a visitor's first request. Before a CDN or shared cache sits in front, keep the CSRF cookie off `/api/images/**` or keep the cache from storing `Set-Cookie` ([task 07 of increment 02](../tasks/02-manage-consultation-offerings/07-offering-image.md#notes)).
+  - `HEAD /api/images/{id}` answers 401: the public matcher allows only `GET`.
 - **IdP:** Keycloak locally (docker-compose, realm import). The production IdP is open; only standard OIDC is used, so switching needs only configuration.
 
 ### Just-in-time provisioning (MVP)
@@ -39,7 +47,8 @@ Configured declaratively in the Spring Security config (D-26).
 | Prefix | Access |
 |---|---|
 | `/api/shop/**`, `GET /api/images/**` | public |
-| `/api/me`, `/api/logout`, every other `/api/**` | authenticated |
+| `POST /api/logout` | public: the logout filter answers before authorization, with 204 for a visitor, too |
+| `/api/me`, every other `/api/**` | authenticated |
 | `/api/customer/**` | `CUSTOMER` |
 | `/api/expert/**` | `EXPERT` |
 | `/api/admin/**` | `ADMIN` |
@@ -81,7 +90,10 @@ Authorization is tested through REST integration tests against Testcontainers Po
    - the admin case detail contains no notes;
    - the customer case detail contains no private notes;
    - the customer's Teams link is absent outside the link window (fixed `Clock`).
-3. **Profile guard:** `/api/poc/**` returns 404 when the `poc` profile isn't active.
+3. **Public images:** `GET /api/images/{id}` passes security without a login, and its `Cache-Control` stays the controller's (`ImageControllerTest`).
+4. **Profile guard:** `/api/poc/**` returns 404 when the `poc` profile isn't active (`PocLoginProfileTest`, a web slice without a database).
+
+Test helpers: `LoggedIn.as(userId, roles…)` makes a request with the authentication a PoC login keeps in the session. `Csrf.token()` sends a CSRF token the way the SPA does, cookie and header. Spring Security Test's `csrf()` isn't used: it swaps the CSRF filter's token repository for a session-based one in the Spring context all integration tests share.
 
 ## Configuration and secrets
 

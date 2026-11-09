@@ -8,7 +8,7 @@ import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 
 /**
- * Read through the projection in {@code OfferingRepository}.
+ * Read through the projection in {@code OfferingRepository}; the admin's adapter reads and writes it as an entity.
  */
 @Entity
 @Table(name = "eligible_expert")
@@ -24,6 +24,15 @@ public class EligibleExpertEntity {
 
     protected EligibleExpertEntity() {
         // for JPA
+    }
+
+    public EligibleExpertEntity(UUID consultationOfferingId, UUID expertId) {
+        this.consultationOfferingId = consultationOfferingId;
+        this.expertId = expertId;
+    }
+
+    public UUID getExpertId() {
+        return expertId;
     }
 
     record Key(UUID consultationOfferingId, UUID expertId) {

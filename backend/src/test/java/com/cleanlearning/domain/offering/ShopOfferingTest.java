@@ -5,10 +5,12 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import com.cleanlearning.domain.image.value.ImageId;
 import com.cleanlearning.domain.offering.value.OfferingId;
 import com.cleanlearning.domain.offering.value.OfferingName;
 import com.cleanlearning.domain.offering.value.OfferingType;
@@ -21,7 +23,7 @@ class ShopOfferingTest {
 
     @Test
     void consultationOfferingIsOfTypeConsultation() {
-        ShopOffering offering = ShopOffering.consultation(ID, NAME, "Coaching for your career.",
+        ShopOffering offering = ShopOffering.consultation(ID, NAME, "Coaching for your career.", Optional.empty(),
                 List.of(Money.chf("450.00")));
 
         assertThat(offering.id()).isEqualTo(ID);
@@ -31,8 +33,16 @@ class ShopOfferingTest {
     }
 
     @Test
+    void consultationOfferingMayHaveAnImage() {
+        ImageId image = new ImageId(UUID.randomUUID());
+
+        assertThat(ShopOffering.consultation(ID, NAME, "Coaching for your career.", Optional.of(image),
+                List.of(Money.chf("450.00"))).imageId()).contains(image);
+    }
+
+    @Test
     void consultationPriceIsTheCheapestPackagePrice() {
-        ShopOffering offering = ShopOffering.consultation(ID, NAME, "Coaching for your career.",
+        ShopOffering offering = ShopOffering.consultation(ID, NAME, "Coaching for your career.", Optional.empty(),
                 List.of(Money.chf("700.00"), Money.chf("450.00"), Money.chf("1800.00")));
 
         assertThat(offering.price()).isEqualTo(Money.chf("450.00"));
@@ -40,7 +50,7 @@ class ShopOfferingTest {
 
     @Test
     void consultationOfferingWithOnePackageCostsItsPrice() {
-        ShopOffering offering = ShopOffering.consultation(ID, NAME, "Coaching for your career.",
+        ShopOffering offering = ShopOffering.consultation(ID, NAME, "Coaching for your career.", Optional.empty(),
                 List.of(Money.chf("700.00")));
 
         assertThat(offering.price()).isEqualTo(Money.chf("700.00"));
@@ -49,7 +59,7 @@ class ShopOfferingTest {
     @Test
     void consultationOfferingNeedsAPackage() {
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> ShopOffering.consultation(ID, NAME, "Coaching for your career.",
+                .isThrownBy(() -> ShopOffering.consultation(ID, NAME, "Coaching for your career.", Optional.empty(),
                         List.of()))
                 .withMessageContaining("package");
     }
@@ -57,16 +67,20 @@ class ShopOfferingTest {
     @Test
     void rejectsMissingValues() {
         Money price = Money.chf("450.00");
+        Optional<ImageId> noImage = Optional.empty();
+        OfferingType consultation = OfferingType.CONSULTATION;
         assertThatNullPointerException()
-                .isThrownBy(() -> new ShopOffering(null, OfferingType.CONSULTATION, NAME, "Text", price));
+                .isThrownBy(() -> new ShopOffering(null, consultation, NAME, "Text", noImage, price));
         assertThatNullPointerException()
-                .isThrownBy(() -> new ShopOffering(ID, null, NAME, "Text", price));
+                .isThrownBy(() -> new ShopOffering(ID, null, NAME, "Text", noImage, price));
         assertThatNullPointerException()
-                .isThrownBy(() -> new ShopOffering(ID, OfferingType.CONSULTATION, null, "Text", price));
+                .isThrownBy(() -> new ShopOffering(ID, consultation, null, "Text", noImage, price));
         assertThatNullPointerException()
-                .isThrownBy(() -> new ShopOffering(ID, OfferingType.CONSULTATION, NAME, null, price));
+                .isThrownBy(() -> new ShopOffering(ID, consultation, NAME, null, noImage, price));
         assertThatNullPointerException()
-                .isThrownBy(() -> new ShopOffering(ID, OfferingType.CONSULTATION, NAME, "Text", null));
+                .isThrownBy(() -> new ShopOffering(ID, consultation, NAME, "Text", noImage, null));
+        assertThatNullPointerException()
+                .isThrownBy(() -> new ShopOffering(ID, consultation, NAME, "Text", null, price));
     }
 
     @Test

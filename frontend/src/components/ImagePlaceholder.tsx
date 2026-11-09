@@ -1,7 +1,7 @@
 import { ImageIcon } from 'lucide-react'
 import { cn } from 'cn'
 
-// Stands in for offering images and expert photos until images exist (UC-14, UC-16).
+// Stands in for an offering without an image (OfferingImage) and for expert photos until they exist (UC-14).
 export function ImagePlaceholder({ className }: { className?: string }) {
   return (
     <div

@@ -38,7 +38,7 @@ A user can hold several roles. The header shows a section for each of them, and 
 ## Cross-cutting rules
 
 - **Time.** All times are in `Europe/Zurich` and displayed with a "(Zurich time)" hint. See the [glossary](../glossary.md#time).
-- **Confirmation.** Every purchase, booking and cancellation needs a confirmation dialog that states the consequence: the price, whether the credit is refunded, or whether the purchase is refund-eligible.
+- **Confirmation.** Every purchase, booking and cancellation, and every status change of an offering ([UC-16](uc-16-manage-consultation-offering.md), [UC-17](uc-17-manage-training-offering.md)), needs a confirmation dialog that states the consequence: the price, whether the credit is refunded, whether the purchase is refund-eligible, or what the shop shows afterwards.
 - **The server decides.** Deadlines, seats, credits and slots are evaluated by the backend at the moment of the request. The UI only previews them.
 - **Lists.** "My …" lists are grouped into Upcoming (by next date), Needs booking, and Past (collapsed, newest first).
 - **Money.** CHF including VAT. No money moves in the PoC; a refund is recorded as a `refundEligible` flag.
@@ -57,6 +57,7 @@ A user can hold several roles. The header shows a section for each of them, and 
 - Per-user time zone, multiple UI languages
 - An availability check before purchase
 - Attendance or no-show tracking
+- A guard for unsaved form edits, e.g. when the admin publishes, unpublishes or archives an offering with a changed form ([UC-16](uc-16-manage-consultation-offering.md))
 
 ## Template
 

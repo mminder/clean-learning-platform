@@ -6,7 +6,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 
+import org.assertj.core.api.AbstractMapAssert;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
@@ -17,6 +19,7 @@ import com.cleanlearning.IntegrationTest;
 /**
  * The committed {@code backend/openapi.json} is the API contract the frontend types are generated from (D-29). It
  * must match the document the code generates. With {@code -Dopenapi.write=true}, the test writes the file instead.
+ * Each route lists the error answers it can give, and only those ({@code ProblemResponses}).
  */
 @IntegrationTest
 class OpenApiContractTest {
@@ -45,5 +48,38 @@ class OpenApiContractTest {
                 .as("backend/openapi.json is out of date. Regenerate it in backend/ with: " + REGENERATE
                         + ", then run npm run generate:api in frontend/")
                 .isEqualTo(generated);
+    }
+
+    @Test
+    void aRouteListsOnlyTheErrorsItCanAnswer() {
+        assertResponsesOf("/api/shop/offerings", "get").containsOnlyKeys("200");
+        assertResponsesOf("/api/admin/consultation-offerings", "get").containsOnlyKeys("200");
+        assertResponsesOf("/api/me", "get").containsOnlyKeys("200", "404");
+        assertResponsesOf("/api/shop/offerings/{id}", "get").containsOnlyKeys("200", "400", "404");
+        assertResponsesOf("/api/admin/consultation-offerings", "post").containsOnlyKeys("201", "400", "415");
+        assertResponsesOf("/api/admin/consultation-offerings/{id}/publish", "post")
+                .containsOnlyKeys("200", "400", "404", "409");
+    }
+
+    @Test
+    void anErrorAnswerHasTheSharedProblemDetailSchema() {
+        assertThat(mockMvc.get().uri("/v3/api-docs")).bodyJson()
+                .extractingPath("$.paths['/api/admin/consultation-offerings/{id}/publish'].post.responses['409']"
+                        + ".content['application/problem+json'].schema['$ref']")
+                .isEqualTo("#/components/schemas/ProblemDetail");
+    }
+
+    /** springdoc lists a route's success by itself only while the route declares no error answer. */
+    @Test
+    void everyRouteListsItsSuccess() {
+        assertThat(mockMvc.get().uri("/v3/api-docs")).bodyJson()
+                .extractingPath("$.paths.*.*.responses").asArray().isNotEmpty()
+                .allSatisfy(responses -> assertThat(((Map<?, ?>) responses).keySet())
+                        .anyMatch(code -> code.toString().startsWith("2")));
+    }
+
+    private AbstractMapAssert<?, ?, String, Object> assertResponsesOf(String path, String method) {
+        return assertThat(mockMvc.get().uri("/v3/api-docs")).bodyJson()
+                .extractingPath("$.paths['" + path + "']." + method + ".responses").asMap();
     }
 }

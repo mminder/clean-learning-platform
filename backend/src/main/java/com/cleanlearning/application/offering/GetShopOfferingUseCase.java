@@ -3,6 +3,7 @@ package com.cleanlearning.application.offering;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.cleanlearning.application.offering.port.LoadShopOfferingPort;
 import com.cleanlearning.domain.offering.ShopConsultationOffering;
 import com.cleanlearning.domain.offering.value.OfferingId;
 import com.cleanlearning.domain.shared.NotFoundException;

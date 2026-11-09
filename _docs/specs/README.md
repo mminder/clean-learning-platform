@@ -88,3 +88,4 @@ What could go wrong, and how the plan addresses it.
 | # | Spec | Status |
 |---|---|---|
 | 01 | [Shop tracer bullet](01-shop-tracer-bullet.md) | Done |
+| 02 | [Manage consultation offerings](02-manage-consultation-offerings.md) | Done |
