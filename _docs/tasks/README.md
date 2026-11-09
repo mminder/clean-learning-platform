@@ -100,3 +100,4 @@ Found while working; empty at the start.
 |---|---|
 | 01 Shop tracer bullet | [01-shop-tracer-bullet/](01-shop-tracer-bullet/README.md) |
 | 02 Manage consultation offerings | [02-manage-consultation-offerings/](02-manage-consultation-offerings/README.md) |
+| 03 Buy a consultation package | [03-buy-consultation-package/](03-buy-consultation-package/README.md) |
