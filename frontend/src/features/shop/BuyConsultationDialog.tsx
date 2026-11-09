@@ -24,6 +24,8 @@ import { fetchShopOffering, shopOfferingKey, useShopOffering } from './queries'
 type ConsultationPackage = components['schemas']['ConsultationPackageResponse']
 
 const NOT_AVAILABLE = 'This offering is no longer available.'
+const PACKAGE_CHANGED =
+  'This package has changed or is no longer available. Please choose again.'
 
 /**
  * UC-03 steps 2–7: the trigger (`children`) opens a dialog in two steps. **Choose** lists the offering's packages;
@@ -137,7 +139,7 @@ function BuySteps({
       }
       // Otherwise Choose keeps the packages it has; buying again tells.
     }
-    setError(problemMessage(failure, NOT_AVAILABLE))
+    setError(problemMessage(failure, PACKAGE_CHANGED))
     setChosenId(undefined)
     setConfirming(undefined)
   }

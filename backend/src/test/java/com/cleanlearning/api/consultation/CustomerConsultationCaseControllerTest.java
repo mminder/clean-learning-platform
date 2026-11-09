@@ -15,6 +15,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
@@ -23,6 +24,7 @@ import com.cleanlearning.Csrf;
 import com.cleanlearning.IntegrationTest;
 import com.cleanlearning.LoggedIn;
 import com.cleanlearning.SeedData;
+import com.cleanlearning.TestImages;
 import com.cleanlearning.domain.user.value.Role;
 import com.jayway.jsonpath.JsonPath;
 
@@ -386,6 +388,28 @@ class CustomerConsultationCaseControllerTest {
         assertThat(change(offering.id(), "archive")).hasStatusOk();
         assertThat(get(id, SeedData.CUSTOMER_1)).hasStatusOk()
                 .bodyJson().extractingPath("$.offeringName").isEqualTo("Lean Coaching");
+    }
+
+    @Test
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
+    void showsTheOfferingsImageLive() throws Exception {
+        AgileCoaching offering = publishAgileCoaching();
+        String id = bought(purchase(offering.id(), offering.twoSessions(), "300.00", 2));
+        assertThat(get(id, SeedData.CUSTOMER_1)).hasStatusOk().bodyJson().extractingPath("$.offeringImageId").isNull();
+
+        MvcTestResult uploaded = mockMvc.put().uri(OFFERINGS + "/{id}/image", offering.id())
+                .with(LoggedIn.as(SeedData.ADMIN_1, Role.ADMIN))
+                .with(Csrf.token())
+                .multipart()
+                .file(new MockMultipartFile("file", "agile.png", "image/png", TestImages.png(100)))
+                .exchange();
+        assertThat(uploaded).hasStatusOk();
+        String imageId = JsonPath.read(uploaded.getResponse().getContentAsString(), "$.imageId");
+
+        assertThat(get(id, SeedData.CUSTOMER_1)).hasStatusOk()
+                .bodyJson().extractingPath("$.offeringImageId").isEqualTo(imageId);
+        assertThat(list(SeedData.CUSTOMER_1)).hasStatusOk()
+                .bodyJson().extractingPath("$[0].offeringImageId").isEqualTo(imageId);
     }
 
     @Test

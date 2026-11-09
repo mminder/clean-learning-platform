@@ -234,6 +234,25 @@ class ConsultationOfferingLifecycleTest {
 
     @Test
     @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
+    void purchasesOfOneOfferingDontBlockUnpublishingAnother() throws Exception {
+        // Career Coaching is bought; the guard is per offering.
+        mockMvc.post().uri("/api/customer/consultation-cases")
+                .with(LoggedIn.as(SeedData.CUSTOMER_1, Role.CUSTOMER))
+                .with(Csrf.token())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        { "offeringId": "%s", "packageId": "%s", "price": "450.00", "sessionCount": 3 }
+                        """.formatted(SeedData.CAREER_COACHING, SeedData.CAREER_COACHING_3_SESSIONS))
+                .exchange();
+        String other = createPublished();
+
+        assertThat(change(other, "unpublish")).hasStatusOk();
+
+        assertThat(status(other)).isEqualTo("DRAFT");
+    }
+
+    @Test
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void unpublishingADraftAnswersWrongOfferingStatus() throws Exception {
         String id = createCompleteDraft();
 
