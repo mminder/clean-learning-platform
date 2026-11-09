@@ -30,7 +30,7 @@ import com.jayway.jsonpath.JsonPath;
 /**
  * UC-16, the admin's consultation offerings. All integration tests share one database, so tests never change seed
  * rows: a test that writes creates its own offering, through the API or with {@code @Sql}, and
- * {@link SeedData#DELETE_TEST_OFFERINGS} removes it afterwards. The {@code @Sql} scripts are the shop tests'.
+ * {@link SeedData#DELETE_TEST_DATA} removes it afterwards. The {@code @Sql} scripts are the shop tests'.
  */
 @IntegrationTest
 class ConsultationOfferingControllerTest {
@@ -121,7 +121,7 @@ class ConsultationOfferingControllerTest {
 
     @Test
     @Sql({ SHOP + "draft-and-archived-offerings.sql", SHOP + "published-offering-without-packages.sql" })
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void listsEveryStatusSortedByName() {
         assertThat(list())
                 .hasStatusOk()
@@ -161,7 +161,7 @@ class ConsultationOfferingControllerTest {
 
     @Test
     @Sql(SHOP + "more-published-offerings.sql")
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void sortsAlphabeticallyRegardlessOfUmlauts() {
         assertThat(list())
                 .hasStatusOk()
@@ -182,7 +182,7 @@ class ConsultationOfferingControllerTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void createsADraftThatItsLocationAnswers() throws Exception {
         MvcTestResult created = post(AGILE_COACHING);
 
@@ -229,7 +229,7 @@ class ConsultationOfferingControllerTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void editsAnOffering() throws Exception {
         String id = createAgileCoaching();
 
@@ -253,7 +253,7 @@ class ConsultationOfferingControllerTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void anEditIgnoresAStatusInTheBody() throws Exception {
         String id = createAgileCoaching();
 
@@ -268,7 +268,7 @@ class ConsultationOfferingControllerTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void savesAnEmptyDescription() {
         assertThat(post("""
                 { "name": "Agile Coaching", "description": "", "sessionDurationMinutes": 45,
@@ -279,7 +279,7 @@ class ConsultationOfferingControllerTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void answersInvalidValuesWithEachField() {
         // Sorted by field. A browser's Accept-Language doesn't change the messages: the UI is English (D-20).
         MvcTestResult result = mockMvc.post().uri(PATH)
@@ -313,7 +313,7 @@ class ConsultationOfferingControllerTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void answersMissingValuesWithEachField() {
         // An empty number field in the form is sent as null.
         assertThat(post("""
@@ -331,7 +331,7 @@ class ConsultationOfferingControllerTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void answersADecimalNumberWithBadRequest() {
         // Not cut to 45 and saved: a whole-number field doesn't accept a decimal (accept-float-as-int).
         assertThat(post("""
@@ -352,7 +352,7 @@ class ConsultationOfferingControllerTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void answersInvalidValuesOfAnEditWithEachFieldAndKeepsTheOffering() throws Exception {
         String id = createAgileCoaching();
 
@@ -368,7 +368,7 @@ class ConsultationOfferingControllerTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void answersANameOfOnlyNoBreakSpacesWithBadRequest() {
         // Bean Validation's @NotBlank lets it through; OfferingName rejects it.
         assertThat(post("""
@@ -436,7 +436,7 @@ class ConsultationOfferingControllerTest {
 
     @Test
     @Sql(SHOP + "more-published-offerings.sql")
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void editsOfAPublishedOfferingShowInTheShopAtOnce() {
         String agileCoaching = "00000000-0000-0000-0000-000000009003";
 
@@ -458,7 +458,7 @@ class ConsultationOfferingControllerTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void anEditChangesUpdatedAtButNotCreatedAt() throws Exception {
         String id = createAgileCoaching();
         List<Timestamps> before = timestamps(id);
@@ -510,7 +510,7 @@ class ConsultationOfferingControllerTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void createsAnOfferingWithPackagesFewestSessionsFirst() throws Exception {
         MvcTestResult created = post(withPackages("[" + aNewPackage(4, "600") + "," + aNewPackage(1, "160.5") + "]"));
 
@@ -525,7 +525,7 @@ class ConsultationOfferingControllerTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void anEditMatchesPackagesByIdAndWritesOnlyTheDifference() throws Exception {
         MvcTestResult created = post(withPackages(
                 "[" + aNewPackage(1, "160") + "," + aNewPackage(3, "450") + "," + aNewPackage(5, "700") + "]"));
@@ -560,7 +560,7 @@ class ConsultationOfferingControllerTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void packagesMayShareASessionCountAndAreSortedByIdThen() throws Exception {
         MvcTestResult created = post(withPackages("[" + aNewPackage(3, "450") + "," + aNewPackage(3, "400") + "]"));
 
@@ -572,7 +572,7 @@ class ConsultationOfferingControllerTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void answersInvalidPackagesWithEachFieldOfEachRow() {
         String body = withPackages("[" + aNewPackage(1, "160") + "," + aNewPackage(0, "-1") + ","
                 + aNewPackage(2, "12.345") + "," + aNewPackage(3, "123456789") + "," + aNewPackage(4, "") + ","
@@ -595,7 +595,7 @@ class ConsultationOfferingControllerTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void acceptsTheLargestAndTheSmallestPrice() {
         assertThat(post(withPackages("[" + aNewPackage(1, "99999999.99") + "," + aNewPackage(2, "0") + "]")))
                 .hasStatus(HttpStatus.CREATED)
@@ -604,7 +604,7 @@ class ConsultationOfferingControllerTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void answersAMissingPackageEntryWithBadRequest() {
         assertThat(post(withPackages("[null]")))
                 .hasStatus(HttpStatus.BAD_REQUEST)
@@ -612,7 +612,7 @@ class ConsultationOfferingControllerTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void answersAPackageIdOfAnotherOfferingWithBadRequestAndChangesNothing() throws Exception {
         String id = createAgileCoaching();
         String foreign = SeedData.CAREER_COACHING_3_SESSIONS.toString();
@@ -635,7 +635,7 @@ class ConsultationOfferingControllerTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void answersAPackageNamedTwiceWithBadRequest() throws Exception {
         String id = json(post(withPackages("[" + aNewPackage(1, "160") + "]")), "$.id");
         String pkg = json(get(id).exchange(), "$.packages[0].id");
@@ -646,7 +646,7 @@ class ConsultationOfferingControllerTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void answersAnyPackageIdOnPostWithBadRequest() {
         assertThat(post(withPackages("[" + aPackage(UNKNOWN_ID, 1, "160") + "]")))
                 .hasStatus(HttpStatus.BAD_REQUEST)
@@ -656,7 +656,7 @@ class ConsultationOfferingControllerTest {
 
     @Test
     @Sql(SHOP + "more-published-offerings.sql")
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void aChangedPriceOfAPublishedOfferingShowsInTheShopAtOnce() {
         String agileCoaching = "00000000-0000-0000-0000-000000009003";
         String cheapest = "00000000-0000-0000-0000-000000009031";
@@ -673,7 +673,7 @@ class ConsultationOfferingControllerTest {
 
     @Test
     @Sql(SHOP + "more-published-offerings.sql")
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void removingEveryPackageOfAPublishedOfferingHidesItFromTheShop() {
         String agileCoaching = "00000000-0000-0000-0000-000000009003";
 
@@ -710,7 +710,7 @@ class ConsultationOfferingControllerTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void createsAnOfferingWithEligibleExpertsSortedAndCountedOnce() throws Exception {
         MvcTestResult created = post(withExperts(ids(EXPERT_2, EXPERT_1, EXPERT_2)));
 
@@ -725,7 +725,7 @@ class ConsultationOfferingControllerTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void anEditReplacesTheEligibleExpertsAndLeavesAKeptRowAlone() throws Exception {
         String id = json(post(withExperts(ids(EXPERT_1, EXPERT_2))), "$.id");
         OffsetDateTime keptBefore = expertRowUpdatedAt(id, EXPERT_2);
@@ -744,7 +744,7 @@ class ConsultationOfferingControllerTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void anEditMayRemoveEveryEligibleExpert() throws Exception {
         String id = json(post(withExperts(ids(EXPERT_1, EXPERT_2))), "$.id");
 
@@ -755,7 +755,7 @@ class ConsultationOfferingControllerTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void answersAnIdThatIsNoExpertWithBadRequestAndChangesNothing() throws Exception {
         String id = json(post(withExperts(ids(EXPERT_1))), "$.id");
         for (String notAnExpert : List.of(SeedData.CUSTOMER_1.toString(), SeedData.ADMIN_1.toString(), UNKNOWN_ID)) {
@@ -781,7 +781,7 @@ class ConsultationOfferingControllerTest {
 
     @Test
     @Sql("/com/cleanlearning/api/user/users-that-are-not-offered-as-experts.sql")
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     @Sql(scripts = "/com/cleanlearning/api/user/delete-users-that-are-not-offered-as-experts.sql",
             executionPhase = AFTER_TEST_METHOD)
     void answersAnExpertWithoutProfileAndAProfileWithoutTheRoleWithBadRequest() {
@@ -794,7 +794,7 @@ class ConsultationOfferingControllerTest {
     }
 
     @Test
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void answersAMissingOrMalformedExpertIdWithBadRequest() {
         assertThat(post(withExperts("[null]")))
                 .hasStatus(HttpStatus.BAD_REQUEST)
@@ -806,7 +806,7 @@ class ConsultationOfferingControllerTest {
 
     @Test
     @Sql(SHOP + "more-published-offerings.sql")
-    @Sql(scripts = SeedData.DELETE_TEST_OFFERINGS, executionPhase = AFTER_TEST_METHOD)
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
     void theShopListsTheExpertsTheAdminChoseAndKeepsAnOfferingWithoutExperts() {
         String agileCoaching = "00000000-0000-0000-0000-000000009003";
         String packages = "[" + aPackage("00000000-0000-0000-0000-000000009031", 1, "250.00") + ","

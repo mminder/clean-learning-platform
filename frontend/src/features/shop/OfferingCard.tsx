@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { formatMoney } from '@/lib/money'
+import { BuyConsultationButton } from './BuyConsultationButton'
 
 type ShopOffering = components['schemas']['ShopOfferingResponse']
 
@@ -38,7 +39,7 @@ export function OfferingCard({ offering }: { offering: ShopOffering }) {
           {offering.description}
         </CardDescription>
       </CardHeader>
-      <CardFooter className="mt-auto">
+      <CardFooter className="mt-auto justify-between gap-4">
         {/* The price comes from the API: for a consultation, its cheapest package. */}
         <p className="text-sm text-muted-foreground">
           from{' '}
@@ -46,6 +47,13 @@ export function OfferingCard({ offering }: { offering: ShopOffering }) {
             {formatMoney(offering.price)}
           </span>
         </p>
+        {/* Above the title's stretched link, so a click on Buy doesn't open the detail page. */}
+        <div className="relative z-10">
+          <BuyConsultationButton
+            offeringId={offering.id}
+            offeringName={offering.name}
+          />
+        </div>
       </CardFooter>
     </Card>
   )

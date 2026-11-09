@@ -40,7 +40,7 @@ None.
 
 ## Business rules
 
-- The landing page goes by the first matching role: Expert → "My cases" ([UC-11](uc-11-view-my-consultation-cases.md)), Admin → "Cases" ([UC-18](uc-18-view-all-consultation-cases.md)), Customer → "My purchases" ([UC-05](uc-05-view-my-purchases.md)). Until those pages exist, a user with `ADMIN` lands on "Consultations" ([UC-16](uc-16-manage-consultation-offering.md)) and everyone else on the shop ([increment 02](../specs/02-manage-consultation-offerings.md), decision 3).
+- The landing page goes by the first matching role: Expert → "My cases" ([UC-11](uc-11-view-my-consultation-cases.md)), Admin → "Cases" ([UC-18](uc-18-view-all-consultation-cases.md)), Customer → "My purchases" ([UC-05](uc-05-view-my-purchases.md)). Until the expert's and the admin's pages exist, a user with `ADMIN` lands on "Consultations" ([UC-16](uc-16-manage-consultation-offering.md)), otherwise a user with `CUSTOMER` on "My purchases", otherwise on the shop ([increment 02](../specs/02-manage-consultation-offerings.md), decision 3; [increment 03](../specs/03-buy-consultation-package.md), decision 5).
 - The header shows a section for every role the user holds (union navigation, no role switcher).
 - Seed users (PoC; two per role, as the authorization tests require):
 

@@ -30,7 +30,7 @@ The admin creates consultation offerings, maintains them, and controls whether t
 ## Alternative and error flows
 
 - **Publishing an incomplete offering:** 409, listing what's missing.
-- **Unpublish or delete when purchases exist:** 409, "Offering has purchases. Archive it instead."
+- **Unpublish or delete when purchases exist:** 409, "The offering has purchases. Archive it instead." (for delete: "The offering has purchases and can't be deleted.")
 - **Invalid values** (blank name, duration ≤ 0, deadline < 0, session count ≤ 0, price < 0, an eligible expert who isn't a user with `EXPERT` and an expert profile): 400. The description may be empty.
 - **Invalid image** (not JPEG, PNG or WebP, or larger than 2 MB): 400.
 - **A change the status doesn't allow** (any change to an archived offering, deleting a published offering, publishing one that is already published, …): 409.

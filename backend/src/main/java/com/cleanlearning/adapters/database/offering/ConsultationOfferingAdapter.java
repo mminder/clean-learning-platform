@@ -16,6 +16,7 @@ import com.cleanlearning.adapters.database.offering.entity.ConsultationPackageEn
 import com.cleanlearning.adapters.database.offering.entity.EligibleExpertEntity;
 import com.cleanlearning.adapters.database.offering.entity.OfferingEntity;
 import com.cleanlearning.adapters.database.offering.row.ConsultationOfferingSummaryRow;
+import com.cleanlearning.application.offering.port.CheckOfferingPurchasesPort;
 import com.cleanlearning.application.offering.port.DeleteConsultationOfferingPort;
 import com.cleanlearning.application.offering.port.LoadConsultationOfferingPort;
 import com.cleanlearning.application.offering.port.LoadConsultationOfferingSummariesPort;
@@ -39,14 +40,16 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 
 /**
- * The admin's side of the offerings (UC-16). The shop's side is {@code ShopOfferingAdapter}.
+ * The admin's side of the offerings (UC-16). The shop's side is {@code ShopOfferingAdapter}. It reads the case table
+ * for the purchase guard (D-23).
  * <p>
  * Writes go through the {@link EntityManager}: the application sets the ids, so a new row is persisted, not merged
  * (Spring Data's {@code save()} would select it first), and a changed row is written by changing its managed entity.
  */
 @Component
 class ConsultationOfferingAdapter implements LoadConsultationOfferingSummariesPort, LoadConsultationOfferingPort,
-        LockConsultationOfferingPort, SaveConsultationOfferingPort, DeleteConsultationOfferingPort {
+        LockConsultationOfferingPort, SaveConsultationOfferingPort, DeleteConsultationOfferingPort,
+        CheckOfferingPurchasesPort {
 
     private final ConsultationOfferingRepository repository;
 
@@ -76,6 +79,12 @@ class ConsultationOfferingAdapter implements LoadConsultationOfferingSummariesPo
     public Optional<ConsultationOffering> lock(OfferingId id) {
         return Optional.ofNullable(entityManager.find(OfferingEntity.class, id.value(), LockModeType.PESSIMISTIC_WRITE))
                 .flatMap(this::withConsultationOffering);
+    }
+
+    /** An {@code exists} over {@code consultation_case}: a purchase is a case. */
+    @Override
+    public boolean hasPurchases(OfferingId id) {
+        return repository.existsCase(id.value());
     }
 
     @Override

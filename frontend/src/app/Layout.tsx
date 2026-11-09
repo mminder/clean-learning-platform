@@ -5,6 +5,7 @@ import { useLogout, useMe } from '@/features/user/queries'
 export function Layout() {
   const me = useMe()
   const isAdmin = me.data?.roles.includes('ADMIN') ?? false
+  const isCustomer = me.data?.roles.includes('CUSTOMER') ?? false
 
   return (
     <div className="min-h-screen">
@@ -17,6 +18,14 @@ export function Layout() {
             <Link to="/" className="text-sm font-medium hover:underline">
               Shop
             </Link>
+            {isCustomer && (
+              <Link
+                to="/my"
+                className="ml-6 text-sm font-medium hover:underline"
+              >
+                My purchases
+              </Link>
+            )}
             {isAdmin && (
               <Link
                 to="/admin/consultations"

@@ -58,6 +58,7 @@ A user can hold several roles. The header shows a section for each of them, and 
 - An availability check before purchase
 - Attendance or no-show tracking
 - A guard for unsaved form edits, e.g. when the admin publishes, unpublishes or archives an offering with a changed form ([UC-16](uc-16-manage-consultation-offering.md))
+- Keeping the buy dialog open with its message when its offering leaves the shop while the customer is in another tab, and returning the focus after **Close** when the offering's card has left the shop ([UC-03](uc-03-purchase-consultation-package.md); today the shop reloads on the tab's return and the dialog closes with the card or the detail page)
 
 ## Template
 

@@ -32,10 +32,12 @@ The customer buys a package and receives a case with session credits.
 
 - **The customer cancels the dialog:** nothing is created.
 - **The offering was unpublished or archived in the meantime:** 409, "This offering is no longer available."
+- **The package changed in the meantime** (its price or session count differs from what the customer confirmed, or it was removed): 409, "This package has changed or is no longer available. Please choose again." The dialog shows the current packages, and nothing is created (decided 2026-11-09).
 
 ## Business rules
 
 - Purchase terms never change after the purchase (D-08).
+- The server buys only at the price and session count the customer confirmed (decided 2026-11-09).
 - A customer may buy the same offering several times; each purchase is a separate case.
 - The purchase doesn't book an appointment and doesn't assign an expert.
 

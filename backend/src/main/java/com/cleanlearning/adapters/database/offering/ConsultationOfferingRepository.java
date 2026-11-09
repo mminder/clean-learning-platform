@@ -33,6 +33,13 @@ interface ConsultationOfferingRepository extends Repository<OfferingEntity, UUID
     @Query("select p from ConsultationPackageEntity p where p.consultationOfferingId = :consultationOfferingId")
     List<ConsultationPackageEntity> findPackageEntities(UUID consultationOfferingId);
 
+    /** Whether the offering has a case (D-23: the offering adapter may read the case table). */
+    @Query("""
+            select exists (
+                select c.id from ConsultationCaseEntity c where c.consultationOfferingId = :consultationOfferingId)
+            """)
+    boolean existsCase(UUID consultationOfferingId);
+
     /** The offering's eligible experts as managed entities, for the adapter to read and to write. */
     @Query("select e from EligibleExpertEntity e where e.consultationOfferingId = :consultationOfferingId")
     List<EligibleExpertEntity> findEligibleExpertEntities(UUID consultationOfferingId);

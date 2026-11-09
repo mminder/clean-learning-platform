@@ -585,6 +585,150 @@
         "tags" : [ "expert-controller" ]
       }
     },
+    "/api/customer/consultation-cases" : {
+      "get" : {
+        "operationId" : "listCustomerConsultationCases",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/CustomerConsultationCaseSummaryResponse"
+                  }
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "customer-consultation-case-controller" ]
+      },
+      "post" : {
+        "operationId" : "purchaseConsultationPackage",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PurchaseConsultationPackageRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CustomerConsultationCaseResponse"
+                }
+              }
+            },
+            "description" : "Created",
+            "headers" : {
+              "Location" : {
+                "description" : "The new case's URL, relative",
+                "schema" : {
+                  "type" : "string",
+                  "format" : "uri-reference"
+                },
+                "style" : "simple"
+              }
+            }
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "415" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Unsupported Media Type"
+          }
+        },
+        "tags" : [ "customer-consultation-case-controller" ]
+      }
+    },
+    "/api/customer/consultation-cases/{id}" : {
+      "get" : {
+        "operationId" : "getCustomerConsultationCase",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CustomerConsultationCaseResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "customer-consultation-case-controller" ]
+      }
+    },
     "/api/images/{id}" : {
       "get" : {
         "operationId" : "getImage",
@@ -1002,6 +1146,67 @@
         },
         "required" : [ "id", "price", "sessionCount" ]
       },
+      "CustomerConsultationCaseResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "offeringImageId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "offeringName" : {
+            "type" : "string"
+          },
+          "openCredits" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "purchaseTerms" : {
+            "$ref" : "#/components/schemas/PurchaseTermsResponse"
+          },
+          "purchasedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "totalCredits" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "id", "offeringName", "openCredits", "purchaseTerms", "purchasedAt", "totalCredits" ]
+      },
+      "CustomerConsultationCaseSummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "offeringImageId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "offeringName" : {
+            "type" : "string"
+          },
+          "openCredits" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "purchasedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "totalCredits" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "id", "offeringName", "openCredits", "purchasedAt", "totalCredits" ]
+      },
       "EligibleExpertResponse" : {
         "type" : "object",
         "properties" : {
@@ -1141,6 +1346,50 @@
           }
         },
         "required" : [ "instance", "status", "title" ]
+      },
+      "PurchaseConsultationPackageRequest" : {
+        "type" : "object",
+        "properties" : {
+          "offeringId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "packageId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "price" : {
+            "type" : "string",
+            "pattern" : "^\\d{1,8}(\\.\\d{1,2})?$"
+          },
+          "sessionCount" : {
+            "type" : "integer",
+            "format" : "int32",
+            "exclusiveMinimum" : 0
+          }
+        },
+        "required" : [ "offeringId", "packageId", "price", "sessionCount" ]
+      },
+      "PurchaseTermsResponse" : {
+        "type" : "object",
+        "properties" : {
+          "cancellationDeadlineHours" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pricePaid" : {
+            "$ref" : "#/components/schemas/MoneyResponse"
+          },
+          "sessionCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "sessionDurationMinutes" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "cancellationDeadlineHours", "pricePaid", "sessionCount", "sessionDurationMinutes" ]
       },
       "ShopOfferingDetailResponse" : {
         "type" : "object",

@@ -125,7 +125,7 @@ class BookConsultationAppointmentUseCase {
 ## Domain
 
 - POJOs and `record` value objects without framework imports. All business rules live here and are unit tested.
-- **Value objects** (examples): `Money` (CHF), `CancellationDeadline` (hours), `SessionDuration`, `SessionCount` (at least 1), `OfferingName` and `DisplayName` (never blank), `TimeRange`, `LocalTimeSlot`, `Seats`, `EmailAddress`, typed ids (`CaseId`, `UserId`, …).
+- **Value objects** (examples): `Money` (CHF), `CancellationDeadline` (hours), `SessionDuration`, `SessionCount` (at least 1), `OfferingName` and `DisplayName` (never blank), `TimeRange`, `LocalTimeSlot`, `Seats`, `EmailAddress`, typed ids (`ConsultationCaseId`, `UserId`, …).
 - **When a value is a value object** (D-36): when it has a rule beyond not null, a unit or behavior, or could be mixed up with another value of the same type. Other values stay Java types, like an offering's description and an expert's bio (`String`s that may be empty). A column that holds a value object repeats its rule as a check constraint.
 - **Use-case-specific domain objects** are encouraged, e.g. `CaseForBooking` and `CaseForCancellation` instead of one big `Case`.
 - **Models and value objects.** In `domain.<feature>`, the models a use case works with sit at the top, and the value objects in `value`. A value object describes one thing by its value (an amount, a duration, an id, a type) and depends only on Java and other value objects; ArchUnit checks this, so a class that needs a model is a model itself. Typed ids are value objects, so several models can share one, like `OfferingId`. Shared value objects live in `domain.shared.value`.
@@ -152,11 +152,12 @@ class BookConsultationAppointmentUseCase {
 
 Pessimistic row locks through port methods, at the start of the use-case transaction, always in the order **offering → case → expert → run** (D-27). A lock port loads the row with JPA's `PESSIMISTIC_WRITE` (`LockConsultationOfferingPort`, `EntityManager.find` with the lock mode), which Hibernate sends to Postgres as `for no key update`: it waits for every other lock of the row, but not for the key-share lock a foreign key check takes. So every writer that must wait takes the lock itself.
 
-A concurrency test makes its race certain, not likely: it holds the contended row lock in its own transaction (`select … for no key update`), starts both requests, waits until `pg_stat_activity` shows both waiting for a lock, and only then commits. With the lock, both wait at the lock and run one after the other; without it, both read the row at once and wait only at their update. `ConsultationOfferingConcurrencyTest` is the pattern, and it fails without the lock.
+A concurrency test makes its race certain, not likely: it holds the contended row lock in its own transaction (`select … for no key update`), starts both requests, waits until `pg_stat_activity` shows both waiting for a lock, and only then commits. With the lock, both wait at the lock and run one after the other; without it, both read the row at once and wait only at their update. `ConsultationOfferingConcurrencyTest` is the pattern, and it fails without the lock. Where one request writes nothing the other waits for, as a purchase's insert against an unpublish, the test also holds the row that its insert's foreign key checks (`for update`), and lets go of it only after the other request is through or waits for it.
 
 | Use case | Locks |
 |---|---|
 | Edit an offering, change its status or image, delete it (UC-16, UC-17) | offering |
+| Purchase consultation package (UC-03) | offering |
 | Book appointment (UC-06) | case → expert (user row) |
 | Cancel appointment / case (UC-07, UC-08) | case |
 | Adjust credits (UC-18) | case |

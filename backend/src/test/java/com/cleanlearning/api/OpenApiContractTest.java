@@ -59,6 +59,9 @@ class OpenApiContractTest {
         assertResponsesOf("/api/admin/consultation-offerings", "post").containsOnlyKeys("201", "400", "415");
         assertResponsesOf("/api/admin/consultation-offerings/{id}/publish", "post")
                 .containsOnlyKeys("200", "400", "404", "409");
+        assertResponsesOf("/api/customer/consultation-cases", "post")
+                .containsOnlyKeys("201", "400", "404", "409", "415");
+        assertResponsesOf("/api/customer/consultation-cases/{id}", "get").containsOnlyKeys("200", "400", "404");
     }
 
     @Test

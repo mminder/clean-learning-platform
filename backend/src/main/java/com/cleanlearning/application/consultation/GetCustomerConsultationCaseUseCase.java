@@ -1,0 +1,33 @@
+package com.cleanlearning.application.consultation;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.cleanlearning.application.consultation.port.LoadCustomerConsultationCasePort;
+import com.cleanlearning.domain.consultation.CustomerConsultationCase;
+import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
+import com.cleanlearning.domain.shared.NotFoundException;
+import com.cleanlearning.domain.user.CurrentUser;
+
+/**
+ * UC-05: the customer opens one of their cases.
+ */
+@Service
+public class GetCustomerConsultationCaseUseCase {
+
+    private final LoadCustomerConsultationCasePort loadCase;
+
+    GetCustomerConsultationCaseUseCase(LoadCustomerConsultationCasePort loadCase) {
+        this.loadCase = loadCase;
+    }
+
+    /**
+     * @throws NotFoundException if there's no case with this id, or it's another customer's: both answer 404, so
+     *     nobody can probe which ids exist
+     */
+    @Transactional(readOnly = true)
+    public CustomerConsultationCase invoke(CurrentUser user, ConsultationCaseId id) {
+        return loadCase.load(id, user.id())
+                .orElseThrow(() -> new NotFoundException("Case " + id.value() + " not found."));
+    }
+}
