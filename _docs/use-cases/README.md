@@ -59,6 +59,9 @@ A user can hold several roles. The header shows a section for each of them, and 
 - Attendance or no-show tracking
 - A guard for unsaved form edits, e.g. when the admin publishes, unpublishes or archives an offering with a changed form ([UC-16](uc-16-manage-consultation-offering.md))
 - Keeping the buy dialog open with its message when its offering leaves the shop while the customer is in another tab, and returning the focus after **Close** when the offering's card has left the shop ([UC-03](uc-03-purchase-consultation-package.md); today the shop reloads on the tab's return and the dialog closes with the card or the detail page)
+- A person's appointments as a customer and as an expert don't block each other: an expert who is also a customer can be booked as an expert at a time they booked as a customer, and the other way round ([UC-06](uc-06-book-consultation-appointment.md), [UC-13](uc-13-manage-availability.md))
+- A time range of the availability that ends at midnight, so that 23:30–24:00 can be offered; today a range can't end at midnight ([UC-13](uc-13-manage-availability.md))
+- 24-hour time inputs on the availability page whatever the browser's language; today they follow the browser, for example 12-hour in English (US) ([UC-13](uc-13-manage-availability.md))
 
 ## Template
 

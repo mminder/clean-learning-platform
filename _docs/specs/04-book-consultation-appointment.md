@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| Status | In progress |
-| Use cases | [UC-13](../use-cases/uc-13-manage-availability.md), all steps; [UC-06](../use-cases/uc-06-book-consultation-appointment.md), all steps, with busy time from appointments only (decision 14); [UC-05](../use-cases/uc-05-view-my-purchases.md), the assigned expert, the appointments and **Book appointment** on the case detail, and the Upcoming and Past groups on **My purchases** (decision 6); [UC-03](../use-cases/uc-03-purchase-consultation-package.md), step 7's hint "Book your first session" |
+| Status | Done |
+| Use cases | [UC-13](../use-cases/uc-13-manage-availability.md), all steps; [UC-06](../use-cases/uc-06-book-consultation-appointment.md), all steps, with busy time from appointments only (decisions 14 and 22); [UC-05](../use-cases/uc-05-view-my-purchases.md), the assigned expert, the appointments and **Book appointment** on the case detail, and the Upcoming and Past groups on **My purchases** (decision 6); [UC-03](../use-cases/uc-03-purchase-consultation-package.md), step 7's hint "Book your first session" |
 | Tasks | [tasks/04-book-consultation-appointment](../tasks/04-book-consultation-appointment/README.md) |
 
 ## Why
@@ -27,7 +27,7 @@ UC-13 comes in the same increment: without it, availability would have to come f
 - On the first booking, the customer picks their expert from the offering's eligible experts. That expert stays the case's expert.
 - The customer sees only the dates and times that really fit: inside the expert's availability, free of the expert's other appointments and of the customer's own, and at least 24 hours ahead.
 - A confirmation states the expert, the date, the time, the duration and the free-cancellation deadline.
-- If someone else took the time in the meantime, the booking is refused, and the customer picks again.
+- If the time was taken in the meantime, by someone else or by the customer's own booking on another case, the booking is refused, and the customer picks again.
 - The case detail shows the expert, the upcoming and the past appointments, and the open credits that are left.
 - **My purchases** groups the cases into Upcoming, Needs booking and Past.
 
@@ -39,7 +39,7 @@ UC-13 comes in the same increment: without it, availability would have to come f
 4. As a customer, I want to see only times that really work, so that I don't pick a time that then fails.
 5. As a customer, I want to confirm the expert, date, time and free-cancellation deadline before I book, so that I don't book by mistake.
 6. As a customer, I want to book several sessions ahead, up to my open credits, so that I can plan a series.
-7. As a customer, I want to be told when someone else took my time, so that I can pick another.
+7. As a customer, I want to be told when my time was taken, by someone else or by my own booking on another case, so that I can pick another.
 8. As a customer, I want **My purchases** and the case detail to show what's next and what I have left, so that I keep track.
 9. As an expert who is also a customer, I want to book myself, so that I can try the flow ([D-06](../decisions.md#catalog)).
 10. As a developer, I want one finished example of a two-row lock and of local dates and times in the API, so that later use cases follow one pattern.
@@ -311,7 +311,7 @@ Agreed with the product owner while planning (2026-11-09): the scope, UC-13 and 
 11. **The days of the summer-time changes.** Ranges and the grid are wall-clock times, but a session lasts its real duration. A start time is offered only if it exists exactly once on that date: in spring, 02:00–02:59 doesn't exist; in autumn, 02:00–02:59 happens twice and isn't offered. A session must end, as an instant, at or before the end of its range, so 01:30 on 28 Mar 2027 is the session 01:30–03:30, which lasts 60 minutes. Nobody is expected to coach at 2 a.m.; the rule only has to be correct and simple. [D-10](../decisions.md#consultation) and UC-06 now say so.
 12. **The booking request names the expert**, the one the customer saw: the one they picked, or the case's. If the case has no expert, the server checks that the named one is eligible (409 `EXPERT_NOT_ELIGIBLE`) and assigns them; if it has one and it's another, the answer is 409 `EXPERT_CHANGED`. As with the confirmed price in spec 03 (decision 3), the server never books something the customer didn't see. UC-06 now says so.
 13. **Saving availability locks the expert's row**, the same lock a booking takes after the case. Two saves at once, from two tabs, would otherwise interleave their deletes and inserts and fail with a 500, and a booking always sees either the old or the new availability. A booking just before a removal is still valid: removing availability never cancels anything. [D-27](../decisions.md#architecture) now says so.
-14. **Busy time is the expert's booked appointments.** Runs don't exist yet; the trainings increment adds the time slots of the expert's runs to the same port, and assigning an expert to a run checks the appointments ([D-09](../decisions.md#consultation)).
+14. **Busy time is the expert's booked appointments** (decision 22 adds the customer's own). Runs don't exist yet; the trainings increment adds the time slots of the expert's runs to the same port, and assigning an expert to a run checks the appointments ([D-09](../decisions.md#consultation)).
 15. **Only what exists is stored**, as in spec 03 (decision 12): the case gets its assigned expert, and the appointment its start, end and status `BOOKED`. The case's status and the appointment's `CANCELLED` and `creditRefunded` come with UC-07 and UC-08. The status column exists from the start so that every query of appointments already filters by `BOOKED`, and UC-07 only adds a value. Open credits are the session count minus the booked appointments, until forfeited credits (UC-07) and credit adjustments (UC-18) exist.
 16. **The picker's experts come from the case** (*planning*), `GET /api/customer/consultation-cases/{id}/eligible-experts`, not from the shop: an archived offering's case can still book, and the shop doesn't show archived offerings.
 17. **The booking answers 201 with the new appointment, without a `Location`** (*planning*): an appointment has no route of its own; it's part of its case, which the page reloads.
@@ -356,10 +356,11 @@ cd frontend && npm run dev
 4. Click **Book appointment**: Expert 1 and Expert 2, with bio and placeholder photo. Pick Expert 2: only day 2 and day 3 can be picked. Pick day 2: 09:00–10:00 to 11:00–12:00, and 13:00–14:00 to 16:00–17:00. Pick 10:00–11:00 and continue: the confirmation names Expert 2, the date, 10:00–11:00 (60 min) and the free-cancellation time one day earlier. Confirm: Expert 2, 2 of 3 credits open, the appointment under Upcoming.
 5. Click **Book appointment** again: no expert step. Day 2 no longer offers 09:30–10:30, 10:00–11:00 or 10:30–11:30. Close the dialog. **My purchases** shows the case under **Upcoming**, with Expert 2 and the appointment.
 6. In a private window, log in as Customer 2, buy Career Coaching, book Expert 2 on day 2: 10:00–11:00 isn't offered. Go to the confirmation of 11:00–12:00 and leave it open. As Customer 1, book 11:00–12:00 with Expert 2. As Customer 2, confirm: "This time is no longer available.", and the times reload without 11:00–12:00.
-7. As Customer 2, paste the URL of Customer 1's case: "Case not found".
-8. In the private window, log out, log in as Expert 2, remove day 2 from the availability and save. As Customer 1, reload the case: both appointments are still there.
-9. In the private window, log out, log in as Expert 1, buy Career Coaching and book yourself, Expert 1, on day 2.
-10. In the private window, log out, log in as Admin 1, open Career Coaching and remove Expert 2 from its eligible experts. Save. As Customer 1, click **Book appointment**: it still offers Expert 2's day 3. Put Expert 2 back.
+7. As Customer 1, buy Career Coaching again, open the new case and click **Book appointment**, pick Expert 1 and day 2: only 09:00–10:00 is offered, since your own appointments at 10:00–11:00 and 11:00–12:00 block the rest. Close the dialog.
+8. As Customer 2, paste the URL of Customer 1's case: "Case not found".
+9. In the private window, log out, log in as Expert 2, remove day 2 from the availability and save. As Customer 1, reload the first case: both appointments are still there.
+10. In the private window, log out, log in as Expert 1, buy Career Coaching and book yourself, Expert 1, on day 2.
+11. In the private window, log out, log in as Admin 1, open Career Coaching and remove Expert 2 from its eligible experts. Save. As Customer 1, click **Book appointment** on the first case: it still offers Expert 2's day 3. Put Expert 2 back.
 
 Completed cases, consumed appointments and the Past group need time to pass, so tests with a fixed `Clock` cover them instead of the demo.
 
@@ -369,7 +370,7 @@ Then the single jar:
 cd backend && ./mvnw -Pfrontend package && java -jar target/clean-learning-platform-*.jar --spring.profiles.active=poc
 ```
 
-11. Open `http://localhost:8080`, log in as Customer 2, open the case from step 6, which has no expert yet, and book Expert 1 on day 2.
+12. Open `http://localhost:8080`, log in as Customer 2, open the case from step 6, which has no expert yet, and book Expert 1 on day 2.
 
 ## Risks
 
