@@ -20,8 +20,9 @@ import com.cleanlearning.domain.user.value.DisplayName;
 
 /**
  * A case on "My purchases" at a given time (UC-05, D-17, spec 04 decisions 6 and 21): its group, its next appointment,
- * its credits and the order of the list. The credits and the appointments' states are {@link Appointment}'s, the same
- * as the case detail's. Instants are in UTC; Zurich is UTC+1 in November.
+ * its credits and the order of the list. Every booked appointment uses a credit, consumed or not, and the
+ * appointments' states are {@link Appointment}'s, the same as the case detail's. Instants are in UTC; Zurich is UTC+1
+ * in November.
  */
 class CustomerConsultationCaseSummaryTest {
 

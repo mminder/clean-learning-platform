@@ -40,9 +40,9 @@ class AvailabilityAdapter implements LoadAvailabilityPort, ReplaceAvailabilityPo
 
     /**
      * Deletes with bulk {@code delete} statements, then persists the new rows. Unlike the offering's packages, the rows
-     * aren't written as a difference: a date or a range is its key, so a kept one is the same row either way. And
-     * Hibernate flushes inserts before deletes, so removing entities and persisting rows with the same keys in one
-     * flush would fail with a duplicate key; a bulk delete runs at once.
+     * aren't written as a difference: the availability is replaced as a whole on every save, and nothing refers to its
+     * rows. And Hibernate flushes inserts before deletes, so removing entities and persisting rows with the same keys
+     * in one flush would fail with a duplicate key; a bulk delete runs at once.
      */
     @Override
     public void replaceFrom(UserId expertId, LocalDate from, Availability availability) {

@@ -38,7 +38,8 @@ interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, 
 
     /**
      * The customer's cases with their offerings, in every status of the offering (UC-16), and their assigned experts'
-     * display names, the oldest purchase first. Scoped to the customer in SQL (security.md).
+     * display names, in no particular order: the use case sorts them (D-17). Scoped to the customer in SQL
+     * (security.md).
      */
     @Query("""
             select new com.cleanlearning.adapters.database.consultation.row.CustomerConsultationCaseSummaryRow(
@@ -47,7 +48,6 @@ interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, 
             join OfferingEntity o on o.id = c.consultationOfferingId
             left join ExpertProfileEntity p on p.userId = c.assignedExpertId
             where c.customerId = :customerId
-            order by c.purchasedAt, c.id
             """)
     List<CustomerConsultationCaseSummaryRow> findCustomerCases(UUID customerId);
 
@@ -72,7 +72,7 @@ interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, 
     @Query("""
             select count(a) from AppointmentEntity a
             where a.consultationCaseId = :consultationCaseId
-              and a.status = com.cleanlearning.domain.consultation.value.AppointmentStatus.BOOKED
+              and a.status = com.cleanlearning.adapters.database.consultation.entity.StoredAppointmentStatus.BOOKED
             """)
     long countBookedAppointments(UUID consultationCaseId);
 
@@ -80,7 +80,7 @@ interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, 
     @Query("""
             select a from AppointmentEntity a
             where a.consultationCaseId = :consultationCaseId
-              and a.status = com.cleanlearning.domain.consultation.value.AppointmentStatus.BOOKED
+              and a.status = com.cleanlearning.adapters.database.consultation.entity.StoredAppointmentStatus.BOOKED
             """)
     List<AppointmentEntity> findBookedAppointments(UUID consultationCaseId);
 
@@ -93,7 +93,7 @@ interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, 
             select a from AppointmentEntity a
             join ConsultationCaseEntity c on c.id = a.consultationCaseId
             where c.customerId = :customerId
-              and a.status = com.cleanlearning.domain.consultation.value.AppointmentStatus.BOOKED
+              and a.status = com.cleanlearning.adapters.database.consultation.entity.StoredAppointmentStatus.BOOKED
             """)
     List<AppointmentEntity> findBookedAppointmentsOfCustomer(UUID customerId);
 
@@ -105,7 +105,7 @@ interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, 
             select a from AppointmentEntity a
             join ConsultationCaseEntity c on c.id = a.consultationCaseId
             where c.assignedExpertId = :expertId
-              and a.status = com.cleanlearning.domain.consultation.value.AppointmentStatus.BOOKED
+              and a.status = com.cleanlearning.adapters.database.consultation.entity.StoredAppointmentStatus.BOOKED
               and a.endsAt > :from
             """)
     List<AppointmentEntity> findBookedAppointmentsOfExpert(UUID expertId, Instant from);

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import com.cleanlearning.adapters.database.consultation.entity.AppointmentEntity;
 import com.cleanlearning.adapters.database.consultation.entity.ConsultationCaseEntity;
+import com.cleanlearning.adapters.database.consultation.entity.StoredAppointmentStatus;
 import com.cleanlearning.adapters.database.consultation.row.CustomerConsultationCaseRow;
 import com.cleanlearning.adapters.database.consultation.row.CustomerConsultationCaseSummaryRow;
 import com.cleanlearning.adapters.database.offering.entity.ConsultationOfferingEntity;
@@ -35,7 +36,6 @@ import com.cleanlearning.domain.consultation.ConsultationOfferingForPurchase;
 import com.cleanlearning.domain.consultation.CustomerConsultationCase;
 import com.cleanlearning.domain.consultation.CustomerConsultationCaseSummary;
 import com.cleanlearning.domain.consultation.value.AppointmentId;
-import com.cleanlearning.domain.consultation.value.AppointmentStatus;
 import com.cleanlearning.domain.consultation.value.BusyTime;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.consultation.value.PurchaseTerms;
@@ -159,7 +159,7 @@ class ConsultationCaseAdapter implements LockConsultationOfferingForPurchasePort
     public void save(Booking booking) {
         Appointment appointment = booking.appointment();
         entityManager.persist(new AppointmentEntity(appointment.id().value(), appointment.consultationCaseId().value(),
-                appointment.start(), appointment.end(), AppointmentStatus.BOOKED));
+                appointment.start(), appointment.end(), StoredAppointmentStatus.BOOKED));
         if (booking.assignsExpert()) {
             ConsultationCaseEntity consultationCase = Objects.requireNonNull(
                     entityManager.find(ConsultationCaseEntity.class, appointment.consultationCaseId().value()),

@@ -6,6 +6,7 @@ import static org.springframework.test.context.jdbc.Sql.ExecutionPhase.AFTER_TES
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -233,10 +234,13 @@ class AvailabilityControllerTest {
         assertThat(storedTimeRanges(SeedData.EXPERT_2)).isEqualTo(2);
     }
 
-    /** Today is Zurich's: at 00:30 in Zurich it's already Tuesday, while it's still Monday in UTC. */
+    /**
+     * Today is Zurich's, not the clock's zone's: at 00:30 on Tuesday in Zurich it's still Monday in New York, where
+     * the clock is.
+     */
     @Test
     void takesTodayInZurich() {
-        clock.set(Instant.parse("2026-11-09T23:30:00Z"));
+        clock.set(Instant.parse("2026-11-09T23:30:00Z"), ZoneId.of("America/New_York"));
 
         assertThat(save(SeedData.EXPERT_2, availability(List.of(date("2026-11-09")))))
                 .hasStatus(HttpStatus.BAD_REQUEST)

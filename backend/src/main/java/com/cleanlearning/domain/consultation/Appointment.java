@@ -19,9 +19,12 @@ import com.cleanlearning.domain.offering.value.SessionCount;
  */
 public record Appointment(AppointmentId id, ConsultationCaseId consultationCaseId, Instant start, Instant end) {
 
-    /** Soonest first; two appointments of a case never start at once, and the id makes the order total anyway. */
+    /**
+     * Soonest first; two appointments of a case never start at once, and the id, as text, makes the order total
+     * anyway, as in {@link CustomerConsultationCaseSummary#MY_PURCHASES_ORDER}.
+     */
     private static final Comparator<Appointment> BY_START = Comparator.comparing(Appointment::start)
-            .thenComparing(appointment -> appointment.id().value());
+            .thenComparing(appointment -> appointment.id().value().toString());
 
     public Appointment {
         Objects.requireNonNull(id, "id");

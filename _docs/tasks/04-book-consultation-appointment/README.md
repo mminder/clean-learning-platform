@@ -97,7 +97,7 @@ indexes                  (consultation_case_id)
 - **`TimeRange`'s rule** is the check `start_time < end_time` ([D-36](../../decisions.md#architecture)). That ranges neither overlap nor touch is a rule across rows; `Availability` holds it, without a database constraint.
 - **The assigned expert** refers to `expert_profile`, as `eligible_expert` does. The case keeps it after the expert stops being eligible (UC-06).
 - **The appointment has no expert column**: its expert is its case's assigned expert, which never changes. Busy time joins the case.
-- **`status`** holds only `BOOKED`; UC-07 adds `CANCELLED` and `credit_refunded` (spec decision 15). Every query of appointments filters by `status = 'BOOKED'` from the start.
+- **`status`** holds only `BOOKED`; UC-07 adds `CANCELLED` and `credit_refunded` (spec decision 15). Every query of appointments filters by `status = 'BOOKED'` from the start. The entity maps it with its own enum, `StoredAppointmentStatus` in `adapters.database.consultation.entity`, which holds only the stored statuses; the domain's `AppointmentStatus` also has the derived `CONSUMED`, which can't be written.
 - **`starts_at` and `ends_at`**, because `end` is reserved in SQL; `purchased_at` set the pattern.
 - No seed (spec decision 8). The test cleanup deletes the new tables' rows ([tests](#tests)).
 
@@ -283,7 +283,7 @@ frontend/src
 | Confirm | "Book Expert 2 on 17 Nov 2026, 10:00–11:00 (60 min, Zurich time)?" and "Free cancellation until 16 Nov 2026, 10:00." (spec decision 7) | **Back**; **Book** |
 
 - **The slots** come from `useBookableSlots(caseId, expertId)` once the expert is known; the dialog groups them by `localDateOf(start)` (`slotsByDate`). The duration comes from the case's purchase terms.
-- **The expert step's Continue** loads the picked expert's slots before the dates show (`fetchQuery`), so a 409 of the slots route (`EXPERT_CHANGED`, `EXPERT_NOT_ELIGIBLE`) follows the error table below, as the booking's does; the case, its experts and its slots reload first. Anything else stays on **Expert** with "The times could not be loaded. Please try again." (03)
+- **The expert step's Continue** loads the picked expert's slots before the dates show (`fetchQuery`), so a 409 of the slots route (`EXPERT_CHANGED`, `EXPERT_NOT_ELIGIBLE`) and a 404 follow the error table below, as the booking's do; the case, its experts and its slots reload first after a 409. Anything else stays on **Expert** with "The times could not be loaded. Please try again." (03)
 - **The expert** the dialog books is the case's as the dialog opened, or the one picked; a reload of the case meanwhile doesn't change it, so the request names the expert the confirmation stated. Only `EXPERT_CHANGED` switches to the reloaded case's expert (03).
 - **After the booking** the dialog closes; the case detail shows the new appointment and the credits.
 - **Errors** show in the dialog (`role="alert"`):
@@ -294,8 +294,8 @@ frontend/src
   | 409 `EXPERT_NOT_ELIGIBLE` | the `detail` | back to **Expert**, with the experts reloaded and none chosen |
   | 409 `EXPERT_CHANGED` | the `detail` | the case reloads; on to **Date** with the case's expert |
   | 409 `NO_OPEN_CREDITS` | the `detail` | only **Close** is left; the case reloads |
-  | 404 | "This case was not found." | only **Close** is left |
-  | anything else | "Booking failed. Please try again." | stays on **Confirm** |
+  | 404, of the booking or of the times | "This case was not found." | only **Close** is left |
+  | anything else | "Booking failed. Please try again." | stays on **Confirm**; for the times, "The times could not be loaded. Please try again." on **Expert** |
 
   The case reloads after a 409 while the dialog stays open: unlike the buy dialog, the dialog isn't a child of something the reload removes.
 

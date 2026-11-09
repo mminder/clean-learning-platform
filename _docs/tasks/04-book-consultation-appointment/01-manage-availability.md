@@ -71,5 +71,6 @@ Work in this order, test first:
 - **`OpenApiContractTest`** also checks the `PUT`'s answers (200, 400, 415).
 - **The shadcn CLI** offered to overwrite `components/ui/button.tsx` when adding `calendar`; it was kept as it is.
 - **The bundle** is 564 kB (main: 512 kB); Vite's 500 kB warning was there before.
-- **For later, not changed:** the calendar's weeks start on Sunday (react-day-picker's default for the browser's `en-US`), and a native time input shows 12-hour times in an English (US) browser; the values are 24-hour `HH:mm` either way.
+- **Weeks start on Monday:** they started on Sunday, because react-day-picker uses its built-in `en-US` locale, not the browser's. The `Calendar` wrapper now sets `weekStartsOn={1}` as its default.
+- **For later, not changed:** a native time input shows 12-hour times in an English (US) browser; the values are 24-hour `HH:mm` either way.
 - The spec's status is **In progress**, as the first task started.
