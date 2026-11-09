@@ -22,7 +22,7 @@ import com.cleanlearning.domain.shared.BusinessTimeZone;
  * now. The grid and the ranges are wall-clock times, but a session lasts its real duration.
  *
  * @param availability the expert's dates and time ranges
- * @param busyTimes the expert's other commitments, in any order
+ * @param busyTimes the expert's other commitments and the customer's own appointments, in any order
  */
 public record SlotFinder(Availability availability, List<BusyTime> busyTimes) {
 

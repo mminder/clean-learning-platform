@@ -28,7 +28,7 @@ The customer turns an open credit into an appointment with an expert.
 
 ## Alternative and error flows
 
-- **The slot was taken in the meantime:** 409, "This time is no longer available." The customer goes back to step 3, with the times reloaded.
+- **The slot was taken in the meantime**, by another booking with the expert, or by one of the customer's own on another case: 409, "This time is no longer available." The customer goes back to step 3, with the times reloaded.
 - **The offering has no eligible experts** (case without an assigned expert): "No experts are available for this offering yet. Please try again later." **Book appointment** stays enabled (decided 2026-11-09).
 - **The selected expert is no longer eligible** (first booking): 409, "This expert is no longer available for this offering. Please choose another." The customer goes back to step 2, with the experts reloaded.
 - **The case got another expert in the meantime** (a first booking in another tab): 409, "This case already has an expert. Please choose a time with them." The customer goes back to step 3, with the case's expert.
@@ -41,10 +41,12 @@ The customer turns an open credit into an appointment with an expert.
 - **Bookable slot** (D-10): a start time on a 30-minute grid such that:
   - `[start, start + session duration]` lies fully inside one of the expert's availability ranges on that date;
   - it doesn't overlap the expert's busy time (any `BOOKED` appointment of any case, or a time slot of an assigned run);
+  - it doesn't overlap the customer's busy time (any `BOOKED` appointment of any of their cases, with any expert);
   - `start ≥ now + 24 h`.
 - Availability ranges and the grid are Zurich wall-clock times, but a session lasts its real duration. On the days of the summer-time changes, a start time is offered only if it exists exactly once on that date, and the session must end, as an instant, at or before the end of its range (D-10, decided 2026-11-09).
 - The session duration comes from the case's purchase terms.
 - There's no buffer between sessions.
+- A customer's appointments never overlap, across all their cases and experts, so a time that overlaps one of them isn't offered. Touching is fine (decided 2026-11-09).
 - A customer can book several future appointments, up to the open credits.
 - The assigned expert can't be changed. All appointments of a case are with the same expert.
 - A user with `EXPERT` and `CUSTOMER` may select themself (D-06).

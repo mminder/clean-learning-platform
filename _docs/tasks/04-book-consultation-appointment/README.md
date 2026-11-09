@@ -56,6 +56,7 @@ Only 01, 03 and 04 change `openapi.json` and `schema.d.ts`, one after the other.
 | `api.response` | `EligibleExpertResponse` moves here from `api.shop.response`: the shop and the case both answer it | 03 |
 | `domain.consultation` | `CustomerConsultationCaseSummary` gains the expert's name, the appointments, `group()` and `nextAppointment()`, and `MY_PURCHASES_ORDER` | 04 |
 | `domain.consultation.value` | `PurchaseGroup` (`UPCOMING`, `NEEDS_BOOKING`, `PAST`) | 04 |
+| `application.consultation.port` | `LoadCustomerBusyTimesPort` (`loadCustomerBusyTimes(UserId customerId, Instant from)`; the method isn't `load`, which `ConsultationCaseAdapter` already has with the same parameters for `LoadBusyTimesPort`, as `LoadExpertsPort.loadExperts` sits next to `LoadUsersPort.loadAll`), implemented by `ConsultationCaseAdapter` | [spec decision 22](../../specs/04-book-consultation-appointment.md#decisions) |
 
 - **Names** follow the [glossary](../../glossary.md): availability, time range, appointment, busy time, bookable slot, assigned expert, eligible expert. The customer's records carry the audience, `Customer…`, as in increment 03; the expert's (UC-11) will be different records.
 - **Other features' types.** Booking uses `domain.availability`'s `Availability`, `application.availability.port`'s `LoadAvailabilityPort` and `application.user.port`'s `LockExpertPort` where they are ([D-23](../../decisions.md#architecture)): a booking needs exactly what the availability page loads, and exactly the lock that saving availability takes. `TimeRange` stays in `domain.availability.value`; nothing moves to `domain.shared.value`. backend.md's tree loses `TimeRange` from its shared examples (01).
@@ -194,6 +195,7 @@ indexes                  (consultation_case_id)
   - the session `[start, start + duration)` overlaps no busy time `[start, end)`: touching is fine, as there's no buffer.
 - **`boolean isBookable(Instant start, SessionDuration duration, Instant now)`**: `start` is one of `startTimes(duration, now)`. One rule for showing and for booking.
 - **`BusyTime(Instant start, Instant end)`** throws unless start is before end.
+- **The busy times are the expert's and the customer's together** (spec decision 22): the use cases pass both lists into one `SlotFinder`, which doesn't tell them apart, so one rule decides showing and booking. `SlotFinder` needs no change, and no test of its own for it: it already takes several busy times in any order.
 
 ### Booking
 
@@ -211,22 +213,24 @@ indexes                  (consultation_case_id)
 
   Open credits are the session count minus the booked appointments (spec decision 15). `book` checks every rule itself, so it's right on its own; it returns a `Booking`: a new `Appointment` (a new id, the case, `start`, `start` + the session duration) and whether it assigns the expert (the case had none).
 - **`ListEligibleExpertsForCaseUseCase.invoke(CurrentUser, ConsultationCaseId)`**: `LoadCaseForBookingPort.load(id, customerId)`, 404 if empty, then its eligible experts.
-- **`ListBookableSlotsUseCase.invoke(CurrentUser, ConsultationCaseId, UserId expertId)`**: load the case (404), `expertFor(expertId)`, `LoadAvailabilityPort.load(expert, today)` and `LoadBusyTimesPort.load(expert, now)`, then `bookableSlots(new SlotFinder(…), now)`. No lock: it only shows.
+- **`ListBookableSlotsUseCase.invoke(CurrentUser, ConsultationCaseId, UserId expertId)`**: load the case (404), `expertFor(expertId)`, `LoadAvailabilityPort.load(expert, today)`, `LoadBusyTimesPort.load(expert, now)` and `LoadCustomerBusyTimesPort.loadCustomerBusyTimes(customer, now)`, then `bookableSlots(new SlotFinder(availability, both busy times), now)`. No lock: it only shows.
 - **`BookConsultationAppointmentUseCase.invoke(CurrentUser, BookConsultationAppointmentCommand)`**:
   1. **Lock the case** with `LockCaseForBookingPort.lock(id, customerId)`: a query scoped to the customer with `@Lock(PESSIMISTIC_WRITE)`, so only the customer's own case is locked; then the rest of `CaseForBooking`. Empty is a `NotFoundException` (404).
   2. **Choose the expert to lock**: `requireOpenCredit()`, then `expertFor(command.expertId())`. Credits come first, so a second booking on a case's last credit is `NO_OPEN_CREDITS` whichever expert it names.
   3. **Lock the expert** with `LockExpertPort.lock(expertId)`, after the case (D-27: case → expert).
-  4. **Load** the availability and the busy times, as the slots do. Under the expert's lock, nobody else books this expert or changes their availability meanwhile.
+  4. **Load** the availability and the busy times, the expert's and the customer's, as the slots do. Under the expert's lock, nobody else books this expert or changes their availability meanwhile. The customer isn't locked: a booking by the same customer on another case, with another expert, could run at the same instant, and two such bookings could overlap; spec decision 22 accepts that.
   5. **The domain decides**: `book(expertId, command.start(), new SlotFinder(…), now)`.
   6. **Write** with `SaveBookingPort.save(booking)`: persist the appointment; on the first booking, set the managed case entity's `assignedExpertId`.
   7. **Answer** the new appointment as a `CustomerAppointment` (`BOOKED`).
 - **`LoadBusyTimesPort.load(expertId, from)`**: the booked appointments of every case assigned to the expert that end after `from`, joined through `consultation_case.assigned_expert_id`. Runs add their time slots here with the trainings (spec decision 14).
+- **`LoadCustomerBusyTimesPort.loadCustomerBusyTimes(customerId, from)`**: the booked appointments of all the customer's cases, with any expert, that end after `from`, joined through `consultation_case.customer_id` (`findBookedAppointmentsOfCustomerEndingAfter`). A customer's appointments never overlap (spec decision 22).
 - **No offering lock.** Booking never locks the offering: eligibility is read when the booking runs, and one that passes just before an admin removes the expert is valid (UC-06). The case of an archived offering books as any other (D-07).
 
 ### Ownership
 
 - **Scoped queries**, as in increment 03: `LoadCaseForBookingPort` and `LockCaseForBookingPort` filter by the case's `customer_id` in SQL. Another customer's case is empty, like an unknown id, and the use case throws `NotFoundException` (404) on all three new routes ([security.md](../../architecture/security.md#ownership-in-use-cases)).
 - **The slots show no one else's data**: each slot is a start, an end and a free-cancellation time.
+- **The customer's busy time is scoped to the customer** in SQL, by the case's `customer_id`: another customer's appointments take none of their times (spec decision 22).
 - **Availability has no id in its route**: it's always the current user's.
 
 ### The case as its customer sees it
@@ -347,8 +351,8 @@ shadcn/ui: `calendar` (01), added with the CLI and then `npm run format`. It bri
 | Test data | No seed availability (spec decision 8). Tests save availability through the API as Expert 1 or Expert 2, buy through the API, and book through the API. `delete-test-data.sql` deletes every appointment (03), then every case, then every availability date and range (01), then the test offerings, as before. |
 | Times | A REST test that books sets the clock first, for example to Mon 9 Nov 2026, 15:00 (Zurich), and makes the expert available on later dates. A test of consumed appointments or completed cases books, then moves the clock past the appointments. |
 | Role matrix | Rows for the two availability routes, `EXPERT` (01); the `GET /api/expert/probe` row goes. Rows for the three case routes, `CUSTOMER`, on an unknown case (03). `PUT` and `POST` send no body (400). |
-| Ownership | Expert 2's `GET` doesn't show Expert 1's availability (01). Customer 2 on Customer 1's case: the experts, the slots and the booking answer 404, and nothing is booked (03). Customer 2's list doesn't show Customer 1's appointments (04). |
-| Concurrency | Two tests (05), deterministic as `ConsultationOfferingConcurrencyTest`: two customers book one expert's slot at once, and must fail without the expert's lock; two bookings on a case's last credit at once, with different experts so that only the case's lock can order them, and must fail without the case's lock. Where a request without its lock would wait nowhere, the test also holds the row a foreign key check of the request waits for, as the purchase's test does. |
+| Ownership | Expert 2's `GET` doesn't show Expert 1's availability (01). Customer 2 on Customer 1's case: the experts, the slots and the booking answer 404, and nothing is booked (03). Customer 2's list doesn't show Customer 1's appointments (04). Customer 2's appointment takes none of Customer 1's times (spec decision 22). |
+| Concurrency | Two tests (05), deterministic as `ConsultationOfferingConcurrencyTest`: two customers book one expert's slot at once, and must fail without the expert's lock; two bookings on a case's last credit at once, with different experts so that only the case's lock can order them, and must fail without the case's lock. Where a request without its lock would wait nowhere, the test also holds the row a foreign key check of the request waits for, as the purchase's test does. The customer's own appointments aren't locked, so they have no concurrency test (spec decision 22). |
 | Domain | `TimeRange`, `Availability` (overlap, touch, past dates) (01). `SlotFinder`: the grid, the fit, two ranges, the notice, busy time with and without touching, the session durations 30, 60 and 90 minutes, a range not on the grid, both days of the summer-time changes, no availability (02). `CaseForBooking`: each code, credits before the expert, the first booking assigns the expert, the slot's end and free-cancellation time (03). `CustomerConsultationCase`: credits, `canBook`, upcoming and past at a given time, also at an appointment's start and end (03). `CustomerConsultationCaseSummary`: each group and the order, also at an appointment's start and end (04). |
 | Frontend | Vitest for logic only ([D-29](../../decisions.md#architecture)): the new `lib/date.ts` functions (01, 03), and the dialog's grouping of slots by date if it's a function of its own (03). Pages and the dialog are checked by hand with Playwright. |
 

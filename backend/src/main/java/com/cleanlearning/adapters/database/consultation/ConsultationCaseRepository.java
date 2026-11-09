@@ -111,6 +111,19 @@ interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, 
     List<AppointmentEntity> findBookedAppointmentsOfExpert(UUID expertId, Instant from);
 
     /**
+     * The {@code BOOKED} appointments of all the customer's cases, with any expert, that end after {@code from}: the
+     * customer's busy time (spec 04, decision 22). Scoped to the customer in SQL, through the case (security.md).
+     */
+    @Query("""
+            select a from AppointmentEntity a
+            join ConsultationCaseEntity c on c.id = a.consultationCaseId
+            where c.customerId = :customerId
+              and a.status = com.cleanlearning.adapters.database.consultation.entity.StoredAppointmentStatus.BOOKED
+              and a.endsAt > :from
+            """)
+    List<AppointmentEntity> findBookedAppointmentsOfCustomerEndingAfter(UUID customerId, Instant from);
+
+    /**
      * The offering's current eligible experts with their profiles, sorted by display name (the column is ICU-collated,
      * so alphabetically), then id. D-23: this adapter may read the offering's and the user's tables.
      */

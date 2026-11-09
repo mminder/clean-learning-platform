@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,9 +12,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.cleanlearning.application.availability.port.LoadAvailabilityPort;
 import com.cleanlearning.application.consultation.port.LoadBusyTimesPort;
 import com.cleanlearning.application.consultation.port.LoadCaseForBookingPort;
+import com.cleanlearning.application.consultation.port.LoadCustomerBusyTimesPort;
 import com.cleanlearning.domain.consultation.CaseForBooking;
 import com.cleanlearning.domain.consultation.SlotFinder;
 import com.cleanlearning.domain.consultation.value.BookableSlot;
+import com.cleanlearning.domain.consultation.value.BusyTime;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.shared.BusinessRuleException;
 import com.cleanlearning.domain.shared.BusinessTimeZone;
@@ -34,18 +37,22 @@ public class ListBookableSlotsUseCase {
 
     private final LoadBusyTimesPort loadBusyTimes;
 
+    private final LoadCustomerBusyTimesPort loadCustomerBusyTimes;
+
     private final Clock clock;
 
     ListBookableSlotsUseCase(LoadCaseForBookingPort loadCase, LoadAvailabilityPort loadAvailability,
-            LoadBusyTimesPort loadBusyTimes, Clock clock) {
+            LoadBusyTimesPort loadBusyTimes, LoadCustomerBusyTimesPort loadCustomerBusyTimes, Clock clock) {
         this.loadCase = loadCase;
         this.loadAvailability = loadAvailability;
         this.loadBusyTimes = loadBusyTimes;
+        this.loadCustomerBusyTimes = loadCustomerBusyTimes;
         this.clock = clock;
     }
 
     /**
-     * The case's bookable slots with the expert, soonest first, each with its end and free-cancellation time.
+     * The case's bookable slots with the expert, soonest first, each with its end and free-cancellation time. A slot
+     * overlaps neither the expert's busy time nor the customer's own appointments, of any case (spec 04, decision 22).
      *
      * @param expertId the expert the dialog shows: the one the customer picked, or the case's
      * @throws NotFoundException if there's no case with this id, or it's another customer's
@@ -59,7 +66,9 @@ public class ListBookableSlotsUseCase {
         UserId expert = consultationCase.expertFor(expertId);
         Instant now = clock.instant();
         LocalDate today = LocalDate.ofInstant(now, BusinessTimeZone.ZONE);
-        SlotFinder slotFinder = new SlotFinder(loadAvailability.load(expert, today), loadBusyTimes.load(expert, now));
+        List<BusyTime> busyTimes = Stream.concat(loadBusyTimes.load(expert, now).stream(),
+                loadCustomerBusyTimes.loadCustomerBusyTimes(user.id(), now).stream()).toList();
+        SlotFinder slotFinder = new SlotFinder(loadAvailability.load(expert, today), busyTimes);
         return consultationCase.bookableSlots(slotFinder, now);
     }
 }

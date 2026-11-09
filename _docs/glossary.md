@@ -82,8 +82,8 @@ Customer buys a Run     ──► Enrollment (purchase terms)
 | Credit adjustment | A goodwill change by an admin: a delta (±), a mandatory reason, the admin, and a timestamp. |
 | Note | Text an expert writes on a case: title, text, visibility (`PRIVATE` or `PUBLIC`). |
 | Availability | An expert's selected calendar dates plus one set of daily time ranges that applies to all of them. |
-| Busy time | An expert's `BOOKED` appointments plus the time slots of runs they're assigned to. |
-| Bookable slot | A start time on the 30-minute grid where the whole session fits inside availability, doesn't overlap busy time, and is at least 24 h from now. |
+| Busy time | The times a new appointment can't overlap. An expert's: their `BOOKED` appointments plus the time slots of runs they're assigned to. A customer's: the `BOOKED` appointments of all their cases. |
+| Bookable slot | A start time on the 30-minute grid where the whole session fits inside the expert's availability, overlaps neither the expert's nor the customer's busy time, and is at least 24 h from now. |
 
 ## Cancellation
 

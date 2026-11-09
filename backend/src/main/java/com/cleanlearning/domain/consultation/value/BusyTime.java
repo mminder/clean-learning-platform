@@ -4,8 +4,8 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * A time when an expert is busy, such as a booked appointment: the half-open interval from start to end, so another
- * session may start where it ends (D-10, no buffer).
+ * A time when an expert or a customer is busy, such as a booked appointment: the half-open interval from start to end,
+ * so another session may start where it ends (D-10, no buffer).
  */
 public record BusyTime(Instant start, Instant end) {
 

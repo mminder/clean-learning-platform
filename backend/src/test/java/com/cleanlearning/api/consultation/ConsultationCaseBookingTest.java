@@ -393,6 +393,46 @@ class ConsultationCaseBookingTest {
         assertThat(assignedExpert(ofCustomer1)).isNull();
     }
 
+    /**
+     * Spec 04, decision 22: a customer's appointments never overlap. Customer 1's appointment with Expert 1 on one case
+     * takes its time from their other case's slots with Expert 2, who is free then. Times that touch it stay.
+     */
+    @Test
+    void theCustomersAppointmentOnAnotherCaseTakesItsTimeTouchingOnesStay() throws Exception {
+        available(SeedData.EXPERT_1, "09:00", "12:00", "2026-11-17");
+        expert2AvailableOnTheSeventeenth();
+        String withExpert1 = boughtCareerCoaching(SeedData.CUSTOMER_1);
+        String withExpert2 = boughtCareerCoaching(SeedData.CUSTOMER_1);
+        assertThat(book(withExpert1, SeedData.EXPERT_1, TEN, SeedData.CUSTOMER_1)).hasStatus(HttpStatus.CREATED);
+
+        // 09:30–10:30, 10:00–11:00 and 10:30–11:30 overlap 10:00–11:00; 09:00–10:00 and 11:00–12:00 touch it.
+        assertThat(slotStarts(withExpert2, SeedData.EXPERT_2, SeedData.CUSTOMER_1)).containsExactly(NINE, ELEVEN);
+        // A booking that hits it anyway, as from a dialog opened before, is refused, and nothing is booked.
+        assertConflict(book(withExpert2, SeedData.EXPERT_2, TEN, SeedData.CUSTOMER_1), "SLOT_NOT_AVAILABLE",
+                SLOT_NOT_AVAILABLE);
+        assertConflict(book(withExpert2, SeedData.EXPERT_2, "2026-11-17T08:30:00Z", SeedData.CUSTOMER_1),
+                "SLOT_NOT_AVAILABLE", SLOT_NOT_AVAILABLE);
+        assertThat(countAppointments()).isOne();
+        assertThat(assignedExpert(withExpert2)).isNull();
+
+        assertThat(book(withExpert2, SeedData.EXPERT_2, ELEVEN, SeedData.CUSTOMER_1)).hasStatus(HttpStatus.CREATED);
+    }
+
+    /** Spec 04, decision 22, scoped to the customer: another customer's appointment at that time takes nothing. */
+    @Test
+    void anotherCustomersAppointmentDoesNotTakeTheCustomersTime() throws Exception {
+        available(SeedData.EXPERT_1, "09:00", "12:00", "2026-11-17");
+        expert2AvailableOnTheSeventeenth();
+        String ofCustomer2 = boughtCareerCoaching(SeedData.CUSTOMER_2);
+        assertThat(book(ofCustomer2, SeedData.EXPERT_1, TEN, SeedData.CUSTOMER_2)).hasStatus(HttpStatus.CREATED);
+        String ofCustomer1 = boughtCareerCoaching(SeedData.CUSTOMER_1);
+
+        assertThat(slotStarts(ofCustomer1, SeedData.EXPERT_2, SeedData.CUSTOMER_1)).containsExactly(NINE,
+                "2026-11-17T08:30:00Z", TEN, "2026-11-17T09:30:00Z", ELEVEN);
+        assertThat(book(ofCustomer1, SeedData.EXPERT_2, TEN, SeedData.CUSTOMER_1)).hasStatus(HttpStatus.CREATED);
+        assertThat(countAppointments()).isEqualTo(2);
+    }
+
     @Test
     void aStartThatIsNotABookableSlotIsNotAvailable() throws Exception {
         available(SeedData.EXPERT_2, "09:00", "12:00", "2026-11-10", "2026-11-17");

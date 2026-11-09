@@ -21,6 +21,7 @@ import com.cleanlearning.adapters.database.offering.entity.OfferingEntity;
 import com.cleanlearning.adapters.database.offering.row.EligibleExpertRow;
 import com.cleanlearning.application.consultation.port.LoadBusyTimesPort;
 import com.cleanlearning.application.consultation.port.LoadCaseForBookingPort;
+import com.cleanlearning.application.consultation.port.LoadCustomerBusyTimesPort;
 import com.cleanlearning.application.consultation.port.LoadCustomerConsultationCasePort;
 import com.cleanlearning.application.consultation.port.LoadCustomerConsultationCasesPort;
 import com.cleanlearning.application.consultation.port.LockCaseForBookingPort;
@@ -63,7 +64,7 @@ import jakarta.persistence.LockModeType;
 @Component
 class ConsultationCaseAdapter implements LockConsultationOfferingForPurchasePort, SaveConsultationCasePort,
         LoadCustomerConsultationCasePort, LoadCustomerConsultationCasesPort, LoadCaseForBookingPort,
-        LockCaseForBookingPort, LoadBusyTimesPort, SaveBookingPort {
+        LockCaseForBookingPort, LoadBusyTimesPort, LoadCustomerBusyTimesPort, SaveBookingPort {
 
     private final ConsultationCaseRepository repository;
 
@@ -148,7 +149,13 @@ class ConsultationCaseAdapter implements LockConsultationOfferingForPurchasePort
     @Override
     public List<BusyTime> load(UserId expertId, Instant from) {
         return repository.findBookedAppointmentsOfExpert(expertId.value(), from).stream()
-                .map(appointment -> new BusyTime(appointment.getStartsAt(), appointment.getEndsAt())).toList();
+                .map(ConsultationCaseAdapter::toBusyTime).toList();
+    }
+
+    @Override
+    public List<BusyTime> loadCustomerBusyTimes(UserId customerId, Instant from) {
+        return repository.findBookedAppointmentsOfCustomerEndingAfter(customerId.value(), from).stream()
+                .map(ConsultationCaseAdapter::toBusyTime).toList();
     }
 
     /**
@@ -208,6 +215,10 @@ class ConsultationCaseAdapter implements LockConsultationOfferingForPurchasePort
         return Optional.of(new AssignedExpert(new UserId(expertId),
                 new DisplayName(Objects.requireNonNull(row.expertDisplayName(), "expertDisplayName")),
                 Objects.requireNonNull(row.expertBio(), "expertBio")));
+    }
+
+    private static BusyTime toBusyTime(AppointmentEntity entity) {
+        return new BusyTime(entity.getStartsAt(), entity.getEndsAt());
     }
 
     private static Appointment toAppointment(AppointmentEntity entity) {
