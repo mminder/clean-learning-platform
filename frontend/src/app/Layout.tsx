@@ -6,6 +6,7 @@ export function Layout() {
   const me = useMe()
   const isAdmin = me.data?.roles.includes('ADMIN') ?? false
   const isCustomer = me.data?.roles.includes('CUSTOMER') ?? false
+  const isExpert = me.data?.roles.includes('EXPERT') ?? false
 
   return (
     <div className="min-h-screen">
@@ -24,6 +25,14 @@ export function Layout() {
                 className="ml-6 text-sm font-medium hover:underline"
               >
                 My purchases
+              </Link>
+            )}
+            {isExpert && (
+              <Link
+                to="/expert/availability"
+                className="ml-6 text-sm font-medium hover:underline"
+              >
+                Availability
               </Link>
             )}
             {isAdmin && (

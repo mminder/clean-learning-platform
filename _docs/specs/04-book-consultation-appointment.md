@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | Ready |
+| Status | In progress |
 | Use cases | [UC-13](../use-cases/uc-13-manage-availability.md), all steps; [UC-06](../use-cases/uc-06-book-consultation-appointment.md), all steps, with busy time from appointments only (decision 14); [UC-05](../use-cases/uc-05-view-my-purchases.md), the assigned expert, the appointments and **Book appointment** on the case detail, and the Upcoming and Past groups on **My purchases** (decision 6); [UC-03](../use-cases/uc-03-purchase-consultation-package.md), step 7's hint "Book your first session" |
 | Tasks | [tasks/04-book-consultation-appointment](../tasks/04-book-consultation-appointment/README.md) |
 

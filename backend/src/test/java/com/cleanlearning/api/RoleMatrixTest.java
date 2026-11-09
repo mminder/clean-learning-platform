@@ -50,7 +50,6 @@ class RoleMatrixTest {
             // Spring Security's logout filter answers before authorization: a visitor's logout is a harmless 204.
             new Route(POST, "/api/logout", Access.PUBLIC),
             new Route(GET, "/api/probe", Access.AUTHENTICATED), // any /api route without a rule of its own
-            new Route(GET, "/api/expert/probe", Access.EXPERT),
             new Route(GET, "/api/admin/probe", Access.ADMIN),
             new Route(POST, "/api/customer/consultation-cases", Access.CUSTOMER), // no body: 400
             new Route(GET, "/api/customer/consultation-cases", Access.CUSTOMER),
@@ -70,6 +69,8 @@ class RoleMatrixTest {
             // unknown id: 404
             new Route(DELETE, "/api/admin/consultation-offerings/" + UNKNOWN_ID + "/image", Access.ADMIN),
             new Route(GET, "/api/admin/experts", Access.ADMIN),
+            new Route(GET, "/api/expert/availability", Access.EXPERT),
+            new Route(PUT, "/api/expert/availability", Access.EXPERT), // no body: 400
             new Route(GET, "/api/images/" + UNKNOWN_ID, Access.PUBLIC), // unknown id: 404
             new Route(GET, "/v3/api-docs", Access.PUBLIC),
             new Route(GET, "/", Access.PUBLIC),

@@ -31,7 +31,7 @@ com.cleanlearning
 │  ├─ user
 │  └─ image
 ├─ domain                     models + value objects (in value/), no framework imports
-│  ├─ shared                  NotFoundException; value: Money, TimeRange, ...
+│  ├─ shared                  NotFoundException, BusinessTimeZone; value: Money, ...
 │  ├─ consultation            e.g. SlotFinder, CaseCredits, CaseCancellation
 │  ├─ training
 │  ├─ offering
@@ -56,7 +56,7 @@ com.cleanlearning
 | `training` | enrollments, enrollment cancellation, expert training views | UC-04, UC-05 (enrollments), UC-09, UC-12 |
 | `availability` | expert availability | UC-13 |
 | `image` | image upload and serving | (D-21) |
-| `shared` | `NotFoundException`, and the value objects several features use, in `domain.shared.value` (domain only) | — |
+| `shared` | `NotFoundException`, `BusinessTimeZone`, and the value objects several features use, in `domain.shared.value` (domain only) | — |
 
 UC-10 (join call) has no feature of its own. Link visibility is part of the case and enrollment detail queries, using a shared `LinkWindow` domain rule.
 
@@ -131,7 +131,7 @@ class BookConsultationAppointmentUseCase {
 - **Models and value objects.** In `domain.<feature>`, the models a use case works with sit at the top, and the value objects in `value`. A value object describes one thing by its value (an amount, a duration, an id, a type) and depends only on Java and other value objects; ArchUnit checks this, so a class that needs a model is a model itself. Typed ids are value objects, so several models can share one, like `OfferingId`. Shared value objects live in `domain.shared.value`.
 - **Derived state is computed, never stored:** `CONSUMED`, `COMPLETED`, open credits, refund eligibility before cancellation, link visibility.
 - **Rules as constants in one place:** slot grid 30 min, minimum notice 24 h, link window 1 h (D-10, D-19).
-- Methods that depend on the current time take a `Clock` or an `Instant now`.
+- Methods that depend on the current time take a `Clock` or an `Instant now`. A local date, such as today, is taken in `BusinessTimeZone.ZONE` (`Europe/Zurich`), never in the clock's own zone: `LocalDate.ofInstant(clock.instant(), BusinessTimeZone.ZONE)`.
 
 ## Persistence
 
@@ -143,7 +143,7 @@ class BookConsultationAppointmentUseCase {
 - **Tables:** singular snake_case names. The user table is `app_user`, because `user` is reserved in PostgreSQL.
 - **Columns:** points in time are `timestamptz`, local times are `time`, dates are `date`, money is `numeric(10,2)` (currency is always CHF). Every table has `created_at` and `updated_at` (D-20).
 - **`updated_at`** is the time of the last change, and the database sets it: a `before update` trigger with the function `set_updated_at()` (`V4__set_updated_at.sql`) sets it to the transaction's `now()`, like `created_at`'s default. Entities map neither column. A new table adds the trigger in its create migration; `UpdatedAtTriggersTest` fails for a table without it.
-- **Writing with JPA:** the application sets the ids, so an adapter inserts a new row with `EntityManager.persist`; Spring Data's `save()` would merge it, with a select first. A changed row is written by changing its managed entity, loaded in the same transaction. Entities gain a constructor and setters for this, and still map only the columns the adapter uses. A list of child rows (an offering's packages) is written as a difference: the adapter loads the managed entities, deletes the ones the domain dropped, updates the ones it kept and persists the new ones; a kept row is never deleted and inserted again.
+- **Writing with JPA:** the application sets the ids, so an adapter inserts a new row with `EntityManager.persist`; Spring Data's `save()` would merge it, with a select first. A changed row is written by changing its managed entity, loaded in the same transaction. Entities gain a constructor and setters for this, and still map only the columns the adapter uses. A list of child rows (an offering's packages) is written as a difference: the adapter loads the managed entities, deletes the ones the domain dropped, updates the ones it kept and persists the new ones; a kept row is never deleted and inserted again. An expert's availability is replaced instead (`AvailabilityAdapter`): each of its rows is nothing but its key, so a kept one is the same row either way. Bulk JPQL `delete` statements run at once, then the new rows are persisted; deleting entities instead would fail, because Hibernate flushes inserts before deletes.
 - **Sorting text:** a name column the UI sorts by is declared `collate "und-x-icu"` (ICU root collation), so `order by` is alphabetical regardless of case and umlauts, and the same in dev, test and production; the database's default collation can sort byte-wise. Known gap: `app_user.name` lacks it, though `GET /api/poc/users` sorts by it; the next migration that touches `app_user` adds it ([task 01 of increment 02](../tasks/02-manage-consultation-offerings/01-poc-login.md#notes)).
 - **Purchase terms** are columns on `consultation_case` and `enrollment` (D-08). A run's schedule is stored in `run_day` and `run_time_slot`.
 - **Images:** an `image` table with the bytes (`bytea`) and the content type; checks keep the content type to JPEG, PNG and WebP and the size between 1 byte and 2 MB (D-21). The domain's `ImageType` detects the type from the file's first bytes, which the database doesn't check. An owner refers to its image (`offering.image_id`, unique), so an image belongs to one owner at most, and the image row is deleted after the owner stops referring to it.
@@ -240,7 +240,7 @@ ConsultationOfferingResponse publishConsultationOffering(@PathVariable UUID id) 
 | Level | What | Rule |
 |---|---|---|
 | Domain unit tests | every business rule (slots, deadlines, credits, refund eligibility, seats, lifecycle, link window) | extensive; plain JUnit; time is fixed via `Clock` |
-| REST integration tests | `@SpringBootTest` + `MockMvcTester` + Testcontainers Postgres | one happy-path test per route; `@IntegrationTest` also starts the server on a random port, for the few tests that need the real servlet container, such as the upload limit (`ImageUploadLimitTest`) |
+| REST integration tests | `@SpringBootTest` + `MockMvcTester` + Testcontainers Postgres | one happy-path test per route; `@IntegrationTest` also starts the server on a random port, for the few tests that need the real servlet container, such as the upload limit (`ImageUploadLimitTest`); its clock is a `TestClock` in Zurich, the system clock until a test sets an instant (`set(Instant)`), and reset to it after each test |
 | Authorization tests | role matrix over all routes (anonymous → 401, wrong role → 403); ownership with the two seed users per role (other's resource → 404); the admin case response has no notes; private notes never appear in customer responses | mandatory ([security](security.md#testing)) |
 | Concurrency tests | parallel requests on each locked race (offering status, expert slot, case credits, run seats) | one per race |
 | Use-case tests | only where the flow has logic worth isolating | optional |

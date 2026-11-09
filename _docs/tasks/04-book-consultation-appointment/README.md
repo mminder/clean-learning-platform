@@ -264,7 +264,7 @@ frontend/src
 01. A form, following [frontend.md](../../architecture/frontend.md#forms), with `AvailabilityRequest` as its values:
 
 - **Heading** "Availability", and "Customers can book you on the selected dates, within your daily time ranges (Zurich time)."
-- **Dates:** a month calendar (shadcn `calendar`, `mode="multiple"`, `timeZone="Europe/Zurich"`) behind a `Controller` on `dates`. Days before today (`todayInZurich()`) are disabled (spec decision 9); it opens on the current month.
+- **Dates:** a month calendar (shadcn `calendar`, `mode="multiple"`, `timeZone="Europe/Zurich"`) behind a `Controller` on `dates`. Days before today (`todayInZurich()`) are disabled (spec decision 9); it opens on the current month. Below it, the selected dates as text (`formatLocalDate`), "Selected: 17 Nov 2026, 18 Nov 2026", or "No dates selected.": the calendar shows one month, and this shows the dates of the others (01).
 - **Daily time ranges:** `useFieldArray` on `timeRanges`, one row per range with two time inputs (start, end) and **Remove**, and **Add time range** below. A new row starts empty. Field errors land on the row (`timeRanges.1.start`).
 - **Save** calls `mutateAsync`; "Saved" until the next change; `showSaveError` for a 400. After a save, the saved availability becomes the form's defaults.
 - Without availability: no date selected, no range, and the text "No time ranges yet. Add one so that customers can book you."

@@ -20,8 +20,9 @@ public final class SeedData {
     public static final UUID CAREER_COACHING_5_SESSIONS = UUID.fromString("00000000-0000-0000-0000-000000001012");
 
     /**
-     * The script that deletes every case (the seed has none), then every offering that isn't in the seed, with its
-     * packages, eligible experts and image. A test that buys or writes offerings runs it afterwards:
+     * The script that deletes every case and every availability (the seed has neither), then every offering that isn't
+     * in the seed, with its packages, eligible experts and image. A test that buys, saves availability or writes
+     * offerings runs it afterwards:
      * {@code @Sql(scripts = DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)}.
      */
     public static final String DELETE_TEST_DATA = "/com/cleanlearning/delete-test-data.sql";
