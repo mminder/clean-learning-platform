@@ -29,7 +29,7 @@ export function customerConsultationCaseKey(id: string) {
   return [...customerConsultationCasesKey, id]
 }
 
-/** The customer's own cases, the oldest purchase first (UC-05's landing page). */
+/** The customer's own cases, in the order of My purchases, each with its group (UC-05's landing page). */
 export function useCustomerConsultationCases() {
   return useQuery({
     queryKey: customerConsultationCasesKey,

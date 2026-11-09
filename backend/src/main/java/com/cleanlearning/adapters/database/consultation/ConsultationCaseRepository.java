@@ -37,14 +37,15 @@ interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, 
     Optional<CustomerConsultationCaseRow> findCustomerCase(UUID id, UUID customerId);
 
     /**
-     * The customer's cases with their offerings, in every status of the offering (UC-16), the oldest purchase first.
-     * Scoped to the customer in SQL (security.md).
+     * The customer's cases with their offerings, in every status of the offering (UC-16), and their assigned experts'
+     * display names, the oldest purchase first. Scoped to the customer in SQL (security.md).
      */
     @Query("""
             select new com.cleanlearning.adapters.database.consultation.row.CustomerConsultationCaseSummaryRow(
-                c.id, o.name, o.imageId, c.sessionCount, c.purchasedAt)
+                c.id, o.name, o.imageId, c.sessionCount, c.purchasedAt, p.displayName)
             from ConsultationCaseEntity c
             join OfferingEntity o on o.id = c.consultationOfferingId
+            left join ExpertProfileEntity p on p.userId = c.assignedExpertId
             where c.customerId = :customerId
             order by c.purchasedAt, c.id
             """)
@@ -82,6 +83,19 @@ interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, 
               and a.status = com.cleanlearning.domain.consultation.value.AppointmentStatus.BOOKED
             """)
     List<AppointmentEntity> findBookedAppointments(UUID consultationCaseId);
+
+    /**
+     * The {@code BOOKED} appointments of all the customer's cases, in any order; the adapter groups them by case and
+     * the domain sorts them. One query for the whole list. Scoped to the customer in SQL, through the case
+     * (security.md).
+     */
+    @Query("""
+            select a from AppointmentEntity a
+            join ConsultationCaseEntity c on c.id = a.consultationCaseId
+            where c.customerId = :customerId
+              and a.status = com.cleanlearning.domain.consultation.value.AppointmentStatus.BOOKED
+            """)
+    List<AppointmentEntity> findBookedAppointmentsOfCustomer(UUID customerId);
 
     /**
      * The {@code BOOKED} appointments of every case assigned to the expert, of any customer, that end after

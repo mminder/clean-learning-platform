@@ -1570,9 +1570,23 @@
       "CustomerConsultationCaseSummaryResponse" : {
         "type" : "object",
         "properties" : {
+          "expertDisplayName" : {
+            "type" : [ "string", "null" ]
+          },
+          "group" : {
+            "type" : "string",
+            "enum" : [ "UPCOMING", "NEEDS_BOOKING", "PAST" ]
+          },
           "id" : {
             "type" : "string",
             "format" : "uuid"
+          },
+          "nextAppointment" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CustomerAppointmentResponse"
+            }, {
+              "type" : "null"
+            } ]
           },
           "offeringImageId" : {
             "type" : [ "string", "null" ],
@@ -1594,7 +1608,7 @@
             "format" : "int32"
           }
         },
-        "required" : [ "id", "offeringName", "openCredits", "purchasedAt", "totalCredits" ]
+        "required" : [ "group", "id", "offeringName", "openCredits", "purchasedAt", "totalCredits" ]
       },
       "EligibleExpertResponse" : {
         "type" : "object",

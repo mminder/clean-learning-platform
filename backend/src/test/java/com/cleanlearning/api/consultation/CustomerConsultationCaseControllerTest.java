@@ -464,7 +464,7 @@ class CustomerConsultationCaseControllerTest {
 
     @Test
     @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
-    void listsTheCustomersCasesOldestFirst() throws Exception {
+    void listsTheCustomersCasesWithoutAppointmentsAsNeedsBookingOldestFirst() throws Exception {
         String first = bought(CAREER_COACHING_3_SESSIONS);
         String second = bought(purchase(SeedData.CAREER_COACHING, SeedData.CAREER_COACHING_5_SESSIONS, "700.00", 5));
 
@@ -480,7 +480,10 @@ class CustomerConsultationCaseControllerTest {
                     "offeringImageId": null,
                     "purchasedAt": "%s",
                     "openCredits": 3,
-                    "totalCredits": 3
+                    "totalCredits": 3,
+                    "expertDisplayName": null,
+                    "nextAppointment": null,
+                    "group": "NEEDS_BOOKING"
                   },
                   {
                     "id": "%s",
@@ -488,7 +491,10 @@ class CustomerConsultationCaseControllerTest {
                     "offeringImageId": null,
                     "purchasedAt": "%s",
                     "openCredits": 5,
-                    "totalCredits": 5
+                    "totalCredits": 5,
+                    "expertDisplayName": null,
+                    "nextAppointment": null,
+                    "group": "NEEDS_BOOKING"
                   }
                 ]
                 """.formatted(first, JsonPath.read(body, "$[0].purchasedAt"), second,

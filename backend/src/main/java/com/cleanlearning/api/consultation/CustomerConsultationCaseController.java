@@ -82,7 +82,7 @@ class CustomerConsultationCaseController {
         this.bookConsultationAppointment = bookConsultationAppointment;
     }
 
-    /** UC-05's landing page: the current user's own cases, the oldest purchase first. */
+    /** UC-05's landing page: the current user's own cases, in the order of "My purchases". */
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     List<CustomerConsultationCaseSummaryResponse> listCustomerConsultationCases(

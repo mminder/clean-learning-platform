@@ -30,8 +30,8 @@ import com.cleanlearning.domain.user.value.Role;
 import com.jayway.jsonpath.JsonPath;
 
 /**
- * UC-06 and UC-05's case detail: a customer books an appointment on their case, and sees it with the expert and the
- * credits. Tests save availability, buy and book through the API, and change only test offerings, never Career
+ * UC-06 and UC-05's case detail and landing page: a customer books an appointment on their case, and sees it with the
+ * expert and the credits, and the cases in their groups. Tests save availability, buy and book through the API, and change only test offerings, never Career
  * Coaching; {@link SeedData#DELETE_TEST_DATA} removes it all afterwards. "Now" is Mon 9 Nov 2026, 15:00 in Zurich, as
  * in spec 04, unless a test moves the clock. In November, Zurich is UTC+1: 10:00 in Zurich is 09:00Z.
  */
@@ -676,6 +676,112 @@ class ConsultationCaseBookingTest {
         assertThat(get(caseId, SeedData.CUSTOMER_1)).hasStatusOk().bodyJson().isLenientlyEqualTo("""
                 { "upcomingAppointments": [], "openCredits": 0, "canBook": false }
                 """);
+    }
+
+    private MvcTestResult list(UUID customer) {
+        return mockMvc.get().uri(PATH).with(LoggedIn.as(customer, Role.CUSTOMER)).exchange();
+    }
+
+    /**
+     * UC-05's landing page, spec 04 decision 6: a case with an upcoming appointment, one with open credits and nothing
+     * upcoming, and one whose three appointments are all past come as Upcoming, Needs booking and Past, in that order,
+     * whatever the order of the purchases.
+     */
+    @Test
+    void theListGroupsTheCasesAsUpcomingNeedsBookingAndPast() throws Exception {
+        available(SeedData.EXPERT_2, "09:00", "12:00", "2026-11-17", "2026-11-24");
+        String past = boughtCareerCoaching(SeedData.CUSTOMER_1);
+        String needsBooking = boughtCareerCoaching(SeedData.CUSTOMER_1);
+        String upcoming = boughtCareerCoaching(SeedData.CUSTOMER_1);
+        for (String start : List.of(NINE, TEN, ELEVEN)) {
+            assertThat(book(past, SeedData.EXPERT_2, start, SeedData.CUSTOMER_1)).hasStatus(HttpStatus.CREATED);
+        }
+        MvcTestResult booked = book(upcoming, SeedData.EXPERT_2, "2026-11-24T09:00:00Z", SeedData.CUSTOMER_1);
+        assertThat(booked).hasStatus(HttpStatus.CREATED);
+        String appointmentId = JsonPath.read(booked.getResponse().getContentAsString(), "$.id");
+
+        // Wed 18 Nov 2026, 10:00 in Zurich: the first case's three appointments have ended
+        clock.set(Instant.parse("2026-11-18T09:00:00Z"));
+
+        assertThat(list(SeedData.CUSTOMER_1)).hasStatusOk().bodyJson().isLenientlyEqualTo("""
+                [
+                  {
+                    "id": "%s",
+                    "group": "UPCOMING",
+                    "expertDisplayName": "Expert 2",
+                    "nextAppointment": {
+                      "id": "%s", "start": "2026-11-24T09:00:00Z", "end": "2026-11-24T10:00:00Z", "status": "BOOKED"
+                    },
+                    "openCredits": 2,
+                    "totalCredits": 3
+                  },
+                  {
+                    "id": "%s",
+                    "group": "NEEDS_BOOKING",
+                    "expertDisplayName": null,
+                    "nextAppointment": null,
+                    "openCredits": 3,
+                    "totalCredits": 3
+                  },
+                  {
+                    "id": "%s",
+                    "group": "PAST",
+                    "expertDisplayName": "Expert 2",
+                    "nextAppointment": null,
+                    "openCredits": 0,
+                    "totalCredits": 3
+                  }
+                ]
+                """.formatted(upcoming, appointmentId, needsBooking, past));
+        // A lenient JSON comparison ignores the order of an array's elements
+        assertThat(list(SeedData.CUSTOMER_1)).hasStatusOk().bodyJson().extractingPath("$[*].id").asList()
+                .containsExactly(upcoming, needsBooking, past);
+    }
+
+    /** Spec 04 decision 21: a running appointment keeps its case under Upcoming, and when it ends, the credit stays used. */
+    @Test
+    void aRunningAppointmentKeepsItsCaseUpcomingUntilItEnds() throws Exception {
+        expert2AvailableOnTheSeventeenth();
+        String caseId = boughtCareerCoaching(SeedData.CUSTOMER_1);
+        MvcTestResult booked = book(caseId, SeedData.EXPERT_2, TEN, SeedData.CUSTOMER_1);
+        assertThat(booked).hasStatus(HttpStatus.CREATED);
+        String appointmentId = JsonPath.read(booked.getResponse().getContentAsString(), "$.id");
+
+        // 10:30 in Zurich: it runs
+        clock.set(Instant.parse("2026-11-17T09:30:00Z"));
+        assertThat(list(SeedData.CUSTOMER_1)).hasStatusOk().bodyJson().isLenientlyEqualTo("""
+                [{
+                  "id": "%s",
+                  "group": "UPCOMING",
+                  "nextAppointment": {
+                    "id": "%s", "start": "2026-11-17T09:00:00Z", "end": "2026-11-17T10:00:00Z", "status": "CONSUMED"
+                  },
+                  "openCredits": 2
+                }]
+                """.formatted(caseId, appointmentId));
+
+        // 11:00: it has ended, two credits are open
+        clock.set(Instant.parse(ELEVEN));
+        assertThat(list(SeedData.CUSTOMER_1)).hasStatusOk().bodyJson().isLenientlyEqualTo("""
+                [{ "id": "%s", "group": "NEEDS_BOOKING", "nextAppointment": null, "openCredits": 2 }]
+                """.formatted(caseId));
+    }
+
+    @Test
+    void theListShowsNoOtherCustomersCasesOrAppointments() throws Exception {
+        expert2AvailableOnTheSeventeenth();
+        String ofCustomer1 = boughtCareerCoaching(SeedData.CUSTOMER_1);
+        assertThat(book(ofCustomer1, SeedData.EXPERT_2, TEN, SeedData.CUSTOMER_1)).hasStatus(HttpStatus.CREATED);
+
+        assertThat(list(SeedData.CUSTOMER_2)).hasStatusOk().bodyJson().isStrictlyEqualTo("[]");
+
+        String ofCustomer2 = boughtCareerCoaching(SeedData.CUSTOMER_2);
+        assertThat(list(SeedData.CUSTOMER_2)).hasStatusOk().bodyJson().isLenientlyEqualTo("""
+                [{ "id": "%s", "group": "NEEDS_BOOKING", "expertDisplayName": null, "nextAppointment": null,
+                   "openCredits": 3 }]
+                """.formatted(ofCustomer2));
+        assertThat(list(SeedData.CUSTOMER_1)).hasStatusOk()
+                .bodyJson().extractingPath("$[*].id").asList().containsExactly(ofCustomer1);
     }
 
     /** Agile Coaching's id and package ids, as the admin's API answered them. */

@@ -6,8 +6,9 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A case on the list, with its offering's name and image, read live. The image id is {@code null} without an image.
+ * A case on the list, with its offering's name and image, read live, and its assigned expert's display name. The image
+ * id is {@code null} without an image; the expert's name is {@code null} until the first booking.
  */
 public record CustomerConsultationCaseSummaryRow(UUID id, String offeringName, @Nullable UUID offeringImageId,
-        int sessionCount, Instant purchasedAt) {
+        int sessionCount, Instant purchasedAt, @Nullable String expertDisplayName) {
 }

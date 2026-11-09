@@ -238,7 +238,7 @@ indexes                  (consultation_case_id)
 - **`CustomerConsultationCase`** (03) gains `Optional<AssignedExpert> expert`, `List<Appointment> appointments` and `Instant asOf`. `openCredits()` subtracts every booked appointment, consumed or not. `canBook()` is `openCredits() > 0`; UC-08 adds "and active". `upcomingAppointments()` are the ones that haven't ended, soonest first, a running one among them as `CONSUMED`; `pastAppointments()` the ones that have ended, newest first.
 - **`CustomerConsultationCaseSummary`** (04) gains `Optional<DisplayName> expertDisplayName`, the appointments and `asOf`. Its `group()`: `UPCOMING` with an upcoming appointment, one that hasn't ended (spec decision 21); otherwise `NEEDS_BOOKING` with an open credit; otherwise `PAST`, a completed case ([UC-05](../../use-cases/uc-05-view-my-purchases.md), [D-17](../../decisions.md#views-and-calls)). `MY_PURCHASES_ORDER` sorts by group in that order, then Upcoming by the next appointment's start (the soonest upcoming one), Needs booking by purchase time, Past by the last appointment's start, newest first, then by id. `ListCustomerConsultationCasesUseCase` sorts with it.
 - **The appointments' rules live once**: the summary and the detail share them (through `Appointment`, or one small model both use), and the review checks there's no copy. They're on `Appointment` (03): `statusAt`, `isUpcomingAt`, `at`, the static `upcoming` and `past`, and the static `openCredits(sessionCount, bookedAppointments)`, which `CaseForBooking` counts with, too.
-- **The adapter loads the appointments** of the case, or of all the customer's cases with one query, and groups them in Java; no rule in SQL beyond `status = 'BOOKED'`.
+- **The adapter loads the appointments** of the case, or of all the customer's cases with one query, and groups them in Java; no rule in SQL beyond `status = 'BOOKED'`. The list's adapter query reads the expert's display name with the cases (`left join` of the expert profile) and `findBookedAppointmentsOfCustomer` reads the appointments, through the case's `customer_id`.
 
 ## Frontend
 
@@ -313,7 +313,7 @@ frontend/src
 
 ### My purchases
 
-04. `MyPurchasesPage` shows the groups the API returns, in its order: **Upcoming**, **Needs booking**, and **Past** collapsed (`<details>` with the summary "Past (2)"). An empty group isn't shown; without any case, the empty state stays. `ConsultationCaseCard` shows the expert's name or "Not assigned yet", "Next: 17 Nov 2026, 10:00–11:00" with an upcoming appointment, or "Now: …" while it runs, the credits and the purchase date.
+04. `MyPurchasesPage` shows the groups the API returns, in its order: **Upcoming**, **Needs booking**, and **Past** collapsed (`<details>` with the summary "Past (2)"). An empty group isn't shown; without any case, the empty state stays. `ConsultationCaseCard` shows the expert's name or "Not assigned yet", "Next: 17 Nov 2026, 10:00–11:00" with an upcoming appointment, or "Now: …" while it runs, the credits and the purchase date. "Times are in Zurich time." sits under **Upcoming**, the only group with a time on its cards (a Past case shows none).
 
 ### Queries
 

@@ -444,8 +444,12 @@ export interface components {
             upcomingAppointments: components["schemas"]["CustomerAppointmentResponse"][];
         };
         CustomerConsultationCaseSummaryResponse: {
+            expertDisplayName?: string | null;
+            /** @enum {string} */
+            group: "UPCOMING" | "NEEDS_BOOKING" | "PAST";
             /** Format: uuid */
             id: string;
+            nextAppointment?: components["schemas"]["CustomerAppointmentResponse"] | null;
             /** Format: uuid */
             offeringImageId?: string | null;
             offeringName: string;

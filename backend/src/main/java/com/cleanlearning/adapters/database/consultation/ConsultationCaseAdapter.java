@@ -2,9 +2,11 @@ package com.cleanlearning.adapters.database.consultation;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
@@ -112,10 +114,20 @@ class ConsultationCaseAdapter implements LockConsultationOfferingForPurchasePort
                 .map(row -> toCustomerConsultationCase(row, repository.findBookedAppointments(row.id()), asOf));
     }
 
+    /**
+     * The customer's cases with one query, and the appointments of all of them with one more, grouped by case here: a
+     * case without appointments gets none.
+     */
     @Override
-    public List<CustomerConsultationCaseSummary> loadAll(UserId customerId) {
+    public List<CustomerConsultationCaseSummary> loadAll(UserId customerId, Instant asOf) {
+        Map<UUID, List<Appointment>> appointmentsByCase = repository
+                .findBookedAppointmentsOfCustomer(customerId.value()).stream()
+                .collect(Collectors.groupingBy(AppointmentEntity::getConsultationCaseId,
+                        Collectors.mapping(ConsultationCaseAdapter::toAppointment, Collectors.toList())));
         return repository.findCustomerCases(customerId.value()).stream()
-                .map(ConsultationCaseAdapter::toCustomerConsultationCaseSummary).toList();
+                .map(row -> toCustomerConsultationCaseSummary(row,
+                        appointmentsByCase.getOrDefault(row.id(), List.of()), asOf))
+                .toList();
     }
 
     @Override
@@ -204,9 +216,10 @@ class ConsultationCaseAdapter implements LockConsultationOfferingForPurchasePort
     }
 
     private static CustomerConsultationCaseSummary toCustomerConsultationCaseSummary(
-            CustomerConsultationCaseSummaryRow row) {
+            CustomerConsultationCaseSummaryRow row, List<Appointment> appointments, Instant asOf) {
         return new CustomerConsultationCaseSummary(new ConsultationCaseId(row.id()),
                 new OfferingName(row.offeringName()), Optional.ofNullable(row.offeringImageId()).map(ImageId::new),
-                new SessionCount(row.sessionCount()), row.purchasedAt());
+                new SessionCount(row.sessionCount()), row.purchasedAt(),
+                Optional.ofNullable(row.expertDisplayName()).map(DisplayName::new), appointments, asOf);
     }
 }

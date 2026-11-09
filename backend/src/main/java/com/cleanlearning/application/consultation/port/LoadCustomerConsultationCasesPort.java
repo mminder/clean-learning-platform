@@ -1,5 +1,6 @@
 package com.cleanlearning.application.consultation.port;
 
+import java.time.Instant;
 import java.util.List;
 
 import com.cleanlearning.domain.consultation.CustomerConsultationCaseSummary;
@@ -8,8 +9,10 @@ import com.cleanlearning.domain.user.value.UserId;
 public interface LoadCustomerConsultationCasesPort {
 
     /**
-     * The customer's own cases, whatever their offerings' status, by purchase time and then id. The query is scoped to
-     * the customer, so another customer's case never shows (security.md).
+     * The customer's own cases at {@code asOf}, whatever their offerings' status, by purchase time and then id, each
+     * with its assigned expert's name and its booked appointments. The queries are scoped to the customer, so another
+     * customer's case or appointment never shows (security.md). The adapter only passes {@code asOf} into the domain
+     * records, which derive the states from it (D-11).
      */
-    List<CustomerConsultationCaseSummary> loadAll(UserId customerId);
+    List<CustomerConsultationCaseSummary> loadAll(UserId customerId, Instant asOf);
 }
