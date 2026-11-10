@@ -20,7 +20,7 @@
 frontend/src
 ├─ app/                 router, providers (QueryClient), layout, header navigation
 ├─ api/                 generated schema types + configured openapi-fetch client
-├─ components/          shared components, e.g. ImagePlaceholder, OfferingImage
+├─ components/          shared components, e.g. ImagePlaceholder, OfferingImage, Field
 │  └─ ui/               shadcn/ui components
 ├─ lib/                 date formatting (Zurich), money formatting, error mapping
 └─ features/            mirrors the backend features
@@ -58,7 +58,7 @@ A shadcn/ui component is added when a page first uses it: run `npx shadcn@latest
 ## Navigation and auth
 
 - On start, the SPA calls `GET /api/me`. A 401 means visitor.
-- The header shows **Shop** plus one section per role the user holds (union navigation, D-03).
+- The header shows **Shop** plus one section per role the user holds (union navigation, D-03), in this order: **My purchases** (`CUSTOMER`), **Availability** (`EXPERT`), **Consultations** (`ADMIN`).
 - After login, the SPA redirects to the landing page by priority Expert (`/expert/cases`) → Admin (`/admin/cases`) → Customer (`/my`), or back to the page where login was started (e.g. from **Buy**).
 - Route guards only hide pages. **The backend is the authority**. `RequireRole` (`app/`) wraps a section's routes: a visitor goes to `/login?redirect=<path>`, a user without the role sees the not-found page.
 - A 401 from any query or mutation other than `useMe` refetches `['me']` (the `QueryClient` in `app/queryClient.ts`), so `RequireRole` then sends the user to the login.
@@ -79,14 +79,21 @@ A shadcn/ui component is added when a page first uses it: run `npx shadcn@latest
 ## Dates, times and money
 
 - All formatting goes through `lib/` helpers, which always use `Europe/Zurich` and show a "(Zurich time)" hint where times appear.
-- `lib/date.ts` is the one place that formats a point in time from the API (an instant, ISO-8601 with offset), in `Europe/Zurich` whatever the browser's time zone (`TZDate` from `@date-fns/tz`, `format` from `date-fns`):
+- `lib/date.ts` is the one place that turns the API's dates and times into text and back: a point in time (an instant, ISO-8601 with offset) and a local date (`yyyy-MM-dd`, a Zurich calendar date), in `Europe/Zurich` whatever the browser's time zone (`TZDate` from `@date-fns/tz`, `format` from `date-fns`):
 
   | Function | Example |
   |---|---|
   | `formatDate(instant)` | 9 Nov 2026 |
   | `formatDateTime(instant)` | 9 Nov 2026, 15:03 |
+  | `formatTime(instant)` | 10:00 |
+  | `localDateOf(instant)` | `2026-11-17T23:30:00Z` → 2026-11-18, the Zurich date of an instant (the booking dialog groups the slots by it) |
+  | `formatLocalDate(localDate)` | `2026-11-17` → 17 Nov 2026 |
+  | `todayInZurich()` | 2026-11-09 |
+  | `toCalendarDay(localDate)`, `fromCalendarDay(date)` | `2026-11-17` ↔ the calendar's `Date` for that day in Zurich |
 
-  A page that shows a time adds "(Zurich time)" once, next to it, as the case detail does after its purchase time.
+  A page that shows a time adds "(Zurich time)" once, next to it, as the case detail does after its purchase time and next to its appointments' headings. A slot or an appointment shows as `17 Nov 2026, 10:00–11:00` (`formatDateAndTimes` in `features/consultation/appointment-times.ts`, from `formatDate` and `formatTime`).
+- **The calendar** (shadcn `calendar`, `react-day-picker`) gets `timeZone="Europe/Zurich"` and weeks that start on Monday (`weekStartsOn={1}`, the wrapper's default; react-day-picker's built-in locale is `en-US`, whose weeks start on Sunday), so its days, today and its disabled days are Zurich's whatever the browser's time zone. Its days are `Date`s at the start of the day in Zurich: `toCalendarDay` turns the API's local dates into them, and `fromCalendarDay` turns a selected day back into a local date (`AvailabilityForm`).
+- Local times from the API (`09:00:00`) go into a time input cut to `HH:mm`; the input sends them as `09:00`, which the API reads as the same time.
 - The frontend never decides a business rule (deadline passed, seats left, link window). It shows what the API returns, for example `canCancel`, `refundIfCancelledNow` and `teamsLink`.
 - Money is formatted as `CHF 1,800.00` from the API's `{ amount, currency }`.
 
@@ -95,7 +102,7 @@ A shadcn/ui component is added when a page first uses it: run `npx shadcn@latest
 UC-16's `ConsultationOfferingForm` is the pattern ([increment 02](../tasks/02-manage-consultation-offerings/README.md#forms-and-mutations)):
 
 - **React Hook Form**, with the generated `*Request` type as the form's values. One form serves the new and the edit page.
-- **No rules in the form.** Inputs have their types (text, number), but no `required` or `min`: the backend's 400 is the one source of the rules, and its messages show next to the fields.
+- **No rules in the form.** Inputs have their types (text, number, time), but no `required` or `min`: the backend's 400 is the one source of the rules, and its messages show next to the fields. `Field` (`components/`) puts a label, its control and the backend's message for it together.
 - **Number inputs** use `valueAsNumber`. An empty one is `NaN`, which JSON sends as `null`, so the backend answers "must not be null" next to the field. A new form starts with `NaN` for an empty number field.
 - **Saving** calls the mutation's `mutateAsync`. When it fails, `showSaveError` (`lib/problem.ts`) puts a 400's field errors on the fields with `setError`, or returns the message to show above the form. After a save, the saved offering's values become the form's defaults (`reset(toRequest(saved))`), and "Saved" shows until the next change. The saved offering, not the submitted values, because it carries the ids the server gave to new rows.
 - **Lists of rows** (the packages) use `useFieldArray`: one row per entry, **Remove** on each, **Add package** below. A row's server `id` stays in the form's values, unseen, so a save names the rows it keeps; `fields[i].id` is only React's key. A new row starts empty (`NaN` for a number, `''` for a text), not at 0. Field errors land on the row (`packages.1.price`).

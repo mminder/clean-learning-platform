@@ -22,12 +22,11 @@ PoC (profile poc)                              MVP (OIDC)
   - The token isn't deferred: any response to a request without the cookie sets it, a 401 included. The SPA's first call, `GET /api/me`, gets it before the first mutating request.
   - A login replaces the token, and a logout deletes the cookie; the next response sets a new one. The SPA reads the cookie on each request ([frontend](frontend.md#navigation-and-auth)).
 - **`GET /api/me`** returns `{ id, name, email, roles }`, or 401 with an empty body. Name, email and roles are read fresh from the database. The SPA uses it identically in the PoC and the MVP.
-- **Logout:** Spring Security's logout filter at `POST /api/logout` (it needs the CSRF token): it invalidates the session, deletes the `JSESSIONID` and `XSRF-TOKEN` cookies and answers 204. It runs before authorization, so a visitor's logout is a harmless 204. `/logout` is nothing special. `openapi.json` lists the route (`OpenApiConfig`), so the SPA calls it through the generated client. In the MVP it also performs OIDC RP-initiated logout.
+- **Logout:** Spring Security's logout filter at `POST /api/logout` (it needs the CSRF token): it invalidates the session, deletes the `JSESSIONID` and `XSRF-TOKEN` cookies and answers 204. It's a filter, not a controller, so a visitor's logout is a harmless 204, too. `/logout` is nothing special. `openapi.json` lists the route (`OpenApiConfig`), so the SPA calls it through the generated client. In the MVP it also performs OIDC RP-initiated logout.
 - **PoC login** (`/api/poc/**`) is registered only in the `poc` profile, so it doesn't exist in production. `POST /api/poc/login` does what Spring Security's own logins do: a new session id (session fixation) and a new CSRF token, through the `SessionAuthenticationStrategy` bean, then it saves the authentication through the `SecurityContextRepository` bean, the one the filter chain reads. An OIDC login (MVP) ends in the same session.
 - **Known gaps (hardening, by MVP hosting at the latest):**
   - The `XSRF-TOKEN` cookie has no `SameSite` attribute.
   - The public, cacheable `GET /api/images/{id}` response can carry `Set-Cookie: XSRF-TOKEN` on a visitor's first request. Before a CDN or shared cache sits in front, keep the CSRF cookie off `/api/images/**` or keep the cache from storing `Set-Cookie` ([task 07 of increment 02](../tasks/02-manage-consultation-offerings/07-offering-image.md#notes)).
-  - `HEAD /api/images/{id}` answers 401: the public matcher allows only `GET`.
 - **IdP:** Keycloak locally (docker-compose, realm import). The production IdP is open; only standard OIDC is used, so switching needs only configuration.
 
 ### Just-in-time provisioning (MVP)
@@ -42,21 +41,35 @@ Roles are always read from our database, never from token claims (D-04).
 
 ### Roles by route prefix
 
-Configured declaratively in the Spring Security config (D-26).
+Each controller says who may call its routes with `@PreAuthorize`, once at class level (D-26); `@EnableMethodSecurity` on `SecurityConfig` turns it on. Under the three role prefixes, `SecurityConfig`'s filter chain checks the same role first ([how the check works](#how-the-check-works)). The prefix names the role, so the URL, the filter chain and the annotation say the same:
 
-| Prefix | Access |
-|---|---|
-| `/api/shop/**`, `GET /api/images/**` | public |
-| `POST /api/logout` | public: the logout filter answers before authorization, with 204 for a visitor, too |
-| `/api/me`, every other `/api/**` | authenticated |
-| `/api/customer/**` | `CUSTOMER` |
-| `/api/expert/**` | `EXPERT` |
-| `/api/admin/**` | `ADMIN` |
-| `/api/poc/**` | public, `poc` profile only |
-| `/v3/api-docs/**` (the OpenAPI document, [D-29](../decisions.md#architecture)) | public, in every profile including production |
-| everything outside `/api` (the SPA) | public |
+| Prefix | Access | Filter chain | `@PreAuthorize` |
+|---|---|---|---|
+| `/api/shop/**`, `/api/images/**` | public | `permitAll()` | `permitAll()` |
+| `/api/me` | authenticated | `permitAll()` | `isAuthenticated()` |
+| `/api/customer/**` | `CUSTOMER` | `hasRole("CUSTOMER")` | `hasRole('CUSTOMER')` |
+| `/api/expert/**` | `EXPERT` | `hasRole("EXPERT")` | `hasRole('EXPERT')` |
+| `/api/admin/**` | `ADMIN` | `hasRole("ADMIN")` | `hasRole('ADMIN')` |
+| `/api/poc/**` | public, `poc` profile only | `permitAll()` | `permitAll()` |
+| `POST /api/logout` | public: a filter, not a controller, it answers 204 to a visitor, too | – | – |
+| `/v3/api-docs/**` (the OpenAPI document, [D-29](../decisions.md#architecture)) | public, in every profile including production: springdoc's controller, not ours | `permitAll()` | – |
+| everything outside `/api` (the SPA) | public | `permitAll()` | – |
 
-A user with several roles can call every prefix their roles allow. An anonymous caller gets 401 without a redirect, login page or Basic challenge; a missing role gets 403.
+A route that only one role may call lives under that role's prefix, and a route under a prefix needs its role. A user with several roles can call every prefix their roles allow. An anonymous caller gets 401 without a redirect, login page or Basic challenge; a missing role gets 403.
+
+### How the check works
+
+Two layers, which say the same under a role prefix:
+
+- **Spring Security checks `@PreAuthorize` when the controller method is called**, through a proxy of the controller. It's the rule per controller, on the code it guards, and a forgotten one fails the build (below). A denial throws `AuthorizationDeniedException` through Spring MVC to the security filter, which answers 401 to a visitor and 403 to a user without the role. So `ApiExceptionHandler` must never catch every exception (`Exception`, `RuntimeException`, `AccessDeniedException`): it would answer the denial itself, with a 500.
+- **The filter chain checks the role per prefix first** (`SecurityConfig`): `/api/customer/**` needs `CUSTOMER`, `/api/expert/**` `EXPERT` and `/api/admin/**` `ADMIN`; everything else passes on to the annotations. *Why:* the annotation is checked only after Spring MVC has read and validated the request, as it resolves the method's arguments. Without the filter chain's check, a caller without the role could make the server parse and validate any body, a 2 MB image upload included, before the 401 or 403; a visitor needs only the CSRF token, which any `GET` gives. The filter chain turns a caller without the role away before Spring MVC sees the request. It also keeps the session, CSRF, logout and the answers to a denial.
+- **What a caller sees.** Under a role prefix, a caller without the role gets 401 or 403 for every path and body, a route that doesn't exist included; a caller with the role gets the 400 for an invalid body and the 404 for an unknown route. Outside the role prefixes the annotation is the only check, so a route that doesn't exist is a 404 for everyone. Those routes are public, except `GET /api/me`, which has no body. The 404 reveals nothing: `/v3/api-docs` documents every route and body anyway ([D-29](../decisions.md#architecture)). A `GET` route answers `HEAD`, too, with the same checks.
+- **Deny by default, at build time.** `AuthorizationRulesTest` (ArchUnit) fails the build for:
+  - a handler method without `@PreAuthorize`, on itself or on its class;
+  - a final controller, or a final, private or static handler method: the proxy can't intercept it, so its check would be skipped silently;
+  - `@PreAuthorize` anywhere but on a controller or one of its handler methods;
+  - `@Secured` and JSR-250's annotations, which aren't enabled and would be ignored, and `@PostAuthorize`, `@PreFilter` and `@PostFilter`, which check after loading (ownership is the scoped queries' job, below);
+  - an `@ExceptionHandler` that would catch the denial.
 
 ### Ownership in use cases
 
@@ -83,7 +96,11 @@ Controllers pass `CurrentUser` (id, roles) into the use case. Ports load data **
 
 Authorization is tested through REST integration tests against Testcontainers Postgres, because the real filtering happens in SQL (D-26).
 
-1. **Role matrix:** a parameterized test over every route. Anonymous gets 401 (except public routes), and a user without the required role gets 403.
+1. **Role matrix** (`RoleMatrixTest`): a parameterized test over every route. Anonymous gets 401 (except public routes), and a user without the required role gets 403. It proves what the filter chain and the annotations say:
+   - **Route coverage:** a test walks Spring MVC's handler mappings and fails, naming the route, for each HTTP method and path of our controllers that has no row.
+   - **Prefixes:** a row under `/api/customer`, `/api/expert` or `/api/admin` needs that role, and a row that needs a role is under its prefix.
+   - **The filter chain first:** a path without a route under each role prefix answers 401 or 403 to a caller without the role, not 404: the filter chain turns them away before Spring MVC sees the request.
+   - **Requests that reach the annotation:** `@PreAuthorize` runs after validation, so a row with a body sends one that passes Bean Validation, and an allowed caller reaches the annotation, too. The use case still refuses it, with an unknown id (404) or a value the domain rejects (400), so an allowed caller changes no data.
 2. **Ownership:** using the seed users (two per role):
    - Customer 2 on Customer 1's case or enrollment → 404;
    - Expert 2 on Expert 1's case or run → 404;
@@ -92,6 +109,7 @@ Authorization is tested through REST integration tests against Testcontainers Po
    - the customer's Teams link is absent outside the link window (fixed `Clock`).
 3. **Public images:** `GET /api/images/{id}` passes security without a login, and its `Cache-Control` stays the controller's (`ImageControllerTest`).
 4. **Profile guard:** `/api/poc/**` returns 404 when the `poc` profile isn't active (`PocLoginProfileTest`, a web slice without a database).
+5. **Authorization rules:** `AuthorizationRulesTest`, the ArchUnit rules of [how the check works](#how-the-check-works).
 
 Test helpers: `LoggedIn.as(userId, roles…)` makes a request with the authentication a PoC login keeps in the session. `Csrf.token()` sends a CSRF token the way the SPA does, cookie and header. Spring Security Test's `csrf()` isn't used: it swaps the CSRF filter's token repository for a session-based one in the Spring context all integration tests share.
 

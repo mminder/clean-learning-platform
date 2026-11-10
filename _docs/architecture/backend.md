@@ -31,7 +31,7 @@ com.cleanlearning
 │  ├─ user
 │  └─ image
 ├─ domain                     models + value objects (in value/), no framework imports
-│  ├─ shared                  NotFoundException; value: Money, TimeRange, ...
+│  ├─ shared                  NotFoundException, BusinessTimeZone; value: Money, ...
 │  ├─ consultation            e.g. SlotFinder, CaseCredits, CaseCancellation
 │  ├─ training
 │  ├─ offering
@@ -56,7 +56,7 @@ com.cleanlearning
 | `training` | enrollments, enrollment cancellation, expert training views | UC-04, UC-05 (enrollments), UC-09, UC-12 |
 | `availability` | expert availability | UC-13 |
 | `image` | image upload and serving | (D-21) |
-| `shared` | `NotFoundException`, and the value objects several features use, in `domain.shared.value` (domain only) | — |
+| `shared` | `NotFoundException`, `BusinessTimeZone`, and the value objects several features use, in `domain.shared.value` (domain only) | — |
 
 UC-10 (join call) has no feature of its own. Link visibility is part of the case and enrollment detail queries, using a shared `LinkWindow` domain rule.
 
@@ -97,27 +97,31 @@ Features aren't isolated from each other (D-23). A use case may use domain class
 
 ```java
 @Service
-class BookConsultationAppointmentUseCase {
-    // ports injected via constructor
+public class BookConsultationAppointmentUseCase {
+    // ports and the Clock injected via constructor
     @Transactional
-    BookedAppointment invoke(CurrentUser user, BookAppointmentCommand cmd) {
-        var caseForBooking = loadCase.lockForCustomer(cmd.caseId(), user.id()); // 404 if not theirs
-        var expertId = caseForBooking.expertOr(cmd.expertId());
-        lockExpert.lock(expertId);
-        var busy = loadBusyTimes.forExpert(expertId, ...);
-        var availability = loadAvailability.forExpert(expertId, ...);
-        var appointment = caseForBooking.book(cmd.start(), availability, busy, clock); // domain decides
-        saveAppointment.save(appointment);
-        return BookedAppointment.from(appointment);
+    public CustomerAppointment invoke(CurrentUser user, BookConsultationAppointmentCommand command) {
+        CaseForBooking consultationCase = lockCase.lock(command.consultationCaseId(), user.id()) // scoped: 404 if not theirs
+                .orElseThrow(() -> new NotFoundException(...));
+        consultationCase.requireOpenCredit();
+        UserId expertId = consultationCase.expertFor(command.expertId());
+        lockExpert.lock(expertId);                                       // D-27: case → expert
+        Instant now = clock.instant();
+        List<BusyTime> busyTimes = Stream.concat(loadBusyTimes.load(expertId, now).stream(),  // the expert's busy time
+                loadCustomerBusyTimes.loadCustomerBusyTimes(user.id(), now).stream()).toList(); // and the customer's
+        SlotFinder slotFinder = new SlotFinder(loadAvailability.load(expertId, today), busyTimes);
+        Booking booking = consultationCase.book(expertId, command.start(), slotFinder, now); // the domain decides
+        saveBooking.save(booking);
+        return booking.appointment().at(now);
     }
 }
 ```
 
-*(Illustrative only. It shows the shape, not the final API.)*
+*(Shortened from the real use case: lock, decide, write, answer.)*
 
 ## Ports
 
-- Outgoing ports are interfaces named `<Purpose>Port` (e.g. `LoadCaseForBookingPort`, `LoadExpertBusyTimesPort`, `SaveAppointmentPort`), living in `application.<feature>.port`, below the use cases that need them (D-37). A port's signature uses domain types, never a command; ArchUnit checks that, and that only use cases and adapters use ports. A use case may use another feature's port, such as `LoadExpertsPort` in `application.user.port` (D-23).
+- Outgoing ports are interfaces named `<Purpose>Port` (e.g. `LoadCaseForBookingPort`, `LoadBusyTimesPort`, `SaveBookingPort`), living in `application.<feature>.port`, below the use cases that need them (D-37). A port's signature uses domain types, never a command; ArchUnit checks that, and that only use cases and adapters use ports. A use case may use another feature's port, such as `LoadExpertsPort` in `application.user.port` (D-23).
 - Ports are **narrow and use-case specific**. They return exactly the domain object that use case needs. Two use cases share a port only if they need the identical thing.
 - Ports are implemented in `adapters.database.<feature>`. One adapter class may implement several ports.
 - `ImageStorePort` (`application.image.port`: `save`, `load`, `delete`) is the port for image bytes (D-21). Its implementation, `ImageAdapter`, is a Postgres table, replaceable by S3 later. An image is never changed: a use case that replaces one saves the new image, points its owner at it and deletes the old one, in one transaction (`UploadConsultationOfferingImageUseCase`).
@@ -129,9 +133,9 @@ class BookConsultationAppointmentUseCase {
 - **When a value is a value object** (D-36): when it has a rule beyond not null, a unit or behavior, or could be mixed up with another value of the same type. Other values stay Java types, like an offering's description and an expert's bio (`String`s that may be empty). A column that holds a value object repeats its rule as a check constraint.
 - **Use-case-specific domain objects** are encouraged, e.g. `CaseForBooking` and `CaseForCancellation` instead of one big `Case`.
 - **Models and value objects.** In `domain.<feature>`, the models a use case works with sit at the top, and the value objects in `value`. A value object describes one thing by its value (an amount, a duration, an id, a type) and depends only on Java and other value objects; ArchUnit checks this, so a class that needs a model is a model itself. Typed ids are value objects, so several models can share one, like `OfferingId`. Shared value objects live in `domain.shared.value`.
-- **Derived state is computed, never stored:** `CONSUMED`, `COMPLETED`, open credits, refund eligibility before cancellation, link visibility.
+- **Derived state is computed, never stored:** `CONSUMED`, `COMPLETED`, open credits, refund eligibility before cancellation, link visibility. A column that holds a status maps an enum of the stored statuses only in `adapters.database.<feature>.entity` (`StoredAppointmentStatus`: `BOOKED`), not the domain's, which also has the derived ones.
 - **Rules as constants in one place:** slot grid 30 min, minimum notice 24 h, link window 1 h (D-10, D-19).
-- Methods that depend on the current time take a `Clock` or an `Instant now`.
+- Methods that depend on the current time take a `Clock` or an `Instant now`. A local date, such as today, is taken in `BusinessTimeZone.ZONE` (`Europe/Zurich`), never in the clock's own zone: `LocalDate.ofInstant(clock.instant(), BusinessTimeZone.ZONE)`.
 
 ## Persistence
 
@@ -143,7 +147,7 @@ class BookConsultationAppointmentUseCase {
 - **Tables:** singular snake_case names. The user table is `app_user`, because `user` is reserved in PostgreSQL.
 - **Columns:** points in time are `timestamptz`, local times are `time`, dates are `date`, money is `numeric(10,2)` (currency is always CHF). Every table has `created_at` and `updated_at` (D-20).
 - **`updated_at`** is the time of the last change, and the database sets it: a `before update` trigger with the function `set_updated_at()` (`V4__set_updated_at.sql`) sets it to the transaction's `now()`, like `created_at`'s default. Entities map neither column. A new table adds the trigger in its create migration; `UpdatedAtTriggersTest` fails for a table without it.
-- **Writing with JPA:** the application sets the ids, so an adapter inserts a new row with `EntityManager.persist`; Spring Data's `save()` would merge it, with a select first. A changed row is written by changing its managed entity, loaded in the same transaction. Entities gain a constructor and setters for this, and still map only the columns the adapter uses. A list of child rows (an offering's packages) is written as a difference: the adapter loads the managed entities, deletes the ones the domain dropped, updates the ones it kept and persists the new ones; a kept row is never deleted and inserted again.
+- **Writing with JPA:** the application sets the ids, so an adapter inserts a new row with `EntityManager.persist`; Spring Data's `save()` would merge it, with a select first. A changed row is written by changing its managed entity, loaded in the same transaction. Entities gain a constructor and setters for this, and still map only the columns the adapter uses. A list of child rows (an offering's packages) is written as a difference: the adapter loads the managed entities, deletes the ones the domain dropped, updates the ones it kept and persists the new ones; a kept row is never deleted and inserted again. An expert's availability is replaced instead (`AvailabilityAdapter`): it is saved as a whole every time, and nothing refers to its rows. Bulk JPQL `delete` statements run at once, then the new rows are persisted; deleting entities instead would fail with a duplicate key, because Hibernate flushes inserts before deletes.
 - **Sorting text:** a name column the UI sorts by is declared `collate "und-x-icu"` (ICU root collation), so `order by` is alphabetical regardless of case and umlauts, and the same in dev, test and production; the database's default collation can sort byte-wise. Known gap: `app_user.name` lacks it, though `GET /api/poc/users` sorts by it; the next migration that touches `app_user` adds it ([task 01 of increment 02](../tasks/02-manage-consultation-offerings/01-poc-login.md#notes)).
 - **Purchase terms** are columns on `consultation_case` and `enrollment` (D-08). A run's schedule is stored in `run_day` and `run_time_slot`.
 - **Images:** an `image` table with the bytes (`bytea`) and the content type; checks keep the content type to JPEG, PNG and WebP and the size between 1 byte and 2 MB (D-21). The domain's `ImageType` detects the type from the file's first bytes, which the database doesn't check. An owner refers to its image (`offering.image_id`, unique), so an image belongs to one owner at most, and the image row is deleted after the owner stops referring to it.
@@ -152,7 +156,7 @@ class BookConsultationAppointmentUseCase {
 
 Pessimistic row locks through port methods, at the start of the use-case transaction, always in the order **offering → case → expert → run** (D-27). A lock port loads the row with JPA's `PESSIMISTIC_WRITE` (`LockConsultationOfferingPort`, `EntityManager.find` with the lock mode), which Hibernate sends to Postgres as `for no key update`: it waits for every other lock of the row, but not for the key-share lock a foreign key check takes. So every writer that must wait takes the lock itself.
 
-A concurrency test makes its race certain, not likely: it holds the contended row lock in its own transaction (`select … for no key update`), starts both requests, waits until `pg_stat_activity` shows both waiting for a lock, and only then commits. With the lock, both wait at the lock and run one after the other; without it, both read the row at once and wait only at their update. `ConsultationOfferingConcurrencyTest` is the pattern, and it fails without the lock. Where one request writes nothing the other waits for, as a purchase's insert against an unpublish, the test also holds the row that its insert's foreign key checks (`for update`), and lets go of it only after the other request is through or waits for it.
+A concurrency test makes its race certain, not likely: it holds the contended row lock in its own transaction (`select … for no key update`), starts both requests, waits until `pg_stat_activity` shows both waiting for a lock, and only then commits. With the lock, both wait at the lock and run one after the other; without it, both read the row at once and wait only at their update. `ConsultationOfferingConcurrencyTest` is the pattern, and it fails without the lock. Where one request writes nothing the other waits for, as a purchase's insert against an unpublish, the test also holds the row that its insert's foreign key checks (`for update`), and lets go of it only after the other request is through or waits for it. `ConsultationCaseConcurrencyTest` does the same for the booking's two locks: two customers who book one expert's slot write only their own cases, so besides the expert's `app_user` row the test holds their `expert_profile` row, which each first booking's foreign key check of the case's expert waits for; two bookings of one case, each with another expert so that only the case's lock can order them, wait without that lock at their update of the case, so holding the case's row is enough.
 
 | Use case | Locks |
 |---|---|
@@ -181,7 +185,7 @@ Domain and application exceptions are mapped centrally (`@RestControllerAdvice`)
 Not every error body is a `ProblemDetail`:
 
 - **`ProblemDetail`** (`application/problem+json`): every error raised inside Spring MVC, through `ApiExceptionHandler` and its base class `ResponseEntityExceptionHandler`: 400, 404, 405 and 409.
-- **Not `ProblemDetail`:** errors that never reach a controller or the advice.
+- **Not `ProblemDetail`:** errors the advice doesn't answer.
   - Spring Security's 401: an empty body.
   - Spring Security's 403, including the CSRF rejection: Boot's error JSON.
   - Unexpected 500s: Boot's error JSON.
@@ -224,13 +228,14 @@ ConsultationOfferingResponse publishConsultationOffering(@PathVariable UUID id) 
 ## REST conventions
 
 - Route prefixes by audience (D-26): `/api/shop`, `/api/customer`, `/api/expert`, `/api/admin`, plus `/api/me`, `/api/images`, `/api/poc` (`poc` profile only).
+- **Every controller says who may call it** with `@PreAuthorize` at class level, matching its prefix, such as `hasRole('ADMIN')` under `/api/admin`; ArchUnit fails for a route without one. `SecurityConfig` checks the same role per prefix first, so a caller without it is turned away before Spring MVC reads the body ([security](security.md#how-the-check-works)).
 - **Response DTOs per audience:** customer, expert and admin case responses are different records. This makes "admin never sees notes" a property of the API's shape.
 - **Controllers and DTOs.** `api.<feature>` holds the controllers. Its `response` sub-package holds the `*Response` records, each with a public static `from(...)` that maps the domain object; its `request` sub-package holds the `*Request` records. A response that several features return, such as `MoneyResponse`, lives in `api.response`. ArchUnit checks both packages.
 - Request and response records have names that are unique across `api`, because the OpenAPI schema name is the simple class name (a test checks this).
 - **Controller method names** are the `operationId`s in `openapi.json`, so each names its route uniquely: `listConsultationOfferings`, `getConsultationOffering`, `createConsultationOffering`, `editConsultationOffering`.
 - **Uploads** are `multipart/form-data` with one part, `file` (`@RequestPart MultipartFile`, `consumes` multipart, so another body answers 415). The multipart limit is 2 MB per file (`spring.servlet.multipart` in `application.yml`; Spring's default is 1 MB), and a file over it answers 400 like a file of another type (`ApiExceptionHandler`), not Spring's 413. The domain checks the size again, because MockMvc never meets the servlet container's limit.
 - **Images** are served by `GET /api/images/{id}` as a `Resource` (so `openapi.json` says `binary`) with `Cache-Control: public, max-age=31536000, immutable`. A header set by the controller keeps Spring Security's `no-cache` headers off the response.
-- **A `POST` that creates** answers 201 with the new resource and a relative `Location` (`ResponseEntity.created`), plus `@ResponseStatus(HttpStatus.CREATED)` on the method, so springdoc lists 201 instead of 200.
+- **A `POST` that creates** answers 201 with the new resource, plus `@ResponseStatus(HttpStatus.CREATED)` on the method, so springdoc lists 201 instead of 200. When the resource has a route of its own, the answer also has its relative `Location` (`ResponseEntity.created`), as a purchase's case has. The booking's appointment has no route of its own, it's part of its case, so `POST /api/customer/consultation-cases/{id}/appointments` answers 201 without a `Location` ([spec 04](../specs/04-book-consultation-appointment.md#decisions), decision 17).
 - **Request records** carry Bean Validation annotations that repeat the use case's rules, so a 400 names every invalid field ([errors](#errors)); numbers are boxed (`Integer`) with `@NotNull`, so a missing number is a 400, not a silent 0. A decimal in a whole-number field is a 400 as well, without `errors` (`spring.jackson.deserialization.accept-float-as-int: false` in `application.yml`), not cut off. The controller maps the request to the use case's command, building the value objects.
 - JSON with camelCase. Instants are ISO-8601 with offset; local dates and times are ISO-8601 without offset. Money is `{ "amount": "450.00", "currency": "CHF" }`.
 - The API is code-first. springdoc generates `backend/openapi.json`, which is committed. A test fails if the committed file differs from the generated one (D-29).
@@ -240,9 +245,9 @@ ConsultationOfferingResponse publishConsultationOffering(@PathVariable UUID id) 
 | Level | What | Rule |
 |---|---|---|
 | Domain unit tests | every business rule (slots, deadlines, credits, refund eligibility, seats, lifecycle, link window) | extensive; plain JUnit; time is fixed via `Clock` |
-| REST integration tests | `@SpringBootTest` + `MockMvcTester` + Testcontainers Postgres | one happy-path test per route; `@IntegrationTest` also starts the server on a random port, for the few tests that need the real servlet container, such as the upload limit (`ImageUploadLimitTest`) |
-| Authorization tests | role matrix over all routes (anonymous → 401, wrong role → 403); ownership with the two seed users per role (other's resource → 404); the admin case response has no notes; private notes never appear in customer responses | mandatory ([security](security.md#testing)) |
+| REST integration tests | `@SpringBootTest` + `MockMvcTester` + Testcontainers Postgres | one happy-path test per route; `@IntegrationTest` also starts the server on a random port, for the few tests that need the real servlet container, such as the upload limit (`ImageUploadLimitTest`); its clock is a `TestClock` in Zurich, the system clock until a test sets an instant (`set(Instant)`), and reset to it after each test |
+| Authorization tests | role matrix over all routes (anonymous → 401, wrong role → 403), which fails for a route without a row; ownership with the two seed users per role (other's resource → 404); the admin case response has no notes; private notes never appear in customer responses | mandatory ([security](security.md#testing)) |
 | Concurrency tests | parallel requests on each locked race (offering status, expert slot, case credits, run seats) | one per race |
 | Use-case tests | only where the flow has logic worth isolating | optional |
-| Architecture tests | ArchUnit layer rules | mandatory |
+| Architecture tests | ArchUnit layer rules (`LayerRulesTest`) and authorization rules (`AuthorizationRulesTest`: `@PreAuthorize` on every route) | mandatory |
 | Contract test | the committed `openapi.json` is up to date | mandatory |

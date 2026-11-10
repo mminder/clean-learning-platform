@@ -729,6 +729,265 @@
         "tags" : [ "customer-consultation-case-controller" ]
       }
     },
+    "/api/customer/consultation-cases/{id}/appointments" : {
+      "post" : {
+        "operationId" : "bookConsultationAppointment",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BookConsultationAppointmentRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CustomerAppointmentResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "415" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Unsupported Media Type"
+          }
+        },
+        "tags" : [ "customer-consultation-case-controller" ]
+      }
+    },
+    "/api/customer/consultation-cases/{id}/bookable-slots" : {
+      "get" : {
+        "operationId" : "listBookableSlots",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "query",
+          "name" : "expertId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/BookableSlotResponse"
+                  }
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Conflict"
+          }
+        },
+        "tags" : [ "customer-consultation-case-controller" ]
+      }
+    },
+    "/api/customer/consultation-cases/{id}/eligible-experts" : {
+      "get" : {
+        "operationId" : "listEligibleExpertsForCase",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/EligibleExpertResponse"
+                  }
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "customer-consultation-case-controller" ]
+      }
+    },
+    "/api/expert/availability" : {
+      "get" : {
+        "operationId" : "getAvailability",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AvailabilityResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "availability-controller" ]
+      },
+      "put" : {
+        "operationId" : "saveAvailability",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AvailabilityRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AvailabilityResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "415" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Unsupported Media Type"
+          }
+        },
+        "tags" : [ "availability-controller" ]
+      }
+    },
     "/api/images/{id}" : {
       "get" : {
         "operationId" : "getImage",
@@ -978,6 +1237,92 @@
   },
   "components" : {
     "schemas" : {
+      "AssignedExpertResponse" : {
+        "type" : "object",
+        "properties" : {
+          "bio" : {
+            "type" : "string"
+          },
+          "displayName" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "bio", "displayName", "id" ]
+      },
+      "AvailabilityRequest" : {
+        "type" : "object",
+        "properties" : {
+          "dates" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "date"
+            }
+          },
+          "timeRanges" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TimeRangeRequest"
+            }
+          }
+        },
+        "required" : [ "dates", "timeRanges" ]
+      },
+      "AvailabilityResponse" : {
+        "type" : "object",
+        "properties" : {
+          "dates" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "date"
+            }
+          },
+          "timeRanges" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TimeRangeResponse"
+            }
+          }
+        },
+        "required" : [ "dates", "timeRanges" ]
+      },
+      "BookConsultationAppointmentRequest" : {
+        "type" : "object",
+        "properties" : {
+          "expertId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "start" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "expertId", "start" ]
+      },
+      "BookableSlotResponse" : {
+        "type" : "object",
+        "properties" : {
+          "end" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "freeCancellationUntil" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "start" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "end", "start" ]
+      },
       "ConsultationOfferingDetailResponse" : {
         "type" : "object",
         "properties" : {
@@ -1146,9 +1491,41 @@
         },
         "required" : [ "id", "price", "sessionCount" ]
       },
+      "CustomerAppointmentResponse" : {
+        "type" : "object",
+        "properties" : {
+          "end" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "start" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "BOOKED", "CONSUMED" ]
+          }
+        },
+        "required" : [ "end", "id", "start", "status" ]
+      },
       "CustomerConsultationCaseResponse" : {
         "type" : "object",
         "properties" : {
+          "canBook" : {
+            "type" : "boolean"
+          },
+          "expert" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AssignedExpertResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
           "id" : {
             "type" : "string",
             "format" : "uuid"
@@ -1163,6 +1540,12 @@
           "openCredits" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pastAppointments" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CustomerAppointmentResponse"
+            }
           },
           "purchaseTerms" : {
             "$ref" : "#/components/schemas/PurchaseTermsResponse"
@@ -1174,16 +1557,36 @@
           "totalCredits" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "upcomingAppointments" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CustomerAppointmentResponse"
+            }
           }
         },
-        "required" : [ "id", "offeringName", "openCredits", "purchaseTerms", "purchasedAt", "totalCredits" ]
+        "required" : [ "canBook", "id", "offeringName", "openCredits", "pastAppointments", "purchaseTerms", "purchasedAt", "totalCredits", "upcomingAppointments" ]
       },
       "CustomerConsultationCaseSummaryResponse" : {
         "type" : "object",
         "properties" : {
+          "expertDisplayName" : {
+            "type" : [ "string", "null" ]
+          },
+          "group" : {
+            "type" : "string",
+            "enum" : [ "UPCOMING", "NEEDS_BOOKING", "PAST" ]
+          },
           "id" : {
             "type" : "string",
             "format" : "uuid"
+          },
+          "nextAppointment" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CustomerAppointmentResponse"
+            }, {
+              "type" : "null"
+            } ]
           },
           "offeringImageId" : {
             "type" : [ "string", "null" ],
@@ -1205,7 +1608,7 @@
             "format" : "int32"
           }
         },
-        "required" : [ "id", "offeringName", "openCredits", "purchasedAt", "totalCredits" ]
+        "required" : [ "group", "id", "offeringName", "openCredits", "purchasedAt", "totalCredits" ]
       },
       "EligibleExpertResponse" : {
         "type" : "object",
@@ -1444,6 +1847,34 @@
           }
         },
         "required" : [ "description", "id", "name", "price", "type" ]
+      },
+      "TimeRangeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "end" : {
+            "type" : "string",
+            "format" : "time-local"
+          },
+          "start" : {
+            "type" : "string",
+            "format" : "time-local"
+          }
+        },
+        "required" : [ "end", "start" ]
+      },
+      "TimeRangeResponse" : {
+        "type" : "object",
+        "properties" : {
+          "end" : {
+            "type" : "string",
+            "format" : "time-local"
+          },
+          "start" : {
+            "type" : "string",
+            "format" : "time-local"
+          }
+        },
+        "required" : [ "end", "start" ]
       }
     }
   }

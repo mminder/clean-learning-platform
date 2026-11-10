@@ -11,22 +11,30 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
+import com.cleanlearning.adapters.database.user.entity.UserEntity;
 import com.cleanlearning.adapters.database.user.row.UserRoleRow;
 import com.cleanlearning.application.user.port.LoadExpertsPort;
 import com.cleanlearning.application.user.port.LoadUserPort;
 import com.cleanlearning.application.user.port.LoadUsersPort;
+import com.cleanlearning.application.user.port.LockExpertPort;
 import com.cleanlearning.domain.user.Expert;
 import com.cleanlearning.domain.user.User;
 import com.cleanlearning.domain.user.value.DisplayName;
 import com.cleanlearning.domain.user.value.UserId;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+
 @Component
-class UserAdapter implements LoadUsersPort, LoadUserPort, LoadExpertsPort {
+class UserAdapter implements LoadUsersPort, LoadUserPort, LoadExpertsPort, LockExpertPort {
 
     private final UserRepository userRepository;
 
-    UserAdapter(UserRepository userRepository) {
+    private final EntityManager entityManager;
+
+    UserAdapter(UserRepository userRepository, EntityManager entityManager) {
         this.userRepository = userRepository;
+        this.entityManager = entityManager;
     }
 
     @Override
@@ -49,6 +57,17 @@ class UserAdapter implements LoadUsersPort, LoadUserPort, LoadExpertsPort {
     public List<Expert> loadExperts() {
         return userRepository.findExperts().stream()
                 .map(row -> new Expert(new UserId(row.id()), new DisplayName(row.displayName()))).toList();
+    }
+
+    /**
+     * {@code PESSIMISTIC_WRITE} on the {@code app_user} row, as {@code ConsultationOfferingAdapter.lock} takes the
+     * offering's ({@code select … for no key update}).
+     */
+    @Override
+    public void lock(UserId expertId) {
+        if (entityManager.find(UserEntity.class, expertId.value(), LockModeType.PESSIMISTIC_WRITE) == null) {
+            throw new IllegalStateException("User " + expertId.value() + " not found.");
+        }
     }
 
     private static User toUser(List<UserRoleRow> rows) {

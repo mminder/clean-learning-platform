@@ -1,4 +1,5 @@
 import { Route, Routes } from 'react-router'
+import { AvailabilityPage } from '@/features/availability/AvailabilityPage'
 import { ConsultationCasePage } from '@/features/consultation/ConsultationCasePage'
 import { MyPurchasesPage } from '@/features/consultation/MyPurchasesPage'
 import { ConsultationOfferingPage } from '@/features/offering/ConsultationOfferingPage'
@@ -21,6 +22,9 @@ export function App() {
         <Route element={<RequireRole role="CUSTOMER" />}>
           <Route path="my" element={<MyPurchasesPage />} />
           <Route path="my/cases/:id" element={<ConsultationCasePage />} />
+        </Route>
+        <Route element={<RequireRole role="EXPERT" />}>
+          <Route path="expert/availability" element={<AvailabilityPage />} />
         </Route>
         <Route element={<RequireRole role="ADMIN" />}>
           <Route

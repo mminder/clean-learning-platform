@@ -5,7 +5,7 @@
 | Increment | [04 Book a consultation appointment](../../specs/04-book-consultation-appointment.md) |
 | Type | AFK |
 | Blocked by | [01](01-manage-availability.md) |
-| Status | Todo |
+| Status | Done |
 
 ## Goal
 
@@ -33,10 +33,10 @@ The spec's scenarios use Mon 9 Nov 2026, 15:00 (Zurich) as now; the tests write 
 
 ## Acceptance criteria
 
-- [ ] Every scenario of the spec's [bookable slots](../../specs/04-book-consultation-appointment.md#requirement-bookable-slots) requirement holds as a domain test, from "Grid and fit" to "No free times".
-- [ ] Both days of the summer-time changes are tested as the plan says.
-- [ ] `isBookable` agrees with `startTimes` for every start time, and is false for a start a minute off the grid.
-- [ ] `SlotFinder` and `BusyTime` have no Spring or JPA imports, and `LayerRulesTest` passes; every check passes.
+- [x] Every scenario of the spec's [bookable slots](../../specs/04-book-consultation-appointment.md#requirement-bookable-slots) requirement holds as a domain test, from "Grid and fit" to "No free times".
+- [x] Both days of the summer-time changes are tested as the plan says.
+- [x] `isBookable` agrees with `startTimes` for every start time, and is false for a start a minute off the grid.
+- [x] `SlotFinder` and `BusyTime` have no Spring or JPA imports, and `LayerRulesTest` passes; every check passes.
 
 ## Tests
 

@@ -1,6 +1,7 @@
 package com.cleanlearning.api.user;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -12,9 +13,10 @@ import com.cleanlearning.application.user.GetCurrentUserUseCase;
 import com.cleanlearning.domain.user.CurrentUser;
 
 /**
- * The logged-in user (UC-01). Without a login, security answers 401 before this controller.
+ * The logged-in user (UC-01). Without a login, {@code @PreAuthorize} stops the call and security answers 401.
  */
 @RestController
+@PreAuthorize("isAuthenticated()")
 class MeController {
 
     private final GetCurrentUserUseCase getCurrentUser;

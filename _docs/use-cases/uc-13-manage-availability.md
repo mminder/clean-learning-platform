@@ -25,7 +25,7 @@ The expert defines when customers can book consultation appointments with them.
 ## Alternative and error flows
 
 - **Invalid time ranges** (start ≥ end, or ranges that overlap or touch): 400 with a message for each field.
-- **A date before today:** 400. The calendar doesn't let the expert select one.
+- **A date before today:** 400. The calendar doesn't let the expert select one, and the page leaves the dates before today out of a save, such as yesterday on a page left open past midnight (decided 2026-11-10).
 
 ## Business rules
 

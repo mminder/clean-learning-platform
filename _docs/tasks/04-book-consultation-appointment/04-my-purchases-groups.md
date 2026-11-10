@@ -5,7 +5,7 @@
 | Increment | [04 Book a consultation appointment](../../specs/04-book-consultation-appointment.md) |
 | Type | AFK |
 | Blocked by | [03](03-book-appointment.md) |
-| Status | Todo |
+| Status | Done |
 
 ## Goal
 
@@ -25,13 +25,13 @@ Work in this order, test first:
 
 ## Acceptance criteria
 
-- [ ] The REST test's three cases come in the three groups, in the order Upcoming, Needs booking, Past.
-- [ ] Within a group: Upcoming by the next appointment, soonest first; Needs booking by purchase time; Past by the last appointment, newest first (domain tests).
-- [ ] A case whose credits are all booked but one appointment is still ahead is Upcoming; while that one runs, it's still Upcoming, and once it has ended, it's Past (spec decision 21).
-- [ ] A case with past appointments and an open credit is Needs booking.
-- [ ] Customer 2's list shows none of Customer 1's cases or appointments.
-- [ ] On the dev server, after Customer 1 books, **My purchases** shows the case under **Upcoming** with Expert 2 and "Next: …" in Zurich time, and a case without appointments under **Needs booking**; **Past** is collapsed (Playwright; Past with a REST test, as it needs the clock).
-- [ ] `openapi.json` and `schema.d.ts` have the new fields; every check passes.
+- [x] The REST test's three cases come in the three groups, in the order Upcoming, Needs booking, Past.
+- [x] Within a group: Upcoming by the next appointment, soonest first; Needs booking by purchase time; Past by the last appointment, newest first (domain tests).
+- [x] A case whose credits are all booked but one appointment is still ahead is Upcoming; while that one runs, it's still Upcoming, and once it has ended, it's Past (spec decision 21).
+- [x] A case with past appointments and an open credit is Needs booking.
+- [x] Customer 2's list shows none of Customer 1's cases or appointments.
+- [x] On the dev server, after Customer 1 books, **My purchases** shows the case under **Upcoming** with Expert 2 and "Next: …" in Zurich time, and a case without appointments under **Needs booking**; **Past** is collapsed (Playwright; Past with a REST test, as it needs the clock).
+- [x] `openapi.json` and `schema.d.ts` have the new fields; every check passes.
 
 ## Tests
 
@@ -45,4 +45,9 @@ Work in this order, test first:
 - Enrollments in the groups: with the trainings (UC-04).
 
 ## Notes
+
+- **The summary shares the rules by calling `Appointment`**, as the case detail does: `openCredits()` is `Appointment.openCredits`, `nextAppointment()` the first of `Appointment.upcoming`, `group()` is built on those two, and Past's key is the first of `Appointment.past`. Nothing was added to `Appointment`; the subtraction, the status and the upcoming test exist once. This also fixes "3 of 3 credits open" on **My purchases** after a booking (task 03's note); its TODO is gone.
+- **The tests:** the list's REST tests are in `ConsultationCaseBookingTest`, which already has the helpers to save availability and book through the API: the three groups and their order, a running appointment moving to Needs booking at its end, and ownership with both customers. `CustomerConsultationCaseControllerTest`'s list tests now expect the new fields. A lenient JSON comparison ignores an array's order, so the order is asserted on the ids.
+- **"(Zurich time)"** sits next to the **Upcoming** heading, since only an Upcoming card shows a time (plan updated). The implementation first had a line "Times are in Zurich time." under it; the review changed it to the hint frontend.md asks for, next to the heading, as on the case detail. The frontend splits the API's list by `group` and keeps its order.
+- **A Past case always has an appointment** (its credits are all booked and none is upcoming, and a session count is at least 1), which the Past order's `getFirst()` relies on. UC-08 will have to give a cancelled case another key.
 

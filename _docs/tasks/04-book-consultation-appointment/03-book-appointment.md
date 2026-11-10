@@ -5,7 +5,7 @@
 | Increment | [04 Book a consultation appointment](../../specs/04-book-consultation-appointment.md) |
 | Type | AFK |
 | Blocked by | [01](01-manage-availability.md), [02](02-bookable-slots.md) |
-| Status | Todo |
+| Status | Done |
 
 ## Goal
 
@@ -42,20 +42,20 @@ Work in this order, test first:
 
 ## Acceptance criteria
 
-- [ ] On the dev server, after Expert 2 saved availability, Customer 1 buys Career Coaching, sees "Book your first session", books Expert 2 through all four steps, and the case shows Expert 2, 2 of 3 credits open and the appointment in Zurich time; the confirmation reads as the spec's "The confirmation states the terms" (Playwright).
-- [ ] A second booking skips the expert step; the booked time and the times overlapping it aren't offered; touching ones are.
-- [ ] Closing the dialog at any step books nothing and assigns no expert.
-- [ ] With three appointments booked, **Book appointment** is disabled, and a booking request answers 409 `NO_OPEN_CREDITS`.
-- [ ] A time booked meanwhile by Customer 2 answers 409 `SLOT_NOT_AVAILABLE`, and the dialog goes back to the dates with the times reloaded (Playwright with a second browser context).
-- [ ] An expert removed from the offering meanwhile answers 409 `EXPERT_NOT_ELIGIBLE` on a first booking, and the dialog shows the current experts; a case whose expert was removed later still books them.
-- [ ] A first booking naming another expert than the case's answers 409 `EXPERT_CHANGED`.
-- [ ] An offering without eligible experts shows "No experts are available for this offering yet. Please try again later."; an expert without slots shows "No free times available at the moment."
-- [ ] Expert 1, who is also a customer, books themself.
-- [ ] A case of an archived offering books.
-- [ ] An invalid booking request (no expert, no start) answers 400 with each field in `errors`; a start that isn't a slot answers 409 `SLOT_NOT_AVAILABLE`.
-- [ ] Customer 2 gets 404 on Customer 1's case from all three routes, and nothing is booked.
-- [ ] With the clock moved into an appointment, the case answers it under `upcomingAppointments` as `CONSUMED`, and the page says "Now"; moved to its end, under `pastAppointments`; either way it counts against the credits (spec decision 21).
-- [ ] `openapi.json` and `schema.d.ts` have the three routes and the new fields; the role matrix has the three rows; every check passes.
+- [x] On the dev server, after Expert 2 saved availability, Customer 1 buys Career Coaching, sees "Book your first session", books Expert 2 through all four steps, and the case shows Expert 2, 2 of 3 credits open and the appointment in Zurich time; the confirmation reads as the spec's "The confirmation states the terms" (Playwright).
+- [x] A second booking skips the expert step; the booked time and the times overlapping it aren't offered; touching ones are.
+- [x] Closing the dialog at any step books nothing and assigns no expert.
+- [x] With three appointments booked, **Book appointment** is disabled, and a booking request answers 409 `NO_OPEN_CREDITS`.
+- [x] A time booked meanwhile by Customer 2 answers 409 `SLOT_NOT_AVAILABLE`, and the dialog goes back to the dates with the times reloaded (Playwright with a second browser context).
+- [x] An expert removed from the offering meanwhile answers 409 `EXPERT_NOT_ELIGIBLE` on a first booking, and the dialog shows the current experts; a case whose expert was removed later still books them.
+- [x] A first booking naming another expert than the case's answers 409 `EXPERT_CHANGED`.
+- [x] An offering without eligible experts shows "No experts are available for this offering yet. Please try again later."; an expert without slots shows "No free times available at the moment."
+- [x] Expert 1, who is also a customer, books themself.
+- [x] A case of an archived offering books.
+- [x] An invalid booking request (no expert, no start) answers 400 with each field in `errors`; a start that isn't a slot answers 409 `SLOT_NOT_AVAILABLE`.
+- [x] Customer 2 gets 404 on Customer 1's case from all three routes, and nothing is booked.
+- [x] With the clock moved into an appointment, the case answers it under `upcomingAppointments` as `CONSUMED`, and the page says "Now"; moved to its end, under `pastAppointments`; either way it counts against the credits (spec decision 21).
+- [x] `openapi.json` and `schema.d.ts` have the three routes and the new fields; the role matrix has the three rows; every check passes.
 
 ## Tests
 
@@ -72,3 +72,13 @@ Work in this order, test first:
 
 ## Notes
 
+- **The shared appointment rules** are on `Appointment`: `statusAt`, `isUpcomingAt`, `at(asOf)` (the `CustomerAppointment`), and the static `Appointment.upcoming(appointments, asOf)` (not ended, soonest first) and `Appointment.past(appointments, asOf)` (ended, newest first). `CustomerConsultationCase` only calls them; task 04's `nextAppointment()` is the first of `upcoming`, and Past's order the first of `past`, without a copy.
+- **Open credits** are one rule, the static `Appointment.openCredits(sessionCount, bookedAppointments)`: `CaseForBooking.openCredits()` passes the counted `BOOKED` appointments, `CustomerConsultationCase.openCredits()` the size of its appointments, so `canBook` and `NO_OPEN_CREDITS` can't drift apart (moved there in the review; the implementation first wrote the subtraction in both). Until task 04, `CustomerConsultationCaseSummary` still counts every credit as open, so **My purchases** shows "3 of 3 credits open" after a booking: task 04 gives the summary its appointments and counts with the same rule (a TODO on `CustomerConsultationCaseSummary.openCredits()` names it).
+- **`Booking`** is `(Appointment appointment, UserId expertId, boolean assignsExpert)`: `SaveBookingPort` needs the expert's id to assign them.
+- **Persistence:** the lock is a Spring Data query with `@Lock(PESSIMISTIC_WRITE)`, scoped to the customer; Hibernate sends `select … from consultation_case … where id = ? and customer_id = ? for no key update`, then the booking's `select … from app_user … for no key update` (checked in the SQL log). `AppointmentEntity` maps `status` with the domain's `AppointmentStatus` (`@Enumerated(STRING)`), and only `BOOKED` is ever written; every appointment query filters `status = BOOKED`. The first booking updates the managed case entity, so Hibernate writes the case's row with all its columns; only `assigned_expert_id` changes, so only its foreign key is checked (`expert_profile`, which task 05's first test holds). The eligible experts' query selects into the offering adapter's `EligibleExpertRow`, the same shape the shop reads.
+- **The use case reads the clock after both locks**, so a booking that waited for them checks the 24 hours' notice at the time it decides.
+- **The dialog**, beyond the plan's table, now recorded in the plan's [booking dialog](README.md#booking-dialog): the expert step's **Continue** loads the expert's slots first, so a 409 of the slots route (`EXPERT_CHANGED`, `EXPERT_NOT_ELIGIBLE`) follows the same table; and the dialog keeps the expert it opened with, or the picked one, so a refetch of the case on window focus can't swap the expert under the confirmation (the spec's two-tabs scenario then answers `EXPERT_CHANGED`, as it should). The mutation reloads the cases after a 409, as frontend.md's mutations do; the plan's [queries](README.md#queries) says so now. `booking-failure.ts`, `bookable-slots.ts` (`slotsByDate`) and `appointment-times.ts` (`formatTimes`, `formatDateAndTimes`) have Vitest tests.
+- **"(Zurich time)"** is next to both appointment headings, Past too (plan's case detail updated).
+- **Tests:** `ConsultationCaseBookingTest` (23 REST tests: the happy path of the three routes and the extended detail, every 409, 404 and 400, the archived offering, self-booking, eligibility removed before and after the assignment, no experts, no slots, removed availability keeps the appointment, consumed and past after moving the clock); domain: `AppointmentTest`, `CaseForBookingTest`, `CustomerConsultationCaseTest`, `BookableSlotTest`, `CancellationDeadlineTest.freeUntil`; `OpenApiContractTest` checks the three routes' answers.
+- **Playwright** (by hand, against the dev server on the real clock, 12 and 13 Nov 2026): Expert 2 saves availability; Customer 1 buys Career Coaching, sees "Book your first session" and "Not assigned yet", and books through all four steps: Expert 1 and Expert 2 with bios, only 12 and 13 Nov enabled, twelve times on 12 Nov, the confirmation "Book Expert 2 on 12 Nov 2026, 10:00–11:00 (60 min, Zurich time)?" and "Free cancellation until 11 Nov 2026, 10:00."; the case then shows Expert 2, "Your expert", 2 of 3 open and the appointment under "Upcoming appointments (Zurich time)". A second booking starts at the date with **Cancel**, and 12 Nov offers 09:00–10:00 and 11:00–12:00 but not 09:30, 10:00 or 10:30. Closing at the expert, date, time and confirm steps (**Cancel**, Escape, the close button) books nothing and assigns no expert. Customer 2 in a second browser context: Expert 1 without availability shows "No free times available at the moment."; at the confirmation of 11:00–12:00 while Customer 1 books it, **Book** shows "This time is no longer available." and goes back to the dates with none chosen, and the reloaded times lack 11:00–12:00. With Admin 1 removing Expert 2 from Career Coaching meanwhile, **Book** shows the `EXPERT_NOT_ELIGIBLE` detail and the experts reloaded (Expert 1 only, none chosen); Customer 1's case still books Expert 2, and at 0 of 3 **Book appointment** is disabled. Without eligible experts the dialog says "No experts are available for this offering yet. Please try again later.". Two tabs of Customer 2: after Expert 1 is booked in one, **Book** with Expert 2 in the other shows the `EXPERT_CHANGED` detail and goes on to Expert 1's dates, and the confirmation names Expert 1. Expert 1 books themself. Customer 2 sees "Case not found" for Customer 1's case. "Now" and "Consumed" on the page were checked with the case's answer intercepted, as at a moved clock; the API's statuses are REST-tested.
+- **The bundle** is 573 kB (Vite's 500 kB warning was there before).

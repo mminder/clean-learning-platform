@@ -8,14 +8,20 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { formatDate } from '@/lib/date'
+import { formatDateAndTimes } from './appointment-times'
 import type { CustomerConsultationCaseSummary } from './queries'
 
-/** A case on My purchases (UC-05 step 2), as far as a case has data yet: no appointment before the first booking. */
+/**
+ * A case on My purchases (UC-05 step 2): the offering, the expert's name or "Not assigned yet", the next appointment
+ * in Zurich time, "Next" before it starts and "Now" while it runs (spec 04, decision 21), the credits and the
+ * purchase date.
+ */
 export function ConsultationCaseCard({
   consultationCase,
 }: {
   consultationCase: CustomerConsultationCaseSummary
 }) {
+  const next = consultationCase.nextAppointment
   return (
     // The title's link stretches over the whole card, so a click anywhere opens the case.
     <Card className="relative w-full overflow-hidden pt-0 transition-shadow focus-within:ring-2 focus-within:ring-ring hover:shadow-md">
@@ -34,9 +40,17 @@ export function ConsultationCaseCard({
             </Link>
           </h3>
         </CardTitle>
-        <CardDescription>Not assigned yet</CardDescription>
+        <CardDescription>
+          {consultationCase.expertDisplayName ?? 'Not assigned yet'}
+        </CardDescription>
       </CardHeader>
       <CardFooter className="mt-auto flex-col items-start gap-1 text-sm">
+        {next && (
+          <p className="font-medium">
+            {next.status === 'CONSUMED' ? 'Now' : 'Next'}:{' '}
+            {formatDateAndTimes(next.start, next.end)}
+          </p>
+        )}
         <p className="font-medium">
           {consultationCase.openCredits} of {consultationCase.totalCredits}{' '}
           credits open

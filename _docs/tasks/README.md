@@ -48,7 +48,7 @@ An orchestrating session runs the increment ([D-33](../decisions.md#scope-and-do
 Every task, on top of its own acceptance criteria:
 
 - All checks that exist so far pass: `./mvnw verify` in `backend/`, and `npm run lint`, `npm run format:check`, `npm test`, `npm run build` and `npm run check:api` in `frontend/`.
-- Each new route has a happy-path integration test and a row in the role matrix.
+- Each new route has `@PreAuthorize` on its controller, a happy-path integration test and a row in the role matrix.
 - `_docs/` matches the code: a changed behavior updates its use case, and a changed decision updates [decisions.md](../decisions.md).
 - New or changed commands are in the **Commands** section of [AGENTS.md](../../AGENTS.md).
 - Each TODO left in the code names a task or the future list.
