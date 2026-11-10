@@ -134,7 +134,8 @@ indexes                  (consultation_case_id)
 {
   "start": "2026-11-17T09:00:00Z",                  // 10:00 in Zurich
   "end": "2026-11-17T10:00:00Z",
-  "freeCancellationUntil": "2026-11-16T09:00:00Z"   // start − the case's cancellation deadline
+  "freeCancellationUntil": "2026-11-16T09:00:00Z"   // start − the case's cancellation deadline; @Nullable: null
+                                                    // when that isn't after now (a deadline longer than the notice)
 }
 
 // BookConsultationAppointmentRequest                                                                   03
@@ -208,7 +209,7 @@ indexes                  (consultation_case_id)
   | `requireOpenCredit()` | `NO_OPEN_CREDITS`: open credits are 0 | This case has no open credits. |
   | `expertFor(UserId named)` | `EXPERT_CHANGED`: the case has another expert | This case already has an expert. Please choose a time with them. |
   | | `EXPERT_NOT_ELIGIBLE`: the case has no expert, and the named one isn't eligible | This expert is no longer available for this offering. Please choose another. |
-  | `bookableSlots(SlotFinder, Instant now)` | – | the start times for the case's session duration, each as a `BookableSlot` with its end and its free-cancellation time (`CancellationDeadline.freeUntil`) |
+  | `bookableSlots(SlotFinder, Instant now)` | – | the start times for the case's session duration, each as a `BookableSlot` with its end and its free-cancellation time (`CancellationDeadline.freeUntil`), empty when it isn't after `now` |
   | `book(UserId expertId, Instant start, SlotFinder, Instant now)` | each of the above, then `SLOT_NOT_AVAILABLE`: `start` isn't bookable | This time is no longer available. |
 
   Open credits are the session count minus the booked appointments (spec decision 15). `book` checks every rule itself, so it's right on its own; it returns a `Booking`: a new `Appointment` (a new id, the case, `start`, `start` + the session duration) and whether it assigns the expert (the case had none).
@@ -284,7 +285,7 @@ frontend/src
 | Expert, only while the case has no expert | "Choose your expert."; one radio item per eligible expert: `ImagePlaceholder`, name, bio. Without experts: "No experts are available for this offering yet. Please try again later." (spec decision 2) | **Cancel**; **Continue**, once an expert is chosen |
 | Date | "Choose a date."; the calendar, single selection, only dates with slots enabled, opening on the month of the first slot. Without slots: "No free times available at the moment." | **Back** (if there was an expert step) or **Cancel**; **Continue**, once a date is chosen |
 | Time | "Choose a time (Zurich time)."; one radio item per slot of the date: "10:00–11:00" | **Back**; **Continue**, once a time is chosen |
-| Confirm | "Book Expert 2 on 17 Nov 2026, 10:00–11:00 (60 min, Zurich time)?" and "Free cancellation until 16 Nov 2026, 10:00." (spec decision 7) | **Back**; **Book** |
+| Confirm | "Book Expert 2 on 17 Nov 2026, 10:00–11:00 (60 min, Zurich time)?" and "Free cancellation until 16 Nov 2026, 10:00.", or for a slot without a free-cancellation time "This time is within the cancellation deadline, so it can't be cancelled for free." (spec decision 7) | **Back**; **Book** |
 
 - **The slots** come from `useBookableSlots(caseId, expertId)` once the expert is known; the dialog groups them by `localDateOf(start)` (`slotsByDate`). The duration comes from the case's purchase terms.
 - **The expert step's Continue** loads the picked expert's slots before the dates show (`fetchQuery`), so a 409 of the slots route (`EXPERT_CHANGED`, `EXPERT_NOT_ELIGIBLE`) and a 404 follow the error table below, as the booking's do; the case, its experts and its slots reload first after a 409. Anything else stays on **Expert** with "The times could not be loaded. Please try again." (03)

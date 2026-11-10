@@ -304,6 +304,32 @@ class ConsultationCaseBookingTest {
         assertThat(assignedExpert(caseId)).isEqualTo(SeedData.EXPERT_2);
     }
 
+    /**
+     * Agile Coaching's 48 hours are longer than the 24 hours' notice: a slot whose free cancellation is already past,
+     * or ends now, has none (spec 04, decision 7).
+     */
+    @Test
+    void aSlotWithinTheCancellationDeadlineHasNoFreeCancellationTime() throws Exception {
+        String caseId = boughtAgileCoaching(publishAgileCoaching());
+        // Wed 11 Nov 2026, 14:00–16:30 in Zurich: 45 minutes from 14:00, 14:30, 15:00 and 15:30. 48 hours before 15:00
+        // is now.
+        available(SeedData.EXPERT_2, "14:00", "16:30", "2026-11-11");
+
+        assertThat(bookableSlots(caseId, SeedData.EXPERT_2, SeedData.CUSTOMER_1)).hasStatusOk()
+                .bodyJson().isStrictlyEqualTo("""
+                        [
+                          { "start": "2026-11-11T13:00:00Z", "end": "2026-11-11T13:45:00Z",
+                            "freeCancellationUntil": null },
+                          { "start": "2026-11-11T13:30:00Z", "end": "2026-11-11T14:15:00Z",
+                            "freeCancellationUntil": null },
+                          { "start": "2026-11-11T14:00:00Z", "end": "2026-11-11T14:45:00Z",
+                            "freeCancellationUntil": null },
+                          { "start": "2026-11-11T14:30:00Z", "end": "2026-11-11T15:15:00Z",
+                            "freeCancellationUntil": "2026-11-09T14:30:00Z" }
+                        ]
+                        """);
+    }
+
     @Test
     void aCaseWithoutAppointmentsHasNoExpertAndCanBook() throws Exception {
         String caseId = boughtCareerCoaching(SeedData.CUSTOMER_1);

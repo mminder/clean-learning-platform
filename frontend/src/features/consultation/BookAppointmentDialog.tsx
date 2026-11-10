@@ -44,14 +44,17 @@ const NO_SLOTS = 'No free times available at the moment.'
 const NOT_FOUND = 'This case was not found.'
 const BOOKING_FAILED = 'Booking failed. Please try again.'
 const TIMES_FAILED = 'The times could not be loaded. Please try again.'
+const NOT_FREE_TO_CANCEL =
+  "This time is within the cancellation deadline, so it can't be cancelled for free."
 
 /**
  * UC-06 steps 1–6: the trigger (`children`) opens a dialog in steps (spec 04, decision 4). **Expert**, only while the
  * case has no expert, lists the offering's eligible experts; **Date** is a calendar where only dates with bookable
  * slots can be picked; **Time** lists that date's slots; **Confirm** states the expert, the date, the times, the
- * duration and the free-cancellation time, and **Book** books exactly these. Then the dialog closes, and the case
- * detail shows the appointment. Closing the dialog at any step (**Cancel**, Escape, the close button) books nothing,
- * and it opens at the first step again.
+ * duration and the free-cancellation time, or, for a slot without one, that it can't be cancelled for free (spec 04,
+ * decision 7), and **Book** books exactly these. Then the dialog closes, and the case detail shows the appointment.
+ * Closing the dialog at any step (**Cancel**, Escape, the close button) books nothing, and it opens at the first step
+ * again.
  *
  * Errors follow the plan's error table. The case reloads after a 409 while the dialog stays open: the dialog isn't a
  * child of something the reload removes.
@@ -323,10 +326,15 @@ function BookingSteps({
           {consultationCase.purchaseTerms.sessionDurationMinutes} min, Zurich
           time)?
         </DialogDescription>
-        <p>
-          Free cancellation until{' '}
-          {formatDateTime(confirming.freeCancellationUntil)}.
-        </p>
+        {/* No time from the server: it has passed, with a deadline longer than the notice. */}
+        {confirming.freeCancellationUntil ? (
+          <p>
+            Free cancellation until{' '}
+            {formatDateTime(confirming.freeCancellationUntil)}.
+          </p>
+        ) : (
+          <p>{NOT_FREE_TO_CANCEL}</p>
+        )}
         {alert}
         <DialogFooter>
           {backTo('time')}

@@ -51,8 +51,9 @@ public class ListBookableSlotsUseCase {
     }
 
     /**
-     * The case's bookable slots with the expert, soonest first, each with its end and free-cancellation time. A slot
-     * overlaps neither the expert's busy time nor the customer's own appointments, of any case (spec 04, decision 22).
+     * The case's bookable slots with the expert, soonest first, each with its end and its free-cancellation time, if
+     * that's still ahead. A slot overlaps neither the expert's busy time nor the customer's own appointments, of any
+     * case (spec 04, decision 22).
      *
      * @param expertId the expert the dialog shows: the one the customer picked, or the case's
      * @throws NotFoundException if there's no case with this id, or it's another customer's

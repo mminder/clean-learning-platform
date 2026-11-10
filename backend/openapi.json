@@ -1313,7 +1313,7 @@
             "format" : "date-time"
           },
           "freeCancellationUntil" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date-time"
           },
           "start" : {
@@ -1321,7 +1321,7 @@
             "format" : "date-time"
           }
         },
-        "required" : [ "end", "freeCancellationUntil", "start" ]
+        "required" : [ "end", "start" ]
       },
       "ConsultationOfferingDetailResponse" : {
         "type" : "object",

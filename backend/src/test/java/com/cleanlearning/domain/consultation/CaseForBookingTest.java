@@ -56,10 +56,20 @@ class CaseForBookingTest {
 
     private static final Instant NOW = zurich("2026-11-09T15:00");
 
+    /** Two sessions of 60 minutes, free cancellation until 48 hours before: longer than the 24 hours' notice. */
+    private static final PurchaseTerms FORTY_EIGHT_HOURS = new PurchaseTerms(Money.chf("300.00"), new SessionCount(2),
+            new SessionDuration(60), new CancellationDeadline(48));
+
     /** The expert is available on Tue 17 Nov 2026, 09:00–12:00. */
     private static final SlotFinder SEVENTEENTH_NINE_TO_TWELVE = new SlotFinder(
             new Availability(new TreeSet<>(List.of(LocalDate.parse("2026-11-17"))),
                     List.of(new TimeRange(LocalTime.parse("09:00"), LocalTime.parse("12:00")))),
+            List.of());
+
+    /** The expert is available on Wed 11 Nov 2026, 14:00–17:00: after the notice, but within 48 hours of now. */
+    private static final SlotFinder ELEVENTH_TWO_TO_FIVE = new SlotFinder(
+            new Availability(new TreeSet<>(List.of(LocalDate.parse("2026-11-11"))),
+                    List.of(new TimeRange(LocalTime.parse("14:00"), LocalTime.parse("17:00")))),
             List.of());
 
     private static final String NO_OPEN_CREDITS = "This case has no open credits.";
@@ -70,6 +80,11 @@ class CaseForBookingTest {
 
     private static Instant zurich(String localDateTime) {
         return LocalDateTime.parse(localDateTime).atZone(BusinessTimeZone.ZONE).toInstant();
+    }
+
+    /** A slot from {@code start} to {@code end}, free to cancel until {@code freeUntil}, all in Zurich. */
+    private static BookableSlot slot(String start, String end, String freeUntil) {
+        return new BookableSlot(zurich(start), zurich(end), Optional.of(zurich(freeUntil)));
     }
 
     /** A case of three sessions without an expert, with these booked appointments, Expert 1 and 2 eligible. */
@@ -134,11 +149,11 @@ class CaseForBookingTest {
     @Test
     void theSlotsHaveTheSessionsEndAndTheFreeCancellationTime() {
         assertThat(withoutExpert(0).bookableSlots(SEVENTEENTH_NINE_TO_TWELVE, NOW)).containsExactly(
-                new BookableSlot(zurich("2026-11-17T09:00"), zurich("2026-11-17T10:00"), zurich("2026-11-16T09:00")),
-                new BookableSlot(zurich("2026-11-17T09:30"), zurich("2026-11-17T10:30"), zurich("2026-11-16T09:30")),
-                new BookableSlot(zurich("2026-11-17T10:00"), zurich("2026-11-17T11:00"), zurich("2026-11-16T10:00")),
-                new BookableSlot(zurich("2026-11-17T10:30"), zurich("2026-11-17T11:30"), zurich("2026-11-16T10:30")),
-                new BookableSlot(zurich("2026-11-17T11:00"), zurich("2026-11-17T12:00"), zurich("2026-11-16T11:00")));
+                slot("2026-11-17T09:00", "2026-11-17T10:00", "2026-11-16T09:00"),
+                slot("2026-11-17T09:30", "2026-11-17T10:30", "2026-11-16T09:30"),
+                slot("2026-11-17T10:00", "2026-11-17T11:00", "2026-11-16T10:00"),
+                slot("2026-11-17T10:30", "2026-11-17T11:30", "2026-11-16T10:30"),
+                slot("2026-11-17T11:00", "2026-11-17T12:00", "2026-11-16T11:00"));
     }
 
     @Test
@@ -148,10 +163,40 @@ class CaseForBookingTest {
                 List.of(EXPERT_2));
 
         assertThat(ninetyMinutesFortyEightHours.bookableSlots(SEVENTEENTH_NINE_TO_TWELVE, NOW)).containsExactly(
-                new BookableSlot(zurich("2026-11-17T09:00"), zurich("2026-11-17T10:30"), zurich("2026-11-15T09:00")),
-                new BookableSlot(zurich("2026-11-17T09:30"), zurich("2026-11-17T11:00"), zurich("2026-11-15T09:30")),
-                new BookableSlot(zurich("2026-11-17T10:00"), zurich("2026-11-17T11:30"), zurich("2026-11-15T10:00")),
-                new BookableSlot(zurich("2026-11-17T10:30"), zurich("2026-11-17T12:00"), zurich("2026-11-15T10:30")));
+                slot("2026-11-17T09:00", "2026-11-17T10:30", "2026-11-15T09:00"),
+                slot("2026-11-17T09:30", "2026-11-17T11:00", "2026-11-15T09:30"),
+                slot("2026-11-17T10:00", "2026-11-17T11:30", "2026-11-15T10:00"),
+                slot("2026-11-17T10:30", "2026-11-17T12:00", "2026-11-15T10:30"));
+    }
+
+    @Test
+    void aSlotWithinTheCancellationDeadlineHasNoFreeCancellationTime() {
+        CaseForBooking consultationCase = new CaseForBooking(CASE, FORTY_EIGHT_HOURS, Optional.empty(), 0,
+                List.of(EXPERT_2));
+
+        // 48 hours before 14:00, 14:30 and 15:00 is before now or now: cancelling is free only before it (D-11).
+        assertThat(consultationCase.bookableSlots(ELEVENTH_TWO_TO_FIVE, NOW)).containsExactly(
+                new BookableSlot(zurich("2026-11-11T14:00"), zurich("2026-11-11T15:00"), Optional.empty()),
+                new BookableSlot(zurich("2026-11-11T14:30"), zurich("2026-11-11T15:30"), Optional.empty()),
+                new BookableSlot(zurich("2026-11-11T15:00"), zurich("2026-11-11T16:00"), Optional.empty()),
+                slot("2026-11-11T15:30", "2026-11-11T16:30", "2026-11-09T15:30"),
+                slot("2026-11-11T16:00", "2026-11-11T17:00", "2026-11-09T16:00"));
+    }
+
+    @Test
+    void freeCancellationEndingNowHasPassed() {
+        CaseForBooking consultationCase = new CaseForBooking(CASE, FORTY_EIGHT_HOURS, Optional.empty(), 0,
+                List.of(EXPERT_2));
+
+        // 15:00's free cancellation ends at now; a second before now, it's still ahead.
+        assertThat(consultationCase.bookableSlots(ELEVENTH_TWO_TO_FIVE, NOW))
+                .extracting(BookableSlot::freeCancellationUntil)
+                .containsExactly(Optional.empty(), Optional.empty(), Optional.empty(),
+                        Optional.of(zurich("2026-11-09T15:30")), Optional.of(zurich("2026-11-09T16:00")));
+        assertThat(consultationCase.bookableSlots(ELEVENTH_TWO_TO_FIVE, NOW.minusSeconds(1)))
+                .extracting(BookableSlot::freeCancellationUntil)
+                .containsExactly(Optional.empty(), Optional.empty(), Optional.of(NOW),
+                        Optional.of(zurich("2026-11-09T15:30")), Optional.of(zurich("2026-11-09T16:00")));
     }
 
     @Test

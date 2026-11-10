@@ -88,12 +88,17 @@ public record CaseForBooking(ConsultationCaseId id, PurchaseTerms purchaseTerms,
      * The slots the customer can book with the expert, from the expert's availability and the expert's and the
      * customer's busy time that {@code slotFinder} holds, soonest first: each start time for the case's session
      * duration, with its end and its free-cancellation time from the case's cancellation deadline (UC-06 steps 3–5).
+     * The deadline may be longer than the minimum notice, so a slot's free-cancellation time may not be after
+     * {@code now}: then the slot has none, since cancelling is free only before it (D-11).
      */
     public List<BookableSlot> bookableSlots(SlotFinder slotFinder, Instant now) {
         return slotFinder.startTimes(purchaseTerms.sessionDuration(), now).stream()
-                .map(start -> new BookableSlot(start, endOf(start),
-                        purchaseTerms.cancellationDeadline().freeUntil(start)))
+                .map(start -> new BookableSlot(start, endOf(start), freeCancellationUntil(start, now)))
                 .toList();
+    }
+
+    private Optional<Instant> freeCancellationUntil(Instant start, Instant now) {
+        return Optional.of(purchaseTerms.cancellationDeadline().freeUntil(start)).filter(until -> until.isAfter(now));
     }
 
     /**

@@ -352,7 +352,7 @@ export interface components {
             /** Format: date-time */
             end: string;
             /** Format: date-time */
-            freeCancellationUntil: string;
+            freeCancellationUntil?: string | null;
             /** Format: date-time */
             start: string;
         };
