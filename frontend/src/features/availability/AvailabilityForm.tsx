@@ -11,6 +11,7 @@ import {
   todayInZurich,
 } from '@/lib/date'
 import { showSaveError } from '@/lib/problem'
+import { datesFromToday } from './dates-from-today'
 import {
   toRequest,
   type Availability,
@@ -20,8 +21,10 @@ import {
 /**
  * The expert's availability (UC-13 steps 2–4): the dates in a month calendar, and one set of daily time ranges for all
  * of them. It has no rules of its own: the backend's 400 puts each message next to its field, and a date before
- * today, which the calendar doesn't offer, shows above the form. `onSave` resolves with the saved availability, which
- * becomes the form's new starting point.
+ * today, which the calendar doesn't offer, shows above the form. A save sends only the dates from today (Zurich, as of
+ * the save) on: a page left open past midnight still holds yesterday, which the save never changes (UC-13), and the
+ * backend would refuse it until a reload. `onSave` resolves with the saved availability, which becomes the form's new
+ * starting point.
  */
 export function AvailabilityForm({
   defaultValues,
@@ -53,7 +56,10 @@ export function AvailabilityForm({
     setSaved(false)
     let savedAvailability: Availability
     try {
-      savedAvailability = await onSave(availability)
+      savedAvailability = await onSave({
+        ...availability,
+        dates: datesFromToday(availability.dates, todayInZurich()),
+      })
     } catch (error) {
       setFormError(showSaveError(error, setError))
       return
