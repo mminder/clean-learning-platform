@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -53,6 +54,7 @@ import jakarta.validation.Valid;
  */
 @RestController
 @RequestMapping(CustomerConsultationCaseController.PATH)
+@PreAuthorize("hasRole('CUSTOMER')")
 class CustomerConsultationCaseController {
 
     static final String PATH = "/api/customer/consultation-cases";

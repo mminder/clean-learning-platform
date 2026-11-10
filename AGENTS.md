@@ -55,6 +55,7 @@ Details: [_docs/architecture/backend.md](_docs/architecture/backend.md).
 - Business rules live in `domain` POJOs and records. `domain` has no Spring or JPA imports. In `domain.<feature>`, the models sit at the top and the value objects in `value`; a value object depends only on Java and other value objects.
 - A domain value with a rule beyond not null, a unit or behavior is a value object, and so is an id. A column that holds one repeats its rule as a check constraint ([D-36](_docs/decisions.md#architecture)).
 - Outgoing ports are interfaces named `<Purpose>Port` in `application.<feature>.port`. They are narrow and use-case specific, use only domain types, and are implemented in `adapters.database.<feature>`. There are no incoming ports: controllers call use cases directly and never a port; adapters see only the ports, never a use case.
+- Every controller says who may call it with `@PreAuthorize` at class level, matching its URL prefix (`hasRole('ADMIN')` under `/api/admin`); ArchUnit fails for a route without one.
 - Controllers pass `CurrentUser` explicitly into use cases. Ownership is enforced by scoped port queries; a resource that isn't yours returns 404.
 - In `api.<feature>`, the controllers sit at the top, the `*Response` records in `response` and the `*Request` records in `request`. Responses that several features return live in `api.response`.
 - JPA entities never leave `adapters.database`. In `adapters.database.<feature>`, the adapters and Spring Data repositories sit at the top, the entities in `entity`, and the `*Row` records that queries select into in `row`. Mappers are hand-written. No Lombok, no MapStruct. Value objects, commands and DTOs are records.
@@ -78,10 +79,10 @@ Details: [_docs/architecture/backend.md#testing](_docs/architecture/backend.md#t
 
 - Domain: extensive unit tests.
 - REST: one happy-path integration test per route, against Testcontainers Postgres.
-- Authorization (mandatory): a role matrix over all routes, plus ownership tests that use the two seeded users per role.
+- Authorization (mandatory): a role matrix over all routes (it fails for a route without a row), plus ownership tests that use the two seeded users per role.
 - Concurrency: one test per locked race (offering status, expert slot, case credits, run seats).
 - Use-case tests only where they add real value.
-- The ArchUnit layer rules and the OpenAPI drift test must pass.
+- The ArchUnit layer and authorization rules and the OpenAPI drift test must pass.
 
 ## Cloud sessions
 

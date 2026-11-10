@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -37,6 +38,7 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/poc")
 @Profile("poc")
+@PreAuthorize("permitAll()")
 class PocLoginController {
 
     private final ListPocUsersUseCase listPocUsers;

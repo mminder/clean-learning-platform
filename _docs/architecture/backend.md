@@ -185,7 +185,7 @@ Domain and application exceptions are mapped centrally (`@RestControllerAdvice`)
 Not every error body is a `ProblemDetail`:
 
 - **`ProblemDetail`** (`application/problem+json`): every error raised inside Spring MVC, through `ApiExceptionHandler` and its base class `ResponseEntityExceptionHandler`: 400, 404, 405 and 409.
-- **Not `ProblemDetail`:** errors that never reach a controller or the advice.
+- **Not `ProblemDetail`:** errors the advice doesn't answer.
   - Spring Security's 401: an empty body.
   - Spring Security's 403, including the CSRF rejection: Boot's error JSON.
   - Unexpected 500s: Boot's error JSON.
@@ -228,6 +228,7 @@ ConsultationOfferingResponse publishConsultationOffering(@PathVariable UUID id) 
 ## REST conventions
 
 - Route prefixes by audience (D-26): `/api/shop`, `/api/customer`, `/api/expert`, `/api/admin`, plus `/api/me`, `/api/images`, `/api/poc` (`poc` profile only).
+- **Every controller says who may call it** with `@PreAuthorize` at class level, matching its prefix, such as `hasRole('ADMIN')` under `/api/admin`; ArchUnit fails for a route without one ([security](security.md#roles-by-route-prefix)).
 - **Response DTOs per audience:** customer, expert and admin case responses are different records. This makes "admin never sees notes" a property of the API's shape.
 - **Controllers and DTOs.** `api.<feature>` holds the controllers. Its `response` sub-package holds the `*Response` records, each with a public static `from(...)` that maps the domain object; its `request` sub-package holds the `*Request` records. A response that several features return, such as `MoneyResponse`, lives in `api.response`. ArchUnit checks both packages.
 - Request and response records have names that are unique across `api`, because the OpenAPI schema name is the simple class name (a test checks this).
@@ -245,8 +246,8 @@ ConsultationOfferingResponse publishConsultationOffering(@PathVariable UUID id) 
 |---|---|---|
 | Domain unit tests | every business rule (slots, deadlines, credits, refund eligibility, seats, lifecycle, link window) | extensive; plain JUnit; time is fixed via `Clock` |
 | REST integration tests | `@SpringBootTest` + `MockMvcTester` + Testcontainers Postgres | one happy-path test per route; `@IntegrationTest` also starts the server on a random port, for the few tests that need the real servlet container, such as the upload limit (`ImageUploadLimitTest`); its clock is a `TestClock` in Zurich, the system clock until a test sets an instant (`set(Instant)`), and reset to it after each test |
-| Authorization tests | role matrix over all routes (anonymous → 401, wrong role → 403); ownership with the two seed users per role (other's resource → 404); the admin case response has no notes; private notes never appear in customer responses | mandatory ([security](security.md#testing)) |
+| Authorization tests | role matrix over all routes (anonymous → 401, wrong role → 403), which fails for a route without a row; ownership with the two seed users per role (other's resource → 404); the admin case response has no notes; private notes never appear in customer responses | mandatory ([security](security.md#testing)) |
 | Concurrency tests | parallel requests on each locked race (offering status, expert slot, case credits, run seats) | one per race |
 | Use-case tests | only where the flow has logic worth isolating | optional |
-| Architecture tests | ArchUnit layer rules | mandatory |
+| Architecture tests | ArchUnit layer rules (`LayerRulesTest`) and authorization rules (`AuthorizationRulesTest`: `@PreAuthorize` on every route) | mandatory |
 | Contract test | the committed `openapi.json` is up to date | mandatory |

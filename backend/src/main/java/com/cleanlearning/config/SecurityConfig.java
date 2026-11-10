@@ -4,8 +4,8 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
@@ -25,13 +25,16 @@ import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler
 import org.springframework.security.web.savedrequest.NullRequestCache;
 
 /**
- * Roles by route prefix, see _docs/architecture/security.md. A new {@code /api} route needs a logged-in user unless a
- * rule here says otherwise; every route gets a row in {@code RoleMatrixTest}.
- * <p>
  * The session holds the login (D-25), and the SPA sends the CSRF token from the {@code XSRF-TOKEN} cookie back in the
  * {@code X-XSRF-TOKEN} header on every mutating request.
+ * <p>
+ * Who may call a route isn't decided here: each controller says it with {@code @PreAuthorize}, which
+ * {@code @EnableMethodSecurity} turns on (D-26, _docs/architecture/security.md). {@code AuthorizationRulesTest} fails
+ * the build for a handler method without one, and every route gets a row in {@code RoleMatrixTest}. A denial is
+ * answered by the filter chain below: 401 for a visitor, 403 for a user without the role.
  */
 @Configuration(proxyBeanMethods = false)
+@EnableMethodSecurity
 public class SecurityConfig {
 
     /** The servlet container's session cookie; {@code application.yml} sets its attributes. */
@@ -41,33 +44,22 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http, SecurityContextRepository securityContextRepository,
             CsrfTokenRepository csrfTokenRepository) {
         http
-                .authorizeHttpRequests(requests -> requests
-                        .requestMatchers("/api/shop/**").permitAll()
-                        // images of offerings and experts, which the shop shows (D-21)
-                        .requestMatchers(HttpMethod.GET, "/api/images/**").permitAll()
-                        // The PoC login. Its controller exists only in the poc profile, elsewhere the routes are 404.
-                        .requestMatchers("/api/poc/**").permitAll()
-                        // the OpenAPI document (D-29)
-                        .requestMatchers("/v3/api-docs/**").permitAll()
-                        .requestMatchers("/api/customer/**").hasRole("CUSTOMER")
-                        .requestMatchers("/api/expert/**").hasRole("EXPERT")
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/**").authenticated()
-                        // the SPA's files
-                        .anyRequest().permitAll())
+                // The controllers decide with @PreAuthorize. Outside them: the SPA's files, the OpenAPI document (D-29)
+                // and the logout below, all public.
+                .authorizeHttpRequests(requests -> requests.anyRequest().permitAll())
                 .securityContext(context -> context.securityContextRepository(securityContextRepository))
                 // Spring Security's SPA setup: the token in a cookie JavaScript can read, and back in a header. It
                 // writes the cookie on every response to a request without one, so the SPA's first GET gets it.
                 .csrf(csrf -> csrf.spa().csrfTokenRepository(csrfTokenRepository))
-                // Answers before authorization, so it's a 204 for a visitor, too.
+                // A filter, not a controller: it answers itself, a 204 for a visitor, too.
                 .logout(logout -> logout
                         .logoutUrl("/api/logout")
                         .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler(HttpStatus.NO_CONTENT))
                         .deleteCookies(SESSION_COOKIE))
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
-                // An anonymous caller gets a plain 401: no redirect, no login page, no Basic challenge,
-                // and no session that saves the request for a redirect after login.
+                // A denied @PreAuthorize reaches these handlers. An anonymous caller gets a plain 401: no redirect, no
+                // login page, no Basic challenge, and no session that saves the request for a redirect after login.
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .requestCache(cache -> cache.requestCache(new NullRequestCache()));

@@ -3,6 +3,7 @@ package com.cleanlearning.api.availability;
 import java.util.HashSet;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -28,6 +29,7 @@ import jakarta.validation.Valid;
  */
 @RestController
 @RequestMapping(AvailabilityController.PATH)
+@PreAuthorize("hasRole('EXPERT')")
 class AvailabilityController {
 
     static final String PATH = "/api/expert/availability";

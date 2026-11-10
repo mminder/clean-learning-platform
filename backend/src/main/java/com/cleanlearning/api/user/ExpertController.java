@@ -2,6 +2,7 @@ package com.cleanlearning.api.user;
 
 import java.util.List;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -12,6 +13,7 @@ import com.cleanlearning.application.user.ListExpertsUseCase;
  * The experts an admin can choose from for a consultation offering (UC-16). Security allows admins only.
  */
 @RestController
+@PreAuthorize("hasRole('ADMIN')")
 class ExpertController {
 
     private final ListExpertsUseCase listExperts;

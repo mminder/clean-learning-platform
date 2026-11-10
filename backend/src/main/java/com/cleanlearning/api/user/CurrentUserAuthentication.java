@@ -11,7 +11,7 @@ import com.cleanlearning.domain.user.CurrentUser;
 /**
  * The authentication a login keeps in the session: the {@link CurrentUser} as the principal, which controllers take
  * with {@code @AuthenticationPrincipal}, and its roles as the authorities {@code ROLE_CUSTOMER}, {@code ROLE_EXPERT}
- * and {@code ROLE_ADMIN}, which {@code SecurityConfig} checks.
+ * and {@code ROLE_ADMIN}, which the controllers' {@code @PreAuthorize} checks.
  */
 public final class CurrentUserAuthentication {
 
