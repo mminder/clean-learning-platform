@@ -228,7 +228,7 @@ ConsultationOfferingResponse publishConsultationOffering(@PathVariable UUID id) 
 ## REST conventions
 
 - Route prefixes by audience (D-26): `/api/shop`, `/api/customer`, `/api/expert`, `/api/admin`, plus `/api/me`, `/api/images`, `/api/poc` (`poc` profile only).
-- **Every controller says who may call it** with `@PreAuthorize` at class level, matching its prefix, such as `hasRole('ADMIN')` under `/api/admin`; ArchUnit fails for a route without one ([security](security.md#roles-by-route-prefix)).
+- **Every controller says who may call it** with `@PreAuthorize` at class level, matching its prefix, such as `hasRole('ADMIN')` under `/api/admin`; ArchUnit fails for a route without one. `SecurityConfig` checks the same role per prefix first, so a caller without it is turned away before Spring MVC reads the body ([security](security.md#how-the-check-works)).
 - **Response DTOs per audience:** customer, expert and admin case responses are different records. This makes "admin never sees notes" a property of the API's shape.
 - **Controllers and DTOs.** `api.<feature>` holds the controllers. Its `response` sub-package holds the `*Response` records, each with a public static `from(...)` that maps the domain object; its `request` sub-package holds the `*Request` records. A response that several features return, such as `MoneyResponse`, lives in `api.response`. ArchUnit checks both packages.
 - Request and response records have names that are unique across `api`, because the OpenAPI schema name is the simple class name (a test checks this).

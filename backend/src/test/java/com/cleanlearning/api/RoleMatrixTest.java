@@ -49,8 +49,8 @@ import com.cleanlearning.domain.user.value.Role;
 
 /**
  * Every route, called by every kind of user: the route either passes security, or the caller gets 401 (anonymous)
- * or 403 (missing role). Each controller says who may call it with {@code @PreAuthorize}; this test proves what the
- * annotations say. See _docs/architecture/security.md.
+ * or 403 (missing role). Each controller says who may call it with {@code @PreAuthorize}, and under a role prefix
+ * {@code SecurityConfig} says it first; this test proves what they say. See _docs/architecture/security.md.
  */
 @IntegrationTest
 class RoleMatrixTest {
@@ -66,9 +66,9 @@ class RoleMatrixTest {
             """;
 
     // Every route gets a row here; everyRouteHasARow() fails for a route without one. @PreAuthorize runs after Spring
-    // MVC has read and validated the request, so a request that fails there answers 400 even to a caller without the
-    // role, and the row would prove nothing. A row with a body sends one that passes. An allowed caller must not change
-    // data, so the use case still says no: an unknown id (404), or a value the domain refuses (400).
+    // MVC has read and validated the request, so a row with a body sends one that passes, and an allowed caller
+    // reaches the annotation, too. An allowed caller must not change data, so the use case still says no: an unknown
+    // id (404), or a value the domain refuses (400).
     private static final List<Route> ROUTES = List.of(
             Route.of(GET, "/api/shop/offerings", Access.PUBLIC),
             Route.of(GET, "/api/shop/offerings/" + SeedData.CAREER_COACHING, Access.PUBLIC),
@@ -77,6 +77,11 @@ class RoleMatrixTest {
             Route.withJson(POST, "/api/poc/login", """
                     {"userId": "%s"}""".formatted(UNKNOWN_ID), Access.PUBLIC),
             Route.of(GET, "/api/me", Access.AUTHENTICATED),
+            // A path under a role prefix without a route: the filter chain turns a caller without the role away before
+            // Spring MVC sees the request, so before any body is read; a caller with the role gets 404.
+            Route.of(GET, "/api/customer/probe", Access.CUSTOMER),
+            Route.of(GET, "/api/expert/probe", Access.EXPERT),
+            Route.of(GET, "/api/admin/probe", Access.ADMIN),
             // Spring Security's logout filter answers before any controller: a visitor's logout is a harmless 204.
             Route.of(POST, "/api/logout", Access.PUBLIC),
             // unknown offering: 404

@@ -41,27 +41,29 @@ Roles are always read from our database, never from token claims (D-04).
 
 ### Roles by route prefix
 
-Each controller says who may call its routes with `@PreAuthorize`, once at class level (D-26); `@EnableMethodSecurity` on `SecurityConfig` turns it on. The prefix names the role, so the URL and the annotation say the same:
+Each controller says who may call its routes with `@PreAuthorize`, once at class level (D-26); `@EnableMethodSecurity` on `SecurityConfig` turns it on. Under the three role prefixes, `SecurityConfig`'s filter chain checks the same role first ([how the check works](#how-the-check-works)). The prefix names the role, so the URL, the filter chain and the annotation say the same:
 
-| Prefix | Access | `@PreAuthorize` |
-|---|---|---|
-| `/api/shop/**`, `/api/images/**` | public | `permitAll()` |
-| `/api/me` | authenticated | `isAuthenticated()` |
-| `/api/customer/**` | `CUSTOMER` | `hasRole('CUSTOMER')` |
-| `/api/expert/**` | `EXPERT` | `hasRole('EXPERT')` |
-| `/api/admin/**` | `ADMIN` | `hasRole('ADMIN')` |
-| `/api/poc/**` | public, `poc` profile only | `permitAll()` |
-| `POST /api/logout` | public: a filter, not a controller, it answers 204 to a visitor, too | – |
-| `/v3/api-docs/**` (the OpenAPI document, [D-29](../decisions.md#architecture)) | public, in every profile including production: springdoc's controller, not ours | – |
-| everything outside `/api` (the SPA) | public | – |
+| Prefix | Access | Filter chain | `@PreAuthorize` |
+|---|---|---|---|
+| `/api/shop/**`, `/api/images/**` | public | `permitAll()` | `permitAll()` |
+| `/api/me` | authenticated | `permitAll()` | `isAuthenticated()` |
+| `/api/customer/**` | `CUSTOMER` | `hasRole("CUSTOMER")` | `hasRole('CUSTOMER')` |
+| `/api/expert/**` | `EXPERT` | `hasRole("EXPERT")` | `hasRole('EXPERT')` |
+| `/api/admin/**` | `ADMIN` | `hasRole("ADMIN")` | `hasRole('ADMIN')` |
+| `/api/poc/**` | public, `poc` profile only | `permitAll()` | `permitAll()` |
+| `POST /api/logout` | public: a filter, not a controller, it answers 204 to a visitor, too | – | – |
+| `/v3/api-docs/**` (the OpenAPI document, [D-29](../decisions.md#architecture)) | public, in every profile including production: springdoc's controller, not ours | `permitAll()` | – |
+| everything outside `/api` (the SPA) | public | `permitAll()` | – |
 
 A route that only one role may call lives under that role's prefix, and a route under a prefix needs its role. A user with several roles can call every prefix their roles allow. An anonymous caller gets 401 without a redirect, login page or Basic challenge; a missing role gets 403.
 
 ### How the check works
 
-- **The filter chain doesn't authorize routes** (`anyRequest().permitAll()` in `SecurityConfig`). It keeps the session, CSRF, logout and the answers to a denial.
-- **Spring Security checks `@PreAuthorize` when the controller method is called**, through a proxy of the controller. A denial throws `AuthorizationDeniedException` through Spring MVC to the security filter, which answers 401 to a visitor and 403 to a user without the role. So `ApiExceptionHandler` must never catch every exception (`Exception`, `RuntimeException`, `AccessDeniedException`): it would answer the denial itself, with a 500.
-- **The check runs after Spring MVC has read and validated the request.** A forbidden caller with an invalid body gets the 400 and its field list before the 403, and a route that doesn't exist is a 404 for everyone. That reveals nothing: `/v3/api-docs` documents every route and body anyway ([D-29](../decisions.md#architecture)). A `GET` route answers `HEAD`, too, with the same check.
+Two layers, which say the same under a role prefix:
+
+- **Spring Security checks `@PreAuthorize` when the controller method is called**, through a proxy of the controller. It's the rule per controller, on the code it guards, and a forgotten one fails the build (below). A denial throws `AuthorizationDeniedException` through Spring MVC to the security filter, which answers 401 to a visitor and 403 to a user without the role. So `ApiExceptionHandler` must never catch every exception (`Exception`, `RuntimeException`, `AccessDeniedException`): it would answer the denial itself, with a 500.
+- **The filter chain checks the role per prefix first** (`SecurityConfig`): `/api/customer/**` needs `CUSTOMER`, `/api/expert/**` `EXPERT` and `/api/admin/**` `ADMIN`; everything else passes on to the annotations. *Why:* the annotation is checked only after Spring MVC has read and validated the request, as it resolves the method's arguments. Without the filter chain's check, a caller without the role could make the server parse and validate any body, a 2 MB image upload included, before the 401 or 403; a visitor needs only the CSRF token, which any `GET` gives. The filter chain turns a caller without the role away before Spring MVC sees the request. It also keeps the session, CSRF, logout and the answers to a denial.
+- **What a caller sees.** Under a role prefix, a caller without the role gets 401 or 403 for every path and body, a route that doesn't exist included; a caller with the role gets the 400 for an invalid body and the 404 for an unknown route. Outside the role prefixes the annotation is the only check, so a route that doesn't exist is a 404 for everyone. Those routes are public, except `GET /api/me`, which has no body. The 404 reveals nothing: `/v3/api-docs` documents every route and body anyway ([D-29](../decisions.md#architecture)). A `GET` route answers `HEAD`, too, with the same checks.
 - **Deny by default, at build time.** `AuthorizationRulesTest` (ArchUnit) fails the build for:
   - a handler method without `@PreAuthorize`, on itself or on its class;
   - a final controller, or a final, private or static handler method: the proxy can't intercept it, so its check would be skipped silently;
@@ -94,10 +96,11 @@ Controllers pass `CurrentUser` (id, roles) into the use case. Ports load data **
 
 Authorization is tested through REST integration tests against Testcontainers Postgres, because the real filtering happens in SQL (D-26).
 
-1. **Role matrix** (`RoleMatrixTest`): a parameterized test over every route. Anonymous gets 401 (except public routes), and a user without the required role gets 403. It proves what the annotations say:
+1. **Role matrix** (`RoleMatrixTest`): a parameterized test over every route. Anonymous gets 401 (except public routes), and a user without the required role gets 403. It proves what the filter chain and the annotations say:
    - **Route coverage:** a test walks Spring MVC's handler mappings and fails, naming the route, for each HTTP method and path of our controllers that has no row.
    - **Prefixes:** a row under `/api/customer`, `/api/expert` or `/api/admin` needs that role, and a row that needs a role is under its prefix.
-   - **Requests that reach the check:** the check runs after validation, so a row with a body sends one that passes Bean Validation. The use case still refuses it, with an unknown id (404) or a value the domain rejects (400), so an allowed caller changes no data.
+   - **The filter chain first:** a path without a route under each role prefix answers 401 or 403 to a caller without the role, not 404: the filter chain turns them away before Spring MVC sees the request.
+   - **Requests that reach the annotation:** `@PreAuthorize` runs after validation, so a row with a body sends one that passes Bean Validation, and an allowed caller reaches the annotation, too. The use case still refuses it, with an unknown id (404) or a value the domain rejects (400), so an allowed caller changes no data.
 2. **Ownership:** using the seed users (two per role):
    - Customer 2 on Customer 1's case or enrollment → 404;
    - Expert 2 on Expert 1's case or run → 404;
