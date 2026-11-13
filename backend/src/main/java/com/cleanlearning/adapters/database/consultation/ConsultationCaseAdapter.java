@@ -30,11 +30,13 @@ import com.cleanlearning.application.consultation.port.LockCaseForCancellationPo
 import com.cleanlearning.application.consultation.port.LockConsultationOfferingForPurchasePort;
 import com.cleanlearning.application.consultation.port.SaveAppointmentCancellationPort;
 import com.cleanlearning.application.consultation.port.SaveBookingPort;
+import com.cleanlearning.application.consultation.port.SaveCaseCancellationPort;
 import com.cleanlearning.application.consultation.port.SaveConsultationCasePort;
 import com.cleanlearning.domain.consultation.Appointment;
 import com.cleanlearning.domain.consultation.AppointmentCancellation;
 import com.cleanlearning.domain.consultation.AssignedExpert;
 import com.cleanlearning.domain.consultation.Booking;
+import com.cleanlearning.domain.consultation.CaseCancellation;
 import com.cleanlearning.domain.consultation.CaseForBooking;
 import com.cleanlearning.domain.consultation.CaseForCancellation;
 import com.cleanlearning.domain.consultation.ConsultationCase;
@@ -43,6 +45,8 @@ import com.cleanlearning.domain.consultation.CustomerConsultationCase;
 import com.cleanlearning.domain.consultation.CustomerConsultationCaseSummary;
 import com.cleanlearning.domain.consultation.value.AppointmentId;
 import com.cleanlearning.domain.consultation.value.BusyTime;
+import com.cleanlearning.domain.consultation.value.CancellationOutcome;
+import com.cleanlearning.domain.consultation.value.CaseStatus;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.consultation.value.PurchaseTerms;
 import com.cleanlearning.domain.image.value.ImageId;
@@ -62,7 +66,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 
 /**
- * The cases and their appointments (UC-03, UC-05, UC-06, UC-07). It reads the offering's tables, through the
+ * The cases and their appointments (UC-03, UC-05, UC-06, UC-07, UC-08). It reads the offering's tables, through the
  * offering's entities, for the purchase, to show a case's offering live and for the eligible experts, and the expert
  * profiles for the assigned expert (D-23). Every query that lists appointments reads only {@code BOOKED} ones (spec 04,
  * decision 15), so a cancelled one frees its time and leaves the customer's views; the credits count the forfeited ones
@@ -72,7 +76,7 @@ import jakarta.persistence.LockModeType;
 class ConsultationCaseAdapter implements LockConsultationOfferingForPurchasePort, SaveConsultationCasePort,
         LoadCustomerConsultationCasePort, LoadCustomerConsultationCasesPort, LoadCaseForBookingPort,
         LockCaseForBookingPort, LoadBusyTimesPort, LoadCustomerBusyTimesPort, SaveBookingPort,
-        LockCaseForCancellationPort, SaveAppointmentCancellationPort {
+        LockCaseForCancellationPort, SaveAppointmentCancellationPort, SaveCaseCancellationPort {
 
     private final ConsultationCaseRepository repository;
 
@@ -209,8 +213,22 @@ class ConsultationCaseAdapter implements LockConsultationOfferingForPurchasePort
         appointment.setCreditRefunded(cancellation.creditRefunded());
     }
 
+    /**
+     * Changes the case's managed entity and those of the appointments cancelled with it, which
+     * {@link #lockForCancellation} loaded in the same transaction.
+     */
+    @Override
+    public void save(CaseCancellation cancellation) {
+        ConsultationCaseEntity consultationCase = Objects.requireNonNull(
+                entityManager.find(ConsultationCaseEntity.class, cancellation.id().value()), "The cancelled case");
+        consultationCase.setStatus(CaseStatus.CANCELLED);
+        consultationCase.setCancelledAt(cancellation.outcome().cancelledAt());
+        consultationCase.setRefundEligible(cancellation.outcome().refundEligible());
+        cancellation.appointments().forEach(this::save);
+    }
+
     private CaseForBooking toCaseForBooking(ConsultationCaseEntity entity) {
-        return new CaseForBooking(new ConsultationCaseId(entity.getId()), toPurchaseTerms(entity),
+        return new CaseForBooking(new ConsultationCaseId(entity.getId()), entity.getStatus(), toPurchaseTerms(entity),
                 Optional.ofNullable(entity.getAssignedExpertId()).map(UserId::new),
                 Math.toIntExact(repository.countBookedAppointments(entity.getId())),
                 Math.toIntExact(repository.countForfeitedCredits(entity.getId())),
@@ -220,7 +238,8 @@ class ConsultationCaseAdapter implements LockConsultationOfferingForPurchasePort
 
     private CaseForCancellation toCaseForCancellation(ConsultationCaseEntity entity) {
         List<AppointmentEntity> appointments = repository.findAppointments(entity.getId());
-        return new CaseForCancellation(new ConsultationCaseId(entity.getId()), toPurchaseTerms(entity),
+        return new CaseForCancellation(new ConsultationCaseId(entity.getId()), entity.getStatus(),
+                toPurchaseTerms(entity),
                 appointments.stream().filter(appointment -> appointment.getStatus() == StoredAppointmentStatus.BOOKED)
                         .map(ConsultationCaseAdapter::toAppointment).toList(),
                 appointments.stream()
@@ -257,7 +276,17 @@ class ConsultationCaseAdapter implements LockConsultationOfferingForPurchasePort
                         new SessionDuration(row.sessionDurationMinutes()),
                         new CancellationDeadline(row.cancellationDeadlineHours())),
                 row.purchasedAt(), assignedExpert(row),
-                appointments.stream().map(ConsultationCaseAdapter::toAppointment).toList(), forfeitedCredits, asOf);
+                appointments.stream().map(ConsultationCaseAdapter::toAppointment).toList(), forfeitedCredits,
+                cancellation(row), asOf);
+    }
+
+    /** V10's checks say a cancelled case has both {@code cancelled_at} and {@code refund_eligible}. */
+    private static Optional<CancellationOutcome> cancellation(CustomerConsultationCaseRow row) {
+        if (row.status() == CaseStatus.ACTIVE) {
+            return Optional.empty();
+        }
+        return Optional.of(new CancellationOutcome(Objects.requireNonNull(row.cancelledAt(), "cancelledAt"),
+                Objects.requireNonNull(row.refundEligible(), "refundEligible")));
     }
 
     /** The left join's expert columns are all null before the first booking. */

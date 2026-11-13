@@ -11,7 +11,9 @@ import org.junit.jupiter.api.Test;
 
 import com.cleanlearning.domain.consultation.value.AppointmentId;
 import com.cleanlearning.domain.consultation.value.AppointmentStatus;
+import com.cleanlearning.domain.consultation.value.CancellationOutcome;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
+import com.cleanlearning.domain.consultation.value.NonRefundableReason;
 import com.cleanlearning.domain.consultation.value.PurchaseTerms;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import com.cleanlearning.domain.offering.value.OfferingName;
@@ -57,10 +59,22 @@ class CustomerConsultationCaseTest {
 
     private static CustomerConsultationCase withSessions(int sessionCount, Optional<AssignedExpert> expert,
             List<Appointment> appointments, int forfeitedCredits, Instant asOf) {
+        return withSessions(sessionCount, expert, appointments, forfeitedCredits, Optional.empty(), asOf);
+    }
+
+    private static CustomerConsultationCase withSessions(int sessionCount, Optional<AssignedExpert> expert,
+            List<Appointment> appointments, int forfeitedCredits, Optional<CancellationOutcome> cancellation,
+            Instant asOf) {
         return new CustomerConsultationCase(CASE, new OfferingName("Career Coaching"), Optional.empty(),
                 new PurchaseTerms(Money.chf("450.00"), new SessionCount(sessionCount), new SessionDuration(60),
                         new CancellationDeadline(24)),
-                Instant.parse("2026-11-09T14:03:12.345Z"), expert, appointments, forfeitedCredits, asOf);
+                Instant.parse("2026-11-09T14:03:12.345Z"), expert, appointments, forfeitedCredits, cancellation, asOf);
+    }
+
+    /** Cancelled on Sun 15 Nov 2026, 12:00 in Zurich, with these appointments left booked. */
+    private static CustomerConsultationCase cancelled(List<Appointment> appointments, Instant asOf) {
+        return withSessions(3, Optional.of(EXPERT_2), appointments, 0,
+                Optional.of(new CancellationOutcome(Instant.parse("2026-11-15T11:00:00Z"), false)), asOf);
     }
 
     private static CustomerConsultationCase withAppointments(List<Appointment> appointments, Instant asOf) {
@@ -191,10 +205,11 @@ class CustomerConsultationCaseTest {
     @Test
     void thePreviewFollowsTheCasesDeadline() {
         CustomerConsultationCase seventyTwoHours = new CustomerConsultationCase(CASE,
-                new OfferingName("Career Coaching"), Optional.empty(), new PurchaseTerms(Money.chf("450.00"), new SessionCount(3), new SessionDuration(60),
+                new OfferingName("Career Coaching"), Optional.empty(),
+                new PurchaseTerms(Money.chf("450.00"), new SessionCount(3), new SessionDuration(60),
                         new CancellationDeadline(72)),
                 Instant.parse("2026-11-09T14:03:12.345Z"), Optional.of(EXPERT_2), List.of(TUESDAY), 0,
-                Instant.parse("2026-11-15T11:00:00Z"));
+                Optional.empty(), Instant.parse("2026-11-15T11:00:00Z"));
 
         assertThat(seventyTwoHours.upcomingAppointments()).singleElement().satisfies(upcoming -> {
             assertThat(upcoming.canCancel()).isTrue();
@@ -206,5 +221,82 @@ class CustomerConsultationCaseTest {
     @Test
     void showsTheAssignedExpert() {
         assertThat(withAppointments(List.of(TUESDAY), NOW).expert()).contains(EXPERT_2);
+    }
+
+    /** UC-08: an active case can be cancelled until it's completed, with its refund outcome as the preview. */
+    @Test
+    void anActiveCaseCanBeCancelledWithItsRefundOutcome() {
+        CustomerConsultationCase withoutAppointments = withSessions(3);
+
+        assertThat(withoutAppointments.cancellation()).isEmpty();
+        assertThat(withoutAppointments.canCancel()).isTrue();
+        assertThat(withoutAppointments.refundIfCancelledNow()).hasValueSatisfying(
+                refund -> assertThat(refund.isRefundEligible()).isTrue());
+        // Mon 16 Nov 2026, 11:00 in Zurich: Tuesday's free cancellation ended at 10:00
+        assertThat(withAppointments(List.of(TUESDAY), Instant.parse("2026-11-16T10:00:00Z")).refundIfCancelledNow())
+                .hasValueSatisfying(refund -> {
+                    assertThat(refund.reason()).contains(NonRefundableReason.DEADLINE_PASSED);
+                    assertThat(refund.deadlinePassedAppointment()).contains(TUESDAY);
+                    assertThat(refund.freeCancellationUntil()).contains(Instant.parse("2026-11-16T09:00:00Z"));
+                });
+        // a forfeited credit
+        assertThat(withSessions(3, Optional.of(EXPERT_2), List.of(), 1, NOW).refundIfCancelledNow())
+                .hasValueSatisfying(refund -> assertThat(refund.reason())
+                        .contains(NonRefundableReason.CREDIT_FORFEITED));
+    }
+
+    /** Spec 05, decision 13: completed at the end of the last appointment of a fully booked case, not at its start. */
+    @Test
+    void aCaseIsCompletedOnceItsLastAppointmentHasEnded() {
+        List<Appointment> fullyBooked = List.of(MONDAY, TUESDAY, WEDNESDAY);
+        CustomerConsultationCase whileTheLastRuns = withAppointments(fullyBooked,
+                Instant.parse("2026-11-18T09:30:00Z"));
+        CustomerConsultationCase atItsEnd = withAppointments(fullyBooked, WEDNESDAY.end());
+
+        assertThat(whileTheLastRuns.canCancel()).isTrue();
+        assertThat(whileTheLastRuns.refundIfCancelledNow()).hasValueSatisfying(
+                refund -> assertThat(refund.reason()).contains(NonRefundableReason.SESSION_TOOK_PLACE));
+        assertThat(atItsEnd.canCancel()).isFalse();
+        assertThat(atItsEnd.refundIfCancelledNow()).isEmpty();
+        assertThat(atItsEnd.canBook()).isFalse();
+    }
+
+    @Test
+    void aCaseWhoseEveryCreditWasForfeitedIsCompleted() {
+        CustomerConsultationCase consultationCase = withSessions(1, Optional.of(EXPERT_2), List.of(), 1, NOW);
+
+        assertThat(consultationCase.canCancel()).isFalse();
+        assertThat(consultationCase.refundIfCancelledNow()).isEmpty();
+    }
+
+    /** Spec 05, decision 6: a cancelled case can be neither booked nor cancelled again, whatever its credits. */
+    @Test
+    void aCancelledCaseCanBeNeitherBookedNorCancelled() {
+        CustomerConsultationCase consultationCase = cancelled(List.of(MONDAY), Instant.parse("2026-11-16T12:00:00Z"));
+
+        assertThat(consultationCase.cancellation())
+                .contains(new CancellationOutcome(Instant.parse("2026-11-15T11:00:00Z"), false));
+        assertThat(consultationCase.openCredits()).isEqualTo(2);
+        assertThat(consultationCase.canBook()).isFalse();
+        assertThat(consultationCase.canCancel()).isFalse();
+        assertThat(consultationCase.refundIfCancelledNow()).isEmpty();
+        assertThat(consultationCase.pastAppointments()).extracting(CustomerAppointment::id)
+                .containsExactly(MONDAY.id());
+    }
+
+    /** The preview is present exactly when the case can be cancelled, at every time and in every state. */
+    @Test
+    void theRefundPreviewIsPresentExactlyWhenTheCaseCanBeCancelled() {
+        List<CustomerConsultationCase> cases = List.of(withSessions(3),
+                withSessions(1, Optional.of(EXPERT_2), List.of(), 1, NOW), cancelled(List.of(), NOW),
+                cancelled(List.of(TUESDAY), TUESDAY.start()),
+                withAppointments(List.of(MONDAY, TUESDAY, WEDNESDAY), NOW),
+                withAppointments(List.of(MONDAY, TUESDAY, WEDNESDAY), Instant.parse("2026-11-16T10:00:00Z")),
+                withAppointments(List.of(MONDAY, TUESDAY, WEDNESDAY), WEDNESDAY.start()),
+                withAppointments(List.of(MONDAY, TUESDAY, WEDNESDAY), WEDNESDAY.end()));
+        for (CustomerConsultationCase consultationCase : cases) {
+            assertThat(consultationCase.refundIfCancelledNow().isPresent()).as(consultationCase.toString())
+                    .isEqualTo(consultationCase.canCancel());
+        }
     }
 }

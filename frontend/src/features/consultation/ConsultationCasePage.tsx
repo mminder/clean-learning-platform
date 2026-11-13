@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
+import { cn } from 'cn'
 import { ImagePlaceholder } from '@/components/ImagePlaceholder'
 import { OfferingImage } from '@/components/OfferingImage'
 import { Badge } from '@/components/ui/badge'
@@ -13,18 +14,22 @@ import {
   CancelAppointmentDialog,
   type AppointmentToCancel,
 } from './CancelAppointmentDialog'
+import { CancelCaseDialog } from './CancelCaseDialog'
 import {
   useCustomerConsultationCase,
   type CustomerAppointment,
 } from './queries'
+import { cancelledCaseRefundText } from './refund-texts'
 
 /**
  * UC-05's case detail, as far as a case has data yet: the offering, the expert ("Not assigned yet" before the first
  * booking), the credits, the purchase terms and the purchase time; **Book appointment** (UC-06), disabled without an
- * open credit; the expert's profile; and the upcoming and past appointments, in Zurich time, each upcoming one with
- * **Cancel** while it can be cancelled (UC-07), but no free-cancellation time (spec 05, decision 1). A cancelled
- * appointment isn't listed (decision 3). The server decides `canBook`, each appointment's status and `canCancel`.
- * Another customer's case is "Case not found", like an unknown one.
+ * open credit, and **Cancel case** (UC-08) while the case can be cancelled; the expert's profile; and the upcoming and
+ * past appointments, in Zurich time, each upcoming one with **Cancel** while it can be cancelled (UC-07), but no
+ * free-cancellation time (spec 05, decision 1). A cancelled appointment isn't listed (decision 3). A cancelled case
+ * says when it was cancelled and its refund outcome in place of the credits, and has no actions and no hint (decision
+ * 6). The server decides `canBook`, `canCancel` and each appointment's status and `canCancel`. Another customer's case
+ * is "Case not found", like an unknown one.
  */
 export function ConsultationCasePage() {
   // The route /my/cases/:id always has an id.
@@ -36,6 +41,7 @@ export function ConsultationCasePage() {
     open: boolean
     appointment?: AppointmentToCancel
   }>({ open: false })
+  const [cancelCaseOpen, setCancelCaseOpen] = useState(false)
 
   if (consultationCase.isPending) {
     return <p className="text-muted-foreground">Loading the case…</p>
@@ -73,6 +79,8 @@ export function ConsultationCasePage() {
     expert,
     upcomingAppointments,
     pastAppointments,
+    cancellation,
+    canCancel,
     canBook,
   } = consultationCase.data
   const hasAppointment =
@@ -89,9 +97,21 @@ export function ConsultationCasePage() {
       </header>
       <dl className="grid gap-4 sm:grid-cols-2">
         <Term label="Expert">{expert?.displayName ?? 'Not assigned yet'}</Term>
-        <Term label="Credits">
-          {openCredits} of {totalCredits} open
-        </Term>
+        {cancellation ? (
+          <Term label="Status">
+            Cancelled on {formatDateTime(cancellation.cancelledAt)}{' '}
+            <span className="font-normal text-muted-foreground">
+              (Zurich time)
+            </span>
+            <span className="block font-normal">
+              {cancelledCaseRefundText(cancellation, purchaseTerms.pricePaid)}
+            </span>
+          </Term>
+        ) : (
+          <Term label="Credits">
+            {openCredits} of {totalCredits} open
+          </Term>
+        )}
         <Term label="Price paid">{formatMoney(purchaseTerms.pricePaid)}</Term>
         <Term label="Sessions">
           {purchaseTerms.sessionCount} × {purchaseTerms.sessionDurationMinutes}{' '}
@@ -108,11 +128,25 @@ export function ConsultationCasePage() {
           </span>
         </Term>
       </dl>
-      <div className="flex flex-wrap items-center gap-4">
+      {/* A cancelled case has no actions, but the booking dialog stays mounted: a tab that booked on it shows
+          CASE_CANCELLED while the reload turns the page into the cancelled case. Its content is in a portal. */}
+      <div
+        className={cn(
+          'flex flex-wrap items-center gap-4',
+          cancellation && 'hidden',
+        )}
+      >
         <BookAppointmentDialog consultationCase={consultationCase.data}>
-          <Button disabled={!canBook}>Book appointment</Button>
+          {!cancellation && (
+            <Button disabled={!canBook}>Book appointment</Button>
+          )}
         </BookAppointmentDialog>
-        {/* Not after late cancellations forfeited every credit: nothing is left to book. */}
+        {canCancel && (
+          <Button variant="outline" onClick={() => setCancelCaseOpen(true)}>
+            Cancel case
+          </Button>
+        )}
+        {/* Not after late cancellations forfeited every credit, nor on a cancelled case: nothing is left to book. */}
         {!hasAppointment && canBook && (
           <p className="text-muted-foreground">Book your first session</p>
         )}
@@ -175,6 +209,12 @@ export function ConsultationCasePage() {
         onOpenChange={(open) =>
           setCancelDialog((dialog) => ({ ...dialog, open }))
         }
+      />
+      <CancelCaseDialog
+        consultationCase={consultationCase.data}
+        reloadCase={consultationCase.refetch}
+        open={cancelCaseOpen}
+        onOpenChange={setCancelCaseOpen}
       />
     </article>
   )

@@ -959,6 +959,83 @@
         "tags" : [ "customer-consultation-case-controller" ]
       }
     },
+    "/api/customer/consultation-cases/{id}/cancel" : {
+      "post" : {
+        "operationId" : "cancelConsultationCase",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CancelConsultationCaseRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CustomerConsultationCaseResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "415" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Unsupported Media Type"
+          }
+        },
+        "tags" : [ "customer-consultation-case-controller" ]
+      }
+    },
     "/api/customer/consultation-cases/{id}/eligible-experts" : {
       "get" : {
         "operationId" : "listEligibleExpertsForCase",
@@ -1417,6 +1494,28 @@
         },
         "required" : [ "creditRefunded" ]
       },
+      "CancelConsultationCaseRequest" : {
+        "type" : "object",
+        "properties" : {
+          "refundEligible" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "refundEligible" ]
+      },
+      "CancellationOutcomeResponse" : {
+        "type" : "object",
+        "properties" : {
+          "cancelledAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "refundEligible" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "cancelledAt", "refundEligible" ]
+      },
       "ConsultationOfferingDetailResponse" : {
         "type" : "object",
         "properties" : {
@@ -1613,6 +1712,16 @@
           "canBook" : {
             "type" : "boolean"
           },
+          "canCancel" : {
+            "type" : "boolean"
+          },
+          "cancellation" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CancellationOutcomeResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
           "expert" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/AssignedExpertResponse"
@@ -1648,6 +1757,13 @@
             "type" : "string",
             "format" : "date-time"
           },
+          "refundIfCancelledNow" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/RefundEligibilityResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
           "totalCredits" : {
             "type" : "integer",
             "format" : "int32"
@@ -1659,7 +1775,7 @@
             }
           }
         },
-        "required" : [ "canBook", "id", "offeringName", "openCredits", "pastAppointments", "purchaseTerms", "purchasedAt", "totalCredits", "upcomingAppointments" ]
+        "required" : [ "canBook", "canCancel", "id", "offeringName", "openCredits", "pastAppointments", "purchaseTerms", "purchasedAt", "totalCredits", "upcomingAppointments" ]
       },
       "CustomerConsultationCaseSummaryResponse" : {
         "type" : "object",
@@ -1735,6 +1851,24 @@
           }
         },
         "required" : [ "canCancel", "creditRefundedIfCancelledNow", "end", "freeCancellationUntil", "id", "start", "status" ]
+      },
+      "DeadlinePassedAppointmentResponse" : {
+        "type" : "object",
+        "properties" : {
+          "end" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "freeCancellationUntil" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "start" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "end", "freeCancellationUntil", "start" ]
       },
       "EligibleExpertResponse" : {
         "type" : "object",
@@ -1919,6 +2053,26 @@
           }
         },
         "required" : [ "cancellationDeadlineHours", "pricePaid", "sessionCount", "sessionDurationMinutes" ]
+      },
+      "RefundEligibilityResponse" : {
+        "type" : "object",
+        "properties" : {
+          "appointment" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/DeadlinePassedAppointmentResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "reason" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "SESSION_TOOK_PLACE", "CREDIT_FORFEITED", "DEADLINE_PASSED" ]
+          },
+          "refundEligible" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "refundEligible" ]
       },
       "ShopOfferingDetailResponse" : {
         "type" : "object",

@@ -121,6 +121,35 @@ class AppointmentTest {
         assertThat(Appointment.openCredits(new SessionCount(1), 0, 1)).isZero();
     }
 
+    /** Spec 05, decision 13: completed once no credit is open and the last booked appointment has ended. */
+    @Test
+    void aCaseIsCompletedWithoutOpenCreditsOnceItsLastAppointmentHasEnded() {
+        Appointment earlier = appointment("2026-11-16T09:00:00Z", "2026-11-16T10:00:00Z");
+        List<Appointment> both = List.of(TEN_TO_ELEVEN, earlier);
+        SessionCount two = new SessionCount(2);
+
+        assertThat(Appointment.isCompleted(two, both, 0, START.minusSeconds(1))).isFalse();
+        // while the last session runs, it isn't completed yet
+        assertThat(Appointment.isCompleted(two, both, 0, START)).isFalse();
+        assertThat(Appointment.isCompleted(two, both, 0, END.minusSeconds(1))).isFalse();
+        assertThat(Appointment.isCompleted(two, both, 0, END)).isTrue();
+    }
+
+    @Test
+    void aCaseWithAnOpenCreditIsNotCompleted() {
+        assertThat(Appointment.isCompleted(new SessionCount(3), List.of(TEN_TO_ELEVEN), 0, END)).isFalse();
+        assertThat(Appointment.isCompleted(new SessionCount(3), List.of(), 0, END)).isFalse();
+        // one consumed, one forfeited, one open
+        assertThat(Appointment.isCompleted(new SessionCount(3), List.of(TEN_TO_ELEVEN), 1, END)).isFalse();
+    }
+
+    @Test
+    void forfeitedCreditsCanCompleteACase() {
+        assertThat(Appointment.isCompleted(new SessionCount(1), List.of(), 1, START)).isTrue();
+        assertThat(Appointment.isCompleted(new SessionCount(2), List.of(TEN_TO_ELEVEN), 1, END)).isTrue();
+        assertThat(Appointment.isCompleted(new SessionCount(2), List.of(TEN_TO_ELEVEN), 1, START)).isFalse();
+    }
+
     @Test
     void cancellingIsFreeUntilTheDeadlineBeforeItsStartInRealHours() {
         assertThat(TEN_TO_ELEVEN.freeCancellationUntil(new CancellationDeadline(24)))

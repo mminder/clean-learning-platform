@@ -77,15 +77,17 @@ public record CustomerConsultationCaseSummary(ConsultationCaseId id, OfferingNam
     }
 
     /**
-     * Computed, never stored (D-11): {@code UPCOMING} with an appointment that hasn't ended, otherwise
-     * {@code NEEDS_BOOKING} with an open credit, otherwise {@code PAST}. UC-08 adds "active" to the second and
-     * cancelled cases to the third.
+     * Computed, never stored (D-11): {@code UPCOMING} with an appointment that hasn't ended, otherwise {@code PAST} once
+     * the case is completed, as {@link Appointment#isCompleted} decides for the case detail too, otherwise
+     * {@code NEEDS_BOOKING}: an open credit is left. UC-08 adds "active" to the second and cancelled cases to the third
+     * (task 04).
      */
     public PurchaseGroup group() {
         if (nextAppointment().isPresent()) {
             return PurchaseGroup.UPCOMING;
         }
-        return openCredits() > 0 ? PurchaseGroup.NEEDS_BOOKING : PurchaseGroup.PAST;
+        return Appointment.isCompleted(sessionCount, appointments, forfeitedCredits, asOf) ? PurchaseGroup.PAST
+                : PurchaseGroup.NEEDS_BOOKING;
     }
 
     /** Compares two cases of the same group. */

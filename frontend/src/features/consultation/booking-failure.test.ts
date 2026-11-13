@@ -34,6 +34,10 @@ describe('bookingFailure', () => {
     )
   })
 
+  it('leaves only Close after CASE_CANCELLED', () => {
+    expect(bookingFailure(conflict('CASE_CANCELLED'))).toBe('caseCancelled')
+  })
+
   it('stays on the confirmation after any other failure', () => {
     expect(bookingFailure(conflict('SOMETHING_ELSE'))).toBe('failed')
     expect(bookingFailure(new ApiError('Booking failed', 400))).toBe('failed')

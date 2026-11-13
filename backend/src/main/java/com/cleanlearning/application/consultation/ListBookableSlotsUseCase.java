@@ -57,13 +57,14 @@ public class ListBookableSlotsUseCase {
      *
      * @param expertId the expert the dialog shows: the one the customer picked, or the case's
      * @throws NotFoundException if there's no case with this id, or it's another customer's
-     * @throws BusinessRuleException if the case has another expert ({@code EXPERT_CHANGED}), or has none and the expert
-     *     isn't eligible ({@code EXPERT_NOT_ELIGIBLE})
+     * @throws BusinessRuleException if the case was cancelled ({@code CASE_CANCELLED}), has another expert
+     *     ({@code EXPERT_CHANGED}), or has none and the expert isn't eligible ({@code EXPERT_NOT_ELIGIBLE})
      */
     @Transactional(readOnly = true)
     public List<BookableSlot> invoke(CurrentUser user, ConsultationCaseId id, UserId expertId) {
         CaseForBooking consultationCase = loadCase.load(id, user.id())
                 .orElseThrow(() -> new NotFoundException("Case " + id.value() + " not found."));
+        consultationCase.requireActive();
         UserId expert = consultationCase.expertFor(expertId);
         Instant now = clock.instant();
         LocalDate today = LocalDate.ofInstant(now, BusinessTimeZone.ZONE);

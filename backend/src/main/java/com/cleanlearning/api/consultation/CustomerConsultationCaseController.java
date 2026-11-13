@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.cleanlearning.api.ProblemResponses;
 import com.cleanlearning.api.consultation.request.BookConsultationAppointmentRequest;
 import com.cleanlearning.api.consultation.request.CancelConsultationAppointmentRequest;
+import com.cleanlearning.api.consultation.request.CancelConsultationCaseRequest;
 import com.cleanlearning.api.consultation.request.PurchaseConsultationPackageRequest;
 import com.cleanlearning.api.consultation.response.BookableSlotResponse;
 import com.cleanlearning.api.consultation.response.CustomerAppointmentResponse;
@@ -31,6 +32,8 @@ import com.cleanlearning.application.consultation.BookConsultationAppointmentCom
 import com.cleanlearning.application.consultation.BookConsultationAppointmentUseCase;
 import com.cleanlearning.application.consultation.CancelConsultationAppointmentCommand;
 import com.cleanlearning.application.consultation.CancelConsultationAppointmentUseCase;
+import com.cleanlearning.application.consultation.CancelConsultationCaseCommand;
+import com.cleanlearning.application.consultation.CancelConsultationCaseUseCase;
 import com.cleanlearning.application.consultation.GetCustomerConsultationCaseUseCase;
 import com.cleanlearning.application.consultation.ListBookableSlotsUseCase;
 import com.cleanlearning.application.consultation.ListCustomerConsultationCasesUseCase;
@@ -53,7 +56,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 
 /**
- * The customer's cases (UC-03, UC-05), their bookings (UC-06) and their appointments' cancellations (UC-07). Security
+ * The customer's cases (UC-03, UC-05), their bookings (UC-06), their appointments' cancellations (UC-07) and their
+ * cancellations (UC-08). Security
  * lets only users with {@code CUSTOMER} in; each use case is scoped to the current user, so another customer's case
  * answers 404.
  */
@@ -78,12 +82,15 @@ class CustomerConsultationCaseController {
 
     private final CancelConsultationAppointmentUseCase cancelConsultationAppointment;
 
+    private final CancelConsultationCaseUseCase cancelConsultationCase;
+
     CustomerConsultationCaseController(PurchaseConsultationPackageUseCase purchaseConsultationPackage,
             GetCustomerConsultationCaseUseCase getCustomerConsultationCase,
             ListCustomerConsultationCasesUseCase listCustomerConsultationCases,
             ListEligibleExpertsForCaseUseCase listEligibleExpertsForCase, ListBookableSlotsUseCase listBookableSlots,
             BookConsultationAppointmentUseCase bookConsultationAppointment,
-            CancelConsultationAppointmentUseCase cancelConsultationAppointment) {
+            CancelConsultationAppointmentUseCase cancelConsultationAppointment,
+            CancelConsultationCaseUseCase cancelConsultationCase) {
         this.purchaseConsultationPackage = purchaseConsultationPackage;
         this.getCustomerConsultationCase = getCustomerConsultationCase;
         this.listCustomerConsultationCases = listCustomerConsultationCases;
@@ -91,6 +98,7 @@ class CustomerConsultationCaseController {
         this.listBookableSlots = listBookableSlots;
         this.bookConsultationAppointment = bookConsultationAppointment;
         this.cancelConsultationAppointment = cancelConsultationAppointment;
+        this.cancelConsultationCase = cancelConsultationCase;
     }
 
     /** UC-05's landing page: the current user's own cases, in the order of "My purchases". */
@@ -194,6 +202,22 @@ class CustomerConsultationCaseController {
         return CustomerConsultationCaseResponse.from(cancelConsultationAppointment.invoke(currentUser,
                 new CancelConsultationAppointmentCommand(new ConsultationCaseId(id), new AppointmentId(appointmentId),
                         request.creditRefunded())));
+    }
+
+    /**
+     * UC-08 steps 3–5: cancels the case, and with it its appointments that haven't started, with the outcome the
+     * dialog stated, and answers the cancelled case (spec 05, decision 12).
+     */
+    @PostMapping("/{id}/cancel")
+    @ResponseStatus(HttpStatus.OK)
+    @ProblemResponses.Status400
+    @ProblemResponses.Status404
+    @ProblemResponses.Status409
+    @ProblemResponses.Status415
+    CustomerConsultationCaseResponse cancelConsultationCase(@AuthenticationPrincipal CurrentUser currentUser,
+            @PathVariable UUID id, @Valid @RequestBody CancelConsultationCaseRequest request) {
+        return CustomerConsultationCaseResponse.from(cancelConsultationCase.invoke(currentUser,
+                new CancelConsultationCaseCommand(new ConsultationCaseId(id), request.refundEligible())));
     }
 
     /** A value object that rejects a value Bean Validation let through throws, and the API answers 400. */
