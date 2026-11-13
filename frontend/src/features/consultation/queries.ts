@@ -33,7 +33,7 @@ export type CancellationOutcome =
   components['schemas']['CancellationOutcomeResponse']
 
 /** The appointment to cancel, and the outcome the dialog stated: whether the credit is returned (spec 05, decision 4). */
-export interface AppointmentCancellation {
+export interface CancelAppointmentVariables {
   appointmentId: string
   creditRefunded: boolean
 }
@@ -214,7 +214,7 @@ export function useCancelConsultationAppointment(caseId: string) {
     mutationFn: async ({
       appointmentId,
       creditRefunded,
-    }: AppointmentCancellation) => {
+    }: CancelAppointmentVariables) => {
       const { data, error, response } = await client.POST(
         '/api/customer/consultation-cases/{id}/appointments/{appointmentId}/cancel',
         {

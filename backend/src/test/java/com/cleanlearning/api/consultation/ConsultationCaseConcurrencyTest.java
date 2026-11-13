@@ -45,9 +45,9 @@ import com.jayway.jsonpath.JsonPath;
  * on it runs never keeps a future booked appointment (spec 05, decision 10).
  * <p>
  * As in {@code ConsultationOfferingConcurrencyTest}, a test makes its race certain rather than likely: it holds the
- * contended row lock itself while the requests start, waits until Postgres shows both waiting for a lock, and only
- * then lets go. With the lock, they wait at the lock and then run one after the other. Without it, they read at once,
- * and both pass. "Now" is Mon 9 Nov 2026, 15:00 in Zurich; in November, Zurich is UTC+1.
+ * contended row lock itself while the requests start, waits until Postgres shows them waiting for a lock (in the
+ * cancellation test, until the cancellation waits or has answered), and only then lets go. With the lock, they wait at
+ * the lock and then run one after the other. Without it, they read at once, and both pass. "Now" is Mon 9 Nov 2026, 15:00 in Zurich; in November, Zurich is UTC+1.
  */
 @IntegrationTest
 class ConsultationCaseConcurrencyTest {
@@ -225,7 +225,8 @@ class ConsultationCaseConcurrencyTest {
         assertThat(jdbc.sql("select status from consultation_case where id = :id::uuid").param("id", caseId)
                 .query(String.class).single()).as("the case's status").isEqualTo("CANCELLED");
         assertThat(jdbc.sql("""
-                select to_char(starts_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') || ' ' || status || ' ' || coalesce(credit_refunded::text, '-') from appointment
+                select to_char(starts_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') || ' ' || status
+                       || ' ' || coalesce(credit_refunded::text, '-') from appointment
                 where consultation_case_id = :id::uuid order by starts_at
                 """).param("id", caseId).query(String.class).list())
                 .as("the case's appointments: none still booked, each credit refunded")

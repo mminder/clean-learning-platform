@@ -155,7 +155,7 @@ class CustomerConsultationCaseController {
 
     /**
      * UC-06 steps 3–4: the times the case can book with the expert, soonest first. {@code expertId} is the expert the
-     * dialog shows; without it Spring answers 400.
+     * dialog shows; without it Spring answers 400. A cancelled case answers 409 {@code CASE_CANCELLED}.
      */
     @GetMapping("/{id}/bookable-slots")
     @ResponseStatus(HttpStatus.OK)

@@ -48,6 +48,11 @@ class RefundEligibilityTest {
     }
 
     @Test
+    void rejectsANegativeNumberOfForfeitedCredits() {
+        assertThatIllegalArgumentException().isThrownBy(() -> rule(List.of(), -1));
+    }
+
+    @Test
     void aCaseWithoutAppointmentsAndForfeitedCreditsIsRefundEligible() {
         RefundEligibility result = rule(List.of(), 0);
 

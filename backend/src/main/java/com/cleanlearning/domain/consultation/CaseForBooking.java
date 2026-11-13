@@ -129,8 +129,8 @@ public record CaseForBooking(ConsultationCaseId id, CaseStatus status, PurchaseT
      *
      * @param slotFinder the named expert's availability, and the expert's and the customer's busy time
      * @throws BusinessRuleException {@link CaseForCancellation#CASE_CANCELLED}, {@link #NO_OPEN_CREDITS},
-     *     {@link #EXPERT_CHANGED}, {@link #EXPERT_NOT_ELIGIBLE}, or {@link #SLOT_NOT_AVAILABLE} if {@code start} isn't a
-     *     bookable slot
+     *     {@link #EXPERT_CHANGED}, {@link #EXPERT_NOT_ELIGIBLE}, or {@link #SLOT_NOT_AVAILABLE} if {@code start}
+     *     isn't a bookable slot
      */
     public Booking book(UserId expertId, Instant start, SlotFinder slotFinder, Instant now) {
         requireActive();

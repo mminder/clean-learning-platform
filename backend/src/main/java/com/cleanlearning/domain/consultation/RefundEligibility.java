@@ -39,6 +39,12 @@ public record RefundEligibility(Optional<NonRefundableReason> reason, Optional<A
      */
     public static RefundEligibility at(List<Appointment> bookedAppointments, int forfeitedCredits,
             CancellationDeadline deadline, Instant asOf) {
+        Objects.requireNonNull(bookedAppointments, "bookedAppointments");
+        Objects.requireNonNull(deadline, "deadline");
+        Objects.requireNonNull(asOf, "asOf");
+        if (forfeitedCredits < 0) {
+            throw new IllegalArgumentException("The forfeited credits can't be negative.");
+        }
         if (bookedAppointments.stream().anyMatch(a -> !a.isCancellableAt(asOf))) {
             return withReason(NonRefundableReason.SESSION_TOOK_PLACE);
         }

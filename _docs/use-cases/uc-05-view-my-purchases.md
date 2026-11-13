@@ -37,7 +37,7 @@ The case detail shows:
 - past appointments: the ones that have ended, as consumed;
 - the expert's public notes, newest first ([UC-15](uc-15-take-consultation-notes.md));
 - the actions **Book appointment** ([UC-06](uc-06-book-consultation-appointment.md)), disabled without open credits, and **Cancel case** ([UC-08](uc-08-cancel-consultation-case.md)), which a completed case doesn't have;
-- the hint "Book your first session" while the case has no appointment and an open credit ([UC-03](uc-03-purchase-consultation-package.md)); a case whose every credit was forfeited by late cancellations has none (decided 2026-11-13, with UC-07);
+- the hint "Book your first session" while the case has no appointment and an open credit ([UC-03](uc-03-purchase-consultation-package.md)); a case whose every credit was forfeited by late cancellations has none (added while building increment 05, accepted 2026-11-13);
 - for a cancelled case, none of the actions, no **Cancel** on an appointment and no hint (decided 2026-11-13).
 
 ## Main flow: enrollment detail

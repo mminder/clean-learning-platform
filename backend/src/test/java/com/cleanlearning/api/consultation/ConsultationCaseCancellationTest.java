@@ -387,6 +387,30 @@ class ConsultationCaseCancellationTest {
                 { "openCredits": 2, "cancellation": { "cancelledAt": "%s", "refundEligible": false } }
                 """.formatted(MONDAY_ELEVEN));
         assertThat(storedCase(caseId)).isEqualTo(cancelled(MONDAY_ELEVEN, false));
+        assertThat(storedAppointment(appointmentId)).isEqualTo(cancelledAppointment(false));
+    }
+
+    /** Spec 05, "A refunded credit doesn't count against the refund": the appointment was cancelled in time. */
+    @Test
+    void aCreditCancelledInTimeDoesNotCountAgainstTheRefund() throws Exception {
+        expert2Available("2026-11-17");
+        String caseId = boughtCareerCoaching(SeedData.CUSTOMER_1);
+        String appointmentId = booked(caseId, TEN, SeedData.CUSTOMER_1);
+        clock.set(SUNDAY_NOON);
+        assertThat(cancelAppointment(caseId, appointmentId, true)).hasStatusOk();
+
+        assertThat(get(caseId, SeedData.CUSTOMER_1)).hasStatusOk().bodyJson().isLenientlyEqualTo("""
+                {
+                  "openCredits": 3,
+                  "canCancel": true,
+                  "refundIfCancelledNow": { "refundEligible": true, "reason": null, "appointment": null }
+                }
+                """);
+        assertThat(cancel(caseId, true, SeedData.CUSTOMER_1)).hasStatusOk().bodyJson().isLenientlyEqualTo("""
+                { "cancellation": { "cancelledAt": "%s", "refundEligible": true } }
+                """.formatted(SUNDAY_NOON));
+        assertThat(storedCase(caseId)).isEqualTo(cancelled(SUNDAY_NOON, true));
+        assertThat(storedAppointment(appointmentId)).isEqualTo(cancelledAppointment(true));
     }
 
     /** Spec 05, decision 7: the appointment past its deadline is cancelled with the case, and its credit forfeited. */

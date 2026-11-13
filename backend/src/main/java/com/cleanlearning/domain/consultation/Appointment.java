@@ -62,8 +62,9 @@ public record Appointment(AppointmentId id, ConsultationCaseId consultationCaseI
     }
 
     /**
-     * Computed, never stored (D-11): the open credits of a case with this session count, this many booked appointments,
-     * each of which uses a credit, consumed or not, and this many forfeited credits, of appointments cancelled late
+     * Computed, never stored (D-11): the open credits of a case with this session count, this many booked
+     * appointments, each of which uses a credit, consumed or not, and this many forfeited credits, of appointments
+     * cancelled late
      * (UC-07): {@code total − BOOKED − forfeited} (glossary), until credit adjustments (UC-18) exist. An appointment
      * cancelled in time is neither. The booking's check, the case detail and "My purchases" all count with this one
      * rule, so what the pages show and what the booking allows can't drift apart.

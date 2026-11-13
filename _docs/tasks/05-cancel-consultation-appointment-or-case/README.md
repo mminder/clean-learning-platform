@@ -261,7 +261,7 @@ No new route, page or shadcn component: the dialogs use `alert-dialog`, which `C
   | 404 | `notFound` | "This appointment was not found." or "This case was not found." | only **Close** is left |
   | anything else | `failed` | "Cancelling failed. Please try again." | stays as it is |
 
-- **The booking dialog** (03) shows a 409 `CASE_CANCELLED`, of the times or of the booking, with its `detail` and only **Close**, as `NO_OPEN_CREDITS`: `booking-failure.ts` gains the kind `caseCancelled`. A 409 of the times reloads the case, as the booking's does. The page keeps the booking dialog mounted on a cancelled case, without its trigger, so the reload that shows the cancelled case doesn't close the dialog while it says so.
+- **The booking dialog** (03) shows a 409 `CASE_CANCELLED`, of the times or of the booking, with its `detail` and only **Close**, as `NO_OPEN_CREDITS`: `booking-failure.ts` gains the kind `caseCancelled`. A 409 of the times reloads only the case's own query (`exact`, so not its experts or slots again), while the booking's 409 reloads every case query. The page keeps the booking dialog mounted on a cancelled case, without its trigger, so the reload that shows the cancelled case doesn't close the dialog while it says so.
 
 ### Case detail
 
