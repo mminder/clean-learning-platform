@@ -62,6 +62,7 @@ A user can hold several roles. The header shows a section for each of them, and 
 - A person's appointments as a customer and as an expert don't block each other: an expert who is also a customer can be booked as an expert at a time they booked as a customer, and the other way round ([UC-06](uc-06-book-consultation-appointment.md), [UC-13](uc-13-manage-availability.md))
 - A time range of the availability that ends at midnight, so that 23:30–24:00 can be offered; today a range can't end at midnight ([UC-13](uc-13-manage-availability.md))
 - 24-hour time inputs on the availability page whatever the browser's language; today they follow the browser, for example 12-hour in English (US) ([UC-13](uc-13-manage-availability.md))
+- A hint without "first" on a case whose appointments were all cancelled and that has open credits left; today it says "Book your first session" again, as on a new case ([UC-05](uc-05-view-my-purchases.md))
 
 ## Template
 

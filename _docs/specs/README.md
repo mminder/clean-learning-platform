@@ -91,5 +91,5 @@ What could go wrong, and how the plan addresses it.
 | 02 | [Manage consultation offerings](02-manage-consultation-offerings.md) | Done |
 | 03 | [Buy a consultation package](03-buy-consultation-package.md) | Done |
 | 04 | [Book a consultation appointment](04-book-consultation-appointment.md) | Done |
-| 05 | [Cancel a consultation appointment or case](05-cancel-consultation-appointment-or-case.md) | In progress |
+| 05 | [Cancel a consultation appointment or case](05-cancel-consultation-appointment-or-case.md) | Done |
 | 06 | [The expert's side of consultations](06-expert-side-of-consultations.md) | Draft |
