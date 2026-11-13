@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | Ready |
+| Status | In progress |
 | Use cases | [UC-07](../use-cases/uc-07-cancel-consultation-appointment.md), all steps; [UC-08](../use-cases/uc-08-cancel-consultation-case.md), all steps, with the refund flag only; [UC-05](../use-cases/uc-05-view-my-purchases.md), **Cancel** on upcoming appointments, **Cancel case**, the cancelled case's detail, and cancelled cases under Past (decisions 3 and 6); [UC-06](../use-cases/uc-06-book-consultation-appointment.md), the error flow "The case was cancelled" |
 | Tasks | [tasks/05-cancel-consultation-appointment-or-case](../tasks/05-cancel-consultation-appointment-or-case/README.md) |
 
