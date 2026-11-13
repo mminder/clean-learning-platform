@@ -326,6 +326,22 @@ class CustomerConsultationCaseSummaryTest {
                 .containsExactly(upcoming, needsBooking, cancelled);
     }
 
+    /** Spec 05, decision 6: a running appointment isn't cancelled with its case, and stays its next appointment; the
+     * case is still Past, by its cancellation time, among the cases of the other groups. */
+    @Test
+    void aCancelledCaseWithARunningAppointmentIsPastByItsCancellationTime() {
+        Instant asOf = START.plusSeconds(1_800);
+        CustomerConsultationCaseSummary running = cancelled(3, PURCHASED, START.plusSeconds(600), asOf,
+                START.toString());
+        CustomerConsultationCaseSummary cancelledEarlier = cancelled(3, PURCHASED, START.minusSeconds(86_400), asOf);
+        CustomerConsultationCaseSummary upcoming = summary(3, PURCHASED, asOf, "2026-11-18T09:00:00Z");
+
+        assertThat(running.nextAppointment()).isPresent();
+        assertThat(List.of(cancelledEarlier, running, upcoming).stream()
+                .sorted(CustomerConsultationCaseSummary.MY_PURCHASES_ORDER).toList())
+                .containsExactly(upcoming, running, cancelledEarlier);
+    }
+
     @Test
     void casesWithTheSameKeyComeById() {
         // as Postgres orders a uuid: a leading "b" comes after a leading "3", though the UUID's own order is signed

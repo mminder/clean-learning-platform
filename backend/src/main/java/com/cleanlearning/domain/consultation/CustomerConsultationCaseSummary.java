@@ -33,8 +33,8 @@ public record CustomerConsultationCaseSummary(ConsultationCaseId id, OfferingNam
     /**
      * The order of "My purchases": by group, then Upcoming by the next appointment, soonest first, Needs booking by
      * purchase time, oldest first, and Past by the cancellation time of a cancelled case, by the last appointment of a
-     * completed one, or by the purchase time without one, newest first (spec 05, decision 8); then by id (D-17), as text: that's Postgres's order of a uuid, which
-     * {@code UUID.compareTo} (signed) isn't.
+     * completed one, or by the purchase time without one, newest first (spec 05, decision 8); then by id (D-17), as
+     * text: that's Postgres's order of a uuid, which {@code UUID.compareTo} (signed) isn't.
      */
     public static final Comparator<CustomerConsultationCaseSummary> MY_PURCHASES_ORDER = Comparator
             .comparing(CustomerConsultationCaseSummary::group)

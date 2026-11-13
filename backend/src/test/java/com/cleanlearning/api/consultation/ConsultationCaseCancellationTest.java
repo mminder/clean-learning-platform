@@ -277,7 +277,8 @@ class ConsultationCaseCancellationTest {
         assertThat(booked(ofCustomer2, TEN, SeedData.CUSTOMER_2)).isNotBlank();
     }
 
-    /** Spec 05, decision 6: My purchases puts a cancelled case under Past with its cancellation time, after the active. */
+    /** Spec 05, decision 6: My purchases puts a cancelled case under Past with its cancellation time, after the
+     * active. */
     @Test
     void aCancelledCaseIsPastOnMyPurchasesAfterTheActiveOne() throws Exception {
         expert2Available("2026-11-17");
