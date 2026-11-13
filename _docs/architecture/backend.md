@@ -247,7 +247,7 @@ ConsultationOfferingResponse publishConsultationOffering(@PathVariable UUID id) 
 | Domain unit tests | every business rule (slots, deadlines, credits, refund eligibility, seats, lifecycle, link window) | extensive; plain JUnit; time is fixed via `Clock` |
 | REST integration tests | `@SpringBootTest` + `MockMvcTester` + Testcontainers Postgres | one happy-path test per route; `@IntegrationTest` also starts the server on a random port, for the few tests that need the real servlet container, such as the upload limit (`ImageUploadLimitTest`); its clock is a `TestClock` in Zurich, the system clock until a test sets an instant (`set(Instant)`), and reset to it after each test |
 | Authorization tests | role matrix over all routes (anonymous → 401, wrong role → 403), which fails for a route without a row; ownership with the two seed users per role (other's resource → 404); the admin case response has no notes; private notes never appear in customer responses | mandatory ([security](security.md#testing)) |
-| Concurrency tests | parallel requests on each locked race (offering status, expert slot, case credits, run seats) | one per race |
+| Concurrency tests | parallel requests on each locked race (offering status, expert slot, case credits, a case cancelled during a booking, run seats) | one per race |
 | Use-case tests | only where the flow has logic worth isolating | optional |
 | Architecture tests | ArchUnit layer rules (`LayerRulesTest`) and authorization rules (`AuthorizationRulesTest`: `@PreAuthorize` on every route) | mandatory |
 | Contract test | the committed `openapi.json` is up to date | mandatory |

@@ -34,7 +34,7 @@ The customer turns an open credit into an appointment with an expert.
 - **The case got another expert in the meantime** (a first booking in another tab): 409, "This case already has an expert. Please choose a time with them." The customer goes back to step 3, with the case's expert.
 - **No open credits:** **Book appointment** is disabled. If the request arrives anyway: 409.
 - **The expert has no bookable slots:** "No free times available at the moment."
-- **The case was cancelled:** 409.
+- **The case was cancelled**, for example in another tab ([UC-08](uc-08-cancel-consultation-case.md)): the times and the booking answer 409 `CASE_CANCELLED`, "This case was cancelled."
 
 ## Business rules
 

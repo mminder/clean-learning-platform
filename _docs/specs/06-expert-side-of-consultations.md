@@ -67,7 +67,7 @@ UC-11 steps 1–3 and its rules: a case becomes the expert's with the customer's
 - **GIVEN** Expert 2 has a case with an upcoming appointment, an active case with open credits and nothing upcoming, a completed case and a cancelled case
 - **WHEN** Expert 2 opens **My cases**
 - **THEN** the first is under **Upcoming**, the second under **Needs booking**, and the other two under **Past**, which is collapsed
-- **AND** Upcoming is sorted by the next appointment, Needs booking by purchase time (question 3), and Past newest first, as on **My purchases** ([spec 05](05-cancel-consultation-appointment-or-case.md#open-questions), question 8)
+- **AND** Upcoming is sorted by the next appointment, Needs booking by purchase time (question 3), and Past newest first, as on **My purchases** ([spec 05](05-cancel-consultation-appointment-or-case.md#decisions), decision 8)
 
 #### Scenario: The case card
 
@@ -274,6 +274,7 @@ Agreed with the product owner while planning increment 04 (2026-11-09): the scop
 11. **The window opens while the page is open.** The API returns the link only inside the window, so a page loaded at 08:55 has none at 09:00. *Recommended:* the case detail reloads itself when the next window opens, at the time the server already sends for "available from". *Alternative:* the customer reloads the page.
 12. **Every expert has a profile** (*technical*). In the PoC, every user with `EXPERT` has a seeded profile; UC-19 (MVP) creates an empty one when it grants `EXPERT`, which is where UC-14's "display name defaults to the user's name" applies. *Recommended:* this increment reads and edits profiles but never creates one, and a missing profile is a programming error (500), not a 404.
 13. **Profile writes lock the expert** (*technical*). Replacing a photo deletes the old image and stores a new one, so two replacements at once could leave an image behind that nothing refers to. *Recommended:* saving the profile and uploading or removing the photo lock the expert's user row first, the lock that saving availability takes ([D-27](../decisions.md#architecture)), as every change to an offering locks the offering. No concurrency test: it isn't a race between users, and [backend.md](../architecture/backend.md#concurrency)'s lock table gains the row.
+14. **Cancelled appointments for the expert.** The customer doesn't see cancelled appointments ([spec 05](05-cancel-consultation-appointment-or-case.md#decisions), decision 3); the product owner said the expert may see them, maybe later (2026-11-13). This spec's scenarios still assume the expert does (user story 3, the expert's case detail, the demo's step 10). *Recommended:* decide when this spec is refined: either the expert's case detail lists them with "Cancelled, credit refunded" or "Cancelled, credit forfeited", which explains the credits; or it doesn't, like the customer's, and user story 3 loses "cancelled".
 
 ## Decisions
 
