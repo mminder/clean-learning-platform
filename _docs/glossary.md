@@ -61,7 +61,7 @@ Customer buys a Run     ──► Enrollment (purchase terms)
 |---|---|
 | Purchase terms | Values copied from the offering at purchase time: price paid, and for consultations also session count, session duration and cancellation deadline. Later offering edits never change them. |
 | Case | What a customer gets by buying a package. Holds the purchase terms, the assigned expert, appointments, notes and credit adjustments. Called `ConsultationCase` in code and `consultation_case` in the database, because `case` is reserved in SQL and a Java keyword, and a class named `Case` reads like part of a use case's name. |
-| Case status | `ACTIVE` or `CANCELLED` (stored). `COMPLETED` is derived: no open credits and no future booked appointment. |
+| Case status | `ACTIVE` or `CANCELLED` (stored). `COMPLETED` is derived: no open credits and no booked appointment that hasn't ended. |
 | Enrollment | What a customer gets by buying a run. Holds the purchase terms. |
 | Enrollment status | `ENROLLED` or `CANCELLED` (stored). `COMPLETED` is derived: the run's last time slot has ended. |
 | Refund-eligible | Flag stored on a cancelled case or enrollment. No money moves in the PoC. |

@@ -39,7 +39,7 @@ A user can hold several roles. The header shows a section for each of them, and 
 
 - **Time.** All times are in `Europe/Zurich` and displayed with a "(Zurich time)" hint. See the [glossary](../glossary.md#time).
 - **Confirmation.** Every purchase, booking and cancellation, and every status change of an offering ([UC-16](uc-16-manage-consultation-offering.md), [UC-17](uc-17-manage-training-offering.md)), needs a confirmation dialog that states the consequence: the price, whether the credit is refunded, whether the purchase is refund-eligible, or what the shop shows afterwards.
-- **The server decides.** Deadlines, seats, credits and slots are evaluated by the backend at the moment of the request. The UI only previews them.
+- **The server decides.** Deadlines, seats, credits and slots are evaluated by the backend at the moment of the request. The UI only previews them. A request names what the customer confirmed (the price, the expert, whether a credit or the price would be refunded); if the server finds something else, it answers 409, changes nothing, and the dialog shows what's current to confirm again (decided 2026-11-09 for purchases and bookings, 2026-11-13 for cancellations).
 - **Lists.** "My …" lists are grouped into Upcoming (by next date), Needs booking, and Past (collapsed, newest first).
 - **Money.** CHF including VAT. No money moves in the PoC; a refund is recorded as a `refundEligible` flag.
 - **Visibility.** Users only see what belongs to them. A resource of someone else returns 404 ([security](../architecture/security.md)).
@@ -62,6 +62,7 @@ A user can hold several roles. The header shows a section for each of them, and 
 - A person's appointments as a customer and as an expert don't block each other: an expert who is also a customer can be booked as an expert at a time they booked as a customer, and the other way round ([UC-06](uc-06-book-consultation-appointment.md), [UC-13](uc-13-manage-availability.md))
 - A time range of the availability that ends at midnight, so that 23:30–24:00 can be offered; today a range can't end at midnight ([UC-13](uc-13-manage-availability.md))
 - 24-hour time inputs on the availability page whatever the browser's language; today they follow the browser, for example 12-hour in English (US) ([UC-13](uc-13-manage-availability.md))
+- A hint without "first" on a case whose appointments were all cancelled and that has open credits left; today it says "Book your first session" again, as on a new case ([UC-05](uc-05-view-my-purchases.md))
 
 ## Template
 

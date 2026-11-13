@@ -181,6 +181,9 @@ class CustomerConsultationCaseControllerTest {
                   "expert": null,
                   "upcomingAppointments": [],
                   "pastAppointments": [],
+                  "cancellation": null,
+                  "canCancel": true,
+                  "refundIfCancelledNow": { "refundEligible": true, "reason": null, "appointment": null },
                   "canBook": true
                 }
                 """.formatted(id, JsonPath.read(body, "$.purchasedAt"));
@@ -483,7 +486,8 @@ class CustomerConsultationCaseControllerTest {
                     "totalCredits": 3,
                     "expertDisplayName": null,
                     "nextAppointment": null,
-                    "group": "NEEDS_BOOKING"
+                    "group": "NEEDS_BOOKING",
+                    "cancelledAt": null
                   },
                   {
                     "id": "%s",
@@ -494,7 +498,8 @@ class CustomerConsultationCaseControllerTest {
                     "totalCredits": 5,
                     "expertDisplayName": null,
                     "nextAppointment": null,
-                    "group": "NEEDS_BOOKING"
+                    "group": "NEEDS_BOOKING",
+                    "cancelledAt": null
                   }
                 ]
                 """.formatted(first, JsonPath.read(body, "$[0].purchasedAt"), second,

@@ -68,8 +68,8 @@ public class BookConsultationAppointmentUseCase {
      * booking. Answers the new appointment as its customer sees it: {@code BOOKED}.
      *
      * @throws NotFoundException if there's no case with this id, or it's another customer's
-     * @throws BusinessRuleException {@code NO_OPEN_CREDITS}, {@code EXPERT_CHANGED}, {@code EXPERT_NOT_ELIGIBLE} or
-     *     {@code SLOT_NOT_AVAILABLE}, as {@code CaseForBooking} decides
+     * @throws BusinessRuleException {@code CASE_CANCELLED}, {@code NO_OPEN_CREDITS}, {@code EXPERT_CHANGED},
+     *     {@code EXPERT_NOT_ELIGIBLE} or {@code SLOT_NOT_AVAILABLE}, as {@code CaseForBooking} decides
      */
     @Transactional
     public CustomerAppointment invoke(CurrentUser user, BookConsultationAppointmentCommand command) {
@@ -77,8 +77,9 @@ public class BookConsultationAppointmentUseCase {
         CaseForBooking consultationCase = lockCase.lock(command.consultationCaseId(), user.id())
                 .orElseThrow(() -> new NotFoundException(
                         "Case " + command.consultationCaseId().value() + " not found."));
-        // 2. The expert to lock: credits first, so a second booking on the last credit is NO_OPEN_CREDITS whichever
-        // expert it names.
+        // 2. The expert to lock: a cancelled case first, then the credits, so a booking on a case cancelled in another
+        // tab is CASE_CANCELLED, and a second booking on the last credit NO_OPEN_CREDITS, whichever expert it names.
+        consultationCase.requireActive();
         consultationCase.requireOpenCredit();
         UserId expertId = consultationCase.expertFor(command.expertId());
         // 3. The expert after the case (D-27): a booking of another case with this expert, or a save of their

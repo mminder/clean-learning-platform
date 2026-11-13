@@ -41,12 +41,13 @@ import com.jayway.jsonpath.JsonPath;
  * The booking's two locks (D-27): two bookings with one expert at once can't both take the expert's slot, and two
  * bookings of one case at once can't both take its last credit. A booking locks the case
  * ({@code LockCaseForBookingPort}), then the expert's user row ({@code LockExpertPort}), so they run one after the
- * other.
+ * other. And the case's lock of a cancellation ({@code LockCaseForCancellationPort}): a case cancelled while a booking
+ * on it runs never keeps a future booked appointment (spec 05, decision 10).
  * <p>
  * As in {@code ConsultationOfferingConcurrencyTest}, a test makes its race certain rather than likely: it holds the
- * contended row lock itself while the requests start, waits until Postgres shows both waiting for a lock, and only
- * then lets go. With the lock, they wait at the lock and then run one after the other. Without it, they read at once,
- * and both pass. "Now" is Mon 9 Nov 2026, 15:00 in Zurich; in November, Zurich is UTC+1.
+ * contended row lock itself while the requests start, waits until Postgres shows them waiting for a lock (in the
+ * cancellation test, until the cancellation waits or has answered), and only then lets go. With the lock, they wait at
+ * the lock and then run one after the other. Without it, they read at once, and both pass. "Now" is Mon 9 Nov 2026, 15:00 in Zurich; in November, Zurich is UTC+1.
  */
 @IntegrationTest
 class ConsultationCaseConcurrencyTest {
@@ -179,6 +180,59 @@ class ConsultationCaseConcurrencyTest {
                 .param("id", caseId).query(Long.class).single()).as("the case's appointments").isOne();
     }
 
+    /**
+     * The case's lock of both a booking and a cancellation: Customer 1 books on their case while cancelling it, as from
+     * two tabs. The case already has Expert 2 from a first booking, so the second booking doesn't write the case's row:
+     * only the case's locks can order the two requests. Without either, the cancellation misses the new appointment,
+     * and the case is cancelled with a future booked appointment.
+     * <p>
+     * The test holds Expert 2's {@code app_user} row, which the booking locks after the case, so the booking waits
+     * there, with the case locked, or without its case lock having read the case as active. Then the cancellation
+     * starts, and the test waits until it waits for a lock or has answered: with both locks it waits for the booking's
+     * case lock; without its own, it reads the case's appointments without the new one and waits at its update of the
+     * case; without the booking's, nothing holds it up, and it answers. Only then does the test let go of the expert.
+     */
+    @Test
+    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
+    void aCaseCancelledDuringABookingKeepsNoFutureBookedAppointment() throws Exception {
+        available(SeedData.EXPERT_2);
+        String caseId = bought(SeedData.CUSTOMER_1, SeedData.CAREER_COACHING, SeedData.CAREER_COACHING_3_SESSIONS,
+                "450.00", 3);
+        assertThat(book(caseId, SeedData.EXPERT_2, TEN, SeedData.CUSTOMER_1)).as("the first booking").isEqualTo("201");
+
+        ExecutorService requests = Executors.newFixedThreadPool(2);
+        List<String> answers;
+        try (Connection expertLock = dataSource.getConnection()) {
+            lock(expertLock, "select id from app_user where id = ? for no key update", SeedData.EXPERT_2);
+
+            Future<String> booking = requests.submit(() -> book(caseId, SeedData.EXPERT_2, ELEVEN,
+                    SeedData.CUSTOMER_1));
+            awaitRequestsWaitingForALock(1);
+            Future<String> cancellation = requests.submit(() -> cancel(caseId, SeedData.CUSTOMER_1));
+            // with its case lock, it waits for the booking's; without it, at its update of the case; with the
+            // booking's lock gone, nothing holds it up
+            await("the cancellation waiting for a lock or answered",
+                    () -> cancellation.isDone() || requestsWaitingForALock() >= 2);
+            expertLock.commit();
+
+            answers = List.of(booking.get(TIMEOUT.toSeconds(), TimeUnit.SECONDS),
+                    cancellation.get(TIMEOUT.toSeconds(), TimeUnit.SECONDS));
+        } finally {
+            shutDown(requests);
+        }
+
+        assertThat(answers).as("the booking and the cancellation").containsExactly("201", "200");
+        assertThat(jdbc.sql("select status from consultation_case where id = :id::uuid").param("id", caseId)
+                .query(String.class).single()).as("the case's status").isEqualTo("CANCELLED");
+        assertThat(jdbc.sql("""
+                select to_char(starts_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') || ' ' || status
+                       || ' ' || coalesce(credit_refunded::text, '-') from appointment
+                where consultation_case_id = :id::uuid order by starts_at
+                """).param("id", caseId).query(String.class).list())
+                .as("the case's appointments: none still booked, each credit refunded")
+                .containsExactly(TEN + " CANCELLED true", ELEVEN + " CANCELLED true");
+    }
+
     /** The expert saves Tue 17 Nov 2026, 09:00–12:00 in Zurich. */
     private void available(UUID expert) {
         assertThat(mockMvc.put().uri("/api/expert/availability")
@@ -216,9 +270,27 @@ class ConsultationCaseConcurrencyTest {
                         { "expertId": "%s", "start": "%s" }
                         """.formatted(expert, start))
                 .exchange();
-        int status = booked.getResponse().getStatus();
+        return answer(booked);
+    }
+
+    /** Cancels the case as refund-eligible; answers the status, and for a 409 its code too. */
+    private String cancel(String caseId, UUID customer) throws Exception {
+        MvcTestResult cancelled = mockMvc.post().uri(PATH + "/{id}/cancel", caseId)
+                .with(LoggedIn.as(customer, Role.CUSTOMER))
+                .with(Csrf.token())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        { "refundEligible": true }
+                        """)
+                .exchange();
+        return answer(cancelled);
+    }
+
+    /** The answer's status, and for a 409 its code too, as in "409 CASE_CANCELLED". */
+    private static String answer(MvcTestResult result) throws Exception {
+        int status = result.getResponse().getStatus();
         return status == HttpStatus.CONFLICT.value()
-                ? status + " " + JsonPath.read(booked.getResponse().getContentAsString(), "$.code")
+                ? status + " " + JsonPath.read(result.getResponse().getContentAsString(), "$.code")
                 : String.valueOf(status);
     }
 
@@ -259,8 +331,8 @@ class ConsultationCaseConcurrencyTest {
     }
 
     /**
-     * The requests' statements waiting for a lock: the booking's lock of the expert's {@code app_user} row or of the
-     * case, or its update of the case, a word in their text.
+     * The requests' statements waiting for a lock: a booking's or a cancellation's lock of the expert's
+     * {@code app_user} row or of the case, or an update of the case, a word in their text.
      */
     private long requestsWaitingForALock() {
         return jdbc.sql("""

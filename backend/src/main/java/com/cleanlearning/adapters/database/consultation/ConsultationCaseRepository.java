@@ -13,6 +13,7 @@ import com.cleanlearning.adapters.database.consultation.entity.AppointmentEntity
 import com.cleanlearning.adapters.database.consultation.entity.ConsultationCaseEntity;
 import com.cleanlearning.adapters.database.consultation.row.CustomerConsultationCaseRow;
 import com.cleanlearning.adapters.database.consultation.row.CustomerConsultationCaseSummaryRow;
+import com.cleanlearning.adapters.database.consultation.row.ForfeitedCreditsRow;
 import com.cleanlearning.adapters.database.offering.entity.ConsultationPackageEntity;
 import com.cleanlearning.adapters.database.offering.row.EligibleExpertRow;
 
@@ -22,13 +23,14 @@ interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, 
 
     /**
      * The customer's case with its offering, in every status of the offering: an archived offering's cases keep
-     * working (UC-16). Its assigned expert's profile, if it has one. Scoped to the customer in SQL, so another
-     * customer's case isn't found (security.md).
+     * working (UC-16). Its assigned expert's profile, if it has one, and its status with its cancellation. Scoped to
+     * the customer in SQL, so another customer's case isn't found (security.md).
      */
     @Query("""
             select new com.cleanlearning.adapters.database.consultation.row.CustomerConsultationCaseRow(
                 c.id, o.name, o.imageId, c.pricePaid, c.sessionCount, c.sessionDurationMinutes,
-                c.cancellationDeadlineHours, c.purchasedAt, p.userId, p.displayName, p.bio)
+                c.cancellationDeadlineHours, c.purchasedAt, p.userId, p.displayName, p.bio, c.status, c.cancelledAt,
+                c.refundEligible)
             from ConsultationCaseEntity c
             join OfferingEntity o on o.id = c.consultationOfferingId
             left join ExpertProfileEntity p on p.userId = c.assignedExpertId
@@ -38,12 +40,12 @@ interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, 
 
     /**
      * The customer's cases with their offerings, in every status of the offering (UC-16), and their assigned experts'
-     * display names, in no particular order: the use case sorts them (D-17). Scoped to the customer in SQL
-     * (security.md).
+     * display names and their cancellation times, in no particular order: the use case sorts them (D-17). Scoped to
+     * the customer in SQL (security.md).
      */
     @Query("""
             select new com.cleanlearning.adapters.database.consultation.row.CustomerConsultationCaseSummaryRow(
-                c.id, o.name, o.imageId, c.sessionCount, c.purchasedAt, p.displayName)
+                c.id, o.name, o.imageId, c.sessionCount, c.purchasedAt, p.displayName, c.cancelledAt)
             from ConsultationCaseEntity c
             join OfferingEntity o on o.id = c.consultationOfferingId
             left join ExpertProfileEntity p on p.userId = c.assignedExpertId
@@ -75,6 +77,40 @@ interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, 
               and a.status = com.cleanlearning.adapters.database.consultation.entity.StoredAppointmentStatus.BOOKED
             """)
     long countBookedAppointments(UUID consultationCaseId);
+
+    /**
+     * The case's forfeited credits: its appointments cancelled late (UC-07), which the open credits lack (glossary).
+     */
+    @Query("""
+            select count(a) from AppointmentEntity a
+            where a.consultationCaseId = :consultationCaseId
+              and a.status = com.cleanlearning.adapters.database.consultation.entity.StoredAppointmentStatus.CANCELLED
+              and a.creditRefunded = false
+            """)
+    long countForfeitedCredits(UUID consultationCaseId);
+
+    /**
+     * The forfeited credits of all the customer's cases, one row per case that has any: one query for the whole list.
+     * Scoped to the customer in SQL, through the case (security.md).
+     */
+    @Query("""
+            select new com.cleanlearning.adapters.database.consultation.row.ForfeitedCreditsRow(
+                a.consultationCaseId, count(a))
+            from AppointmentEntity a
+            join ConsultationCaseEntity c on c.id = a.consultationCaseId
+            where c.customerId = :customerId
+              and a.status = com.cleanlearning.adapters.database.consultation.entity.StoredAppointmentStatus.CANCELLED
+              and a.creditRefunded = false
+            group by a.consultationCaseId
+            """)
+    List<ForfeitedCreditsRow> findForfeitedCreditsOfCustomer(UUID customerId);
+
+    /**
+     * Every appointment of the case, {@code BOOKED} and {@code CANCELLED}, in any order: a cancellation tells a
+     * cancelled appointment from an unknown one, and counts the forfeited credits.
+     */
+    @Query("select a from AppointmentEntity a where a.consultationCaseId = :consultationCaseId")
+    List<AppointmentEntity> findAppointments(UUID consultationCaseId);
 
     /** The case's {@code BOOKED} appointments, in any order; the domain sorts them. */
     @Query("""

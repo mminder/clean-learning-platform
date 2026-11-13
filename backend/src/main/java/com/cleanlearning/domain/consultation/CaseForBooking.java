@@ -9,6 +9,7 @@ import java.util.UUID;
 
 import com.cleanlearning.domain.consultation.value.AppointmentId;
 import com.cleanlearning.domain.consultation.value.BookableSlot;
+import com.cleanlearning.domain.consultation.value.CaseStatus;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.consultation.value.PurchaseTerms;
 import com.cleanlearning.domain.offering.EligibleExpert;
@@ -16,16 +17,19 @@ import com.cleanlearning.domain.shared.BusinessRuleException;
 import com.cleanlearning.domain.user.value.UserId;
 
 /**
- * A case as a booking needs it (UC-06): its purchase terms, its assigned expert, if any, the number of its booked
- * appointments, and its offering's current eligible experts, by display name. It holds UC-06's rules: a booking needs
- * an open credit, is with the case's expert or, on the first booking, with an eligible one, and starts at a bookable
- * slot. {@link #book} checks every rule itself, credits first.
+ * A case as a booking needs it (UC-06): its stored status, its purchase terms, its assigned expert, if any, the number
+ * of its booked appointments and of its forfeited credits, and its offering's current eligible experts, by display
+ * name. It holds UC-06's rules: a booking needs an active case and an open credit, is with the case's expert or, on the
+ * first booking, with an eligible one, and starts at a bookable slot. {@link #book} checks every rule itself, the
+ * status first.
  *
  * @param assignedExpertId the case's expert, empty until the first booking
  * @param bookedAppointments the case's {@code BOOKED} appointments, consumed or not
+ * @param forfeitedCredits the case's appointments cancelled late (UC-07)
  */
-public record CaseForBooking(ConsultationCaseId id, PurchaseTerms purchaseTerms, Optional<UserId> assignedExpertId,
-        int bookedAppointments, List<EligibleExpert> eligibleExperts) {
+public record CaseForBooking(ConsultationCaseId id, CaseStatus status, PurchaseTerms purchaseTerms,
+        Optional<UserId> assignedExpertId, int bookedAppointments, int forfeitedCredits,
+        List<EligibleExpert> eligibleExperts) {
 
     /** Every credit of the case is booked. */
     public static final String NO_OPEN_CREDITS = "NO_OPEN_CREDITS";
@@ -41,21 +45,38 @@ public record CaseForBooking(ConsultationCaseId id, PurchaseTerms purchaseTerms,
 
     public CaseForBooking {
         Objects.requireNonNull(id, "id");
+        Objects.requireNonNull(status, "status");
         Objects.requireNonNull(purchaseTerms, "purchaseTerms");
         Objects.requireNonNull(assignedExpertId, "assignedExpertId");
         if (bookedAppointments < 0) {
             throw new IllegalArgumentException(
                     "A case has no negative number of booked appointments: " + bookedAppointments);
         }
+        if (forfeitedCredits < 0) {
+            throw new IllegalArgumentException(
+                    "A case has no negative number of forfeited credits: " + forfeitedCredits);
+        }
         eligibleExperts = List.copyOf(eligibleExperts);
     }
 
-    /** The session count less the booked appointments, counted as the case detail counts them. */
+    /** The session count less the booked appointments and the forfeited credits, as the case detail counts them. */
     public int openCredits() {
-        return Appointment.openCredits(purchaseTerms.sessionCount(), bookedAppointments);
+        return Appointment.openCredits(purchaseTerms.sessionCount(), bookedAppointments, forfeitedCredits);
     }
 
-    /** @throws BusinessRuleException {@link #NO_OPEN_CREDITS} if every credit is booked */
+    /**
+     * A cancelled case can't be booked (UC-06, UC-08): its customer cancelled it, maybe in another tab.
+     *
+     * @throws BusinessRuleException {@link CaseForCancellation#CASE_CANCELLED} if the case is {@code CANCELLED}
+     */
+    public void requireActive() {
+        if (status == CaseStatus.CANCELLED) {
+            throw new BusinessRuleException(CaseForCancellation.CASE_CANCELLED,
+                    CaseForCancellation.CASE_CANCELLED_DETAIL);
+        }
+    }
+
+    /** @throws BusinessRuleException {@link #NO_OPEN_CREDITS} if every credit is booked or forfeited */
     public void requireOpenCredit() {
         if (openCredits() <= 0) {
             throw new BusinessRuleException(NO_OPEN_CREDITS, "This case has no open credits.");
@@ -103,13 +124,16 @@ public record CaseForBooking(ConsultationCaseId id, PurchaseTerms purchaseTerms,
 
     /**
      * Books a session at {@code start} with the named expert (UC-06 step 7): a new appointment, and on the first
-     * booking the expert it assigns. It checks every rule itself, in this order: an open credit, the expert, the slot.
+     * booking the expert it assigns. It checks every rule itself, in this order: an active case, an open credit, the
+     * expert, the slot.
      *
      * @param slotFinder the named expert's availability, and the expert's and the customer's busy time
-     * @throws BusinessRuleException {@link #NO_OPEN_CREDITS}, {@link #EXPERT_CHANGED}, {@link #EXPERT_NOT_ELIGIBLE},
-     *     or {@link #SLOT_NOT_AVAILABLE} if {@code start} isn't a bookable slot
+     * @throws BusinessRuleException {@link CaseForCancellation#CASE_CANCELLED}, {@link #NO_OPEN_CREDITS},
+     *     {@link #EXPERT_CHANGED}, {@link #EXPERT_NOT_ELIGIBLE}, or {@link #SLOT_NOT_AVAILABLE} if {@code start}
+     *     isn't a bookable slot
      */
     public Booking book(UserId expertId, Instant start, SlotFinder slotFinder, Instant now) {
+        requireActive();
         requireOpenCredit();
         UserId expert = expertFor(expertId);
         if (!slotFinder.isBookable(start, purchaseTerms.sessionDuration(), now)) {

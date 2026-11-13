@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { ImagePlaceholder } from '@/components/ImagePlaceholder'
 import { Button } from '@/components/ui/button'
@@ -57,7 +57,8 @@ const NOT_FREE_TO_CANCEL =
  * again.
  *
  * Errors follow the plan's error table. The case reloads after a 409 while the dialog stays open: the dialog isn't a
- * child of something the reload removes.
+ * child of something the reload removes. Without a trigger, as on a cancelled case, the dialog stays mounted, so a
+ * reload that cancels the case doesn't close it while it says so (`CASE_CANCELLED`, UC-08).
  */
 export function BookAppointmentDialog({
   consultationCase,
@@ -69,7 +70,7 @@ export function BookAppointmentDialog({
   const [open, setOpen] = useState(false)
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      {children && <DialogTrigger asChild>{children}</DialogTrigger>}
       <DialogContent>
         {/* The content unmounts when the dialog closes, so the steps start again. */}
         <BookingSteps
@@ -113,6 +114,18 @@ function BookingSteps({
   )
   const book = useBookConsultationAppointment(caseId)
   const byDate = slotsByDate(slots.data ?? [])
+  // The times of a case cancelled in another tab (UC-06's error flow): only Close is left, and the case reloads, so the
+  // page behind shows the cancelled case. Only the case: its slots would answer the same again.
+  const slotsOfACancelledCase =
+    slots.isError && bookingFailure(slots.error) === 'caseCancelled'
+  useEffect(() => {
+    if (slotsOfACancelledCase) {
+      void queryClient.invalidateQueries({
+        queryKey: customerConsultationCaseKey(caseId),
+        exact: true,
+      })
+    }
+  }, [slotsOfACancelledCase, queryClient, caseId])
 
   function resetDateAndTime() {
     setChosenDate(undefined)
@@ -158,6 +171,7 @@ function BookingSteps({
         continueWithTheCasesExpert()
         return
       case 'noOpenCredits':
+      case 'caseCancelled':
         setError(problemMessage(failure, fallback))
         setCloseOnly(true)
         return
@@ -224,12 +238,12 @@ function BookingSteps({
     </p>
   )
 
-  if (closeOnly) {
+  if (closeOnly || slotsOfACancelledCase) {
     return (
       <>
         {title}
         <DialogDescription role="alert" className="text-destructive">
-          {error}
+          {closeOnly ? error : problemMessage(slots.error, TIMES_FAILED)}
         </DialogDescription>
         <DialogFooter>
           <CloseButton label="Close" />

@@ -3,6 +3,8 @@ package com.cleanlearning.adapters.database.consultation.entity;
 import java.time.Instant;
 import java.util.UUID;
 
+import org.jspecify.annotations.Nullable;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -11,7 +13,8 @@ import jakarta.persistence.Table;
 
 /**
  * Written and read by {@code ConsultationCaseAdapter}. The database sets {@code created_at} and {@code updated_at}. Its
- * expert is its case's assigned expert. The status is a {@link StoredAppointmentStatus}, only {@code BOOKED} for now.
+ * expert is its case's assigned expert. The status is a {@link StoredAppointmentStatus}; a booking writes
+ * {@code BOOKED}, and a cancellation changes the managed entity to {@code CANCELLED} with {@code creditRefunded}.
  */
 @Entity
 @Table(name = "appointment")
@@ -28,6 +31,9 @@ public class AppointmentEntity {
 
     @Enumerated(EnumType.STRING)
     private StoredAppointmentStatus status;
+
+    // Whether the cancellation refunded the credit; null while BOOKED (UC-07).
+    private @Nullable Boolean creditRefunded;
 
     protected AppointmentEntity() {
         // for JPA
@@ -56,5 +62,21 @@ public class AppointmentEntity {
 
     public Instant getEndsAt() {
         return endsAt;
+    }
+
+    public StoredAppointmentStatus getStatus() {
+        return status;
+    }
+
+    public @Nullable Boolean getCreditRefunded() {
+        return creditRefunded;
+    }
+
+    public void setStatus(StoredAppointmentStatus status) {
+        this.status = status;
+    }
+
+    public void setCreditRefunded(@Nullable Boolean creditRefunded) {
+        this.creditRefunded = creditRefunded;
     }
 }

@@ -99,6 +99,13 @@ class RoleMatrixTest {
             Route.withJson(POST, "/api/customer/consultation-cases/" + UNKNOWN_ID + "/appointments", """
                     {"expertId": "%s", "start": "2030-01-07T08:00:00Z"}""".formatted(SeedData.EXPERT_2),
                     Access.CUSTOMER),
+            // unknown case: 404
+            Route.withJson(POST, "/api/customer/consultation-cases/" + UNKNOWN_ID + "/appointments/" + UNKNOWN_ID
+                    + "/cancel", """
+                    {"creditRefunded": true}""", Access.CUSTOMER),
+            // unknown case: 404
+            Route.withJson(POST, "/api/customer/consultation-cases/" + UNKNOWN_ID + "/cancel", """
+                    {"refundEligible": true}""", Access.CUSTOMER),
             Route.of(GET, "/api/admin/consultation-offerings", Access.ADMIN),
             // A name of only a no-break space: Bean Validation lets it through, the value object answers 400.
             Route.withJson(POST, "/api/admin/consultation-offerings", OFFERING.formatted("\u00A0"), Access.ADMIN),

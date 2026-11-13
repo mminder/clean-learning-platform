@@ -102,3 +102,4 @@ Found while working; empty at the start.
 | 02 Manage consultation offerings | [02-manage-consultation-offerings/](02-manage-consultation-offerings/README.md) |
 | 03 Buy a consultation package | [03-buy-consultation-package/](03-buy-consultation-package/README.md) |
 | 04 Book a consultation appointment | [04-book-consultation-appointment/](04-book-consultation-appointment/README.md) |
+| 05 Cancel a consultation appointment or case | [05-cancel-consultation-appointment-or-case/](05-cancel-consultation-appointment-or-case/README.md) |

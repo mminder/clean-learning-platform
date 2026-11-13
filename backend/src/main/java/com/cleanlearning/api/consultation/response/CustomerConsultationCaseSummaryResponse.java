@@ -15,12 +15,13 @@ import com.cleanlearning.domain.user.value.DisplayName;
  * image, and {@code GET /api/images/{id}} serves it. {@code purchasedAt} is an instant. {@code expertDisplayName} is
  * {@code null} until the first booking; {@code nextAppointment} is the soonest appointment that hasn't ended,
  * {@code CONSUMED} while it runs, and {@code null} without one. The server computes {@code group}, and the answer comes
- * in the order of "My purchases" (spec 04, decision 18).
+ * in the order of "My purchases" (spec 04, decision 18). {@code cancelledAt} is an instant, {@code null} for an active
+ * case; a cancelled case is {@code PAST} (spec 05, decision 6).
  */
 public record CustomerConsultationCaseSummaryResponse(UUID id, String offeringName,
         @Nullable UUID offeringImageId, Instant purchasedAt, int openCredits, int totalCredits,
         @Nullable String expertDisplayName, @Nullable CustomerAppointmentResponse nextAppointment,
-        PurchaseGroup group) {
+        PurchaseGroup group, @Nullable Instant cancelledAt) {
 
     public static CustomerConsultationCaseSummaryResponse from(CustomerConsultationCaseSummary consultationCase) {
         return new CustomerConsultationCaseSummaryResponse(consultationCase.id().value(),
@@ -29,6 +30,6 @@ public record CustomerConsultationCaseSummaryResponse(UUID id, String offeringNa
                 consultationCase.openCredits(), consultationCase.totalCredits(),
                 consultationCase.expertDisplayName().map(DisplayName::value).orElse(null),
                 consultationCase.nextAppointment().map(CustomerAppointmentResponse::from).orElse(null),
-                consultationCase.group());
+                consultationCase.group(), consultationCase.cancelledAt().orElse(null));
     }
 }

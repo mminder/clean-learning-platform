@@ -21,16 +21,20 @@ import com.cleanlearning.domain.user.value.DisplayName;
  *
  * @param expertDisplayName the assigned expert's name, empty until the first booking
  * @param appointments the case's {@code BOOKED} appointments, in any order
+ * @param forfeitedCredits the case's appointments cancelled late
+ * @param cancelledAt when the case was cancelled (UC-08), empty for an active case
  * @param asOf the time the case is shown at, from the {@code Clock}
  */
 public record CustomerConsultationCaseSummary(ConsultationCaseId id, OfferingName offeringName,
         Optional<ImageId> offeringImageId, SessionCount sessionCount, Instant purchasedAt,
-        Optional<DisplayName> expertDisplayName, List<Appointment> appointments, Instant asOf) {
+        Optional<DisplayName> expertDisplayName, List<Appointment> appointments, int forfeitedCredits,
+        Optional<Instant> cancelledAt, Instant asOf) {
 
     /**
      * The order of "My purchases": by group, then Upcoming by the next appointment, soonest first, Needs booking by
-     * purchase time, oldest first, and Past by the last appointment, newest first; then by id (D-17), as text: that's
-     * Postgres's order of a uuid, which {@code UUID.compareTo} (signed) isn't.
+     * purchase time, oldest first, and Past by the cancellation time of a cancelled case, by the last appointment of a
+     * completed one, or by the purchase time without one, newest first (spec 05, decision 8); then by id (D-17), as
+     * text: that's Postgres's order of a uuid, which {@code UUID.compareTo} (signed) isn't.
      */
     public static final Comparator<CustomerConsultationCaseSummary> MY_PURCHASES_ORDER = Comparator
             .comparing(CustomerConsultationCaseSummary::group)
@@ -45,6 +49,11 @@ public record CustomerConsultationCaseSummary(ConsultationCaseId id, OfferingNam
         Objects.requireNonNull(purchasedAt, "purchasedAt");
         Objects.requireNonNull(expertDisplayName, "expertDisplayName");
         appointments = List.copyOf(appointments);
+        if (forfeitedCredits < 0) {
+            throw new IllegalArgumentException(
+                    "A case has no negative number of forfeited credits: " + forfeitedCredits);
+        }
+        Objects.requireNonNull(cancelledAt, "cancelledAt");
         Objects.requireNonNull(asOf, "asOf");
     }
 
@@ -53,9 +62,12 @@ public record CustomerConsultationCaseSummary(ConsultationCaseId id, OfferingNam
         return sessionCount.value();
     }
 
-    /** Every booked appointment uses a credit, consumed or not, counted as the booking counts them. */
+    /**
+     * Every booked appointment uses a credit, consumed or not, and so does every forfeited one, counted as the booking
+     * counts them.
+     */
     public int openCredits() {
-        return Appointment.openCredits(sessionCount, appointments.size());
+        return Appointment.openCredits(sessionCount, appointments.size(), forfeitedCredits);
     }
 
     /**
@@ -67,30 +79,44 @@ public record CustomerConsultationCaseSummary(ConsultationCaseId id, OfferingNam
     }
 
     /**
-     * Computed, never stored (D-11): {@code UPCOMING} with an appointment that hasn't ended, otherwise
-     * {@code NEEDS_BOOKING} with an open credit, otherwise {@code PAST}. UC-08 adds "active" to the second and
-     * cancelled cases to the third.
+     * Computed, never stored (D-11): {@code PAST} for a cancelled case, whatever it had (spec 05, decision 6);
+     * otherwise {@code UPCOMING} with an appointment that hasn't ended, otherwise {@code PAST} once the case is
+     * completed, as {@link Appointment#isCompleted} decides for the case detail too, otherwise {@code NEEDS_BOOKING}:
+     * an open credit is left.
      */
     public PurchaseGroup group() {
+        if (cancelledAt.isPresent()) {
+            return PurchaseGroup.PAST;
+        }
         if (nextAppointment().isPresent()) {
             return PurchaseGroup.UPCOMING;
         }
-        return openCredits() > 0 ? PurchaseGroup.NEEDS_BOOKING : PurchaseGroup.PAST;
+        return Appointment.isCompleted(sessionCount, appointments, forfeitedCredits, asOf) ? PurchaseGroup.PAST
+                : PurchaseGroup.NEEDS_BOOKING;
     }
 
-    /** Compares two cases of the same group. A past case has an appointment: its credits are all booked. */
+    /** Compares two cases of the same group. */
     private static int compareWithinGroup(CustomerConsultationCaseSummary first,
             CustomerConsultationCaseSummary second) {
         return switch (first.group()) {
             case UPCOMING -> first.nextAppointment().orElseThrow().start()
                     .compareTo(second.nextAppointment().orElseThrow().start());
             case NEEDS_BOOKING -> first.purchasedAt().compareTo(second.purchasedAt());
-            case PAST -> second.lastAppointmentStart().compareTo(first.lastAppointmentStart());
+            case PAST -> second.pastOrderKey().compareTo(first.pastOrderKey());
         };
     }
 
-    /** The newest past appointment's start, of a case that has appointments, all of them past. */
-    private Instant lastAppointmentStart() {
-        return Appointment.past(appointments, asOf).getFirst().start();
+    /**
+     * A past case's key in Past's order (spec 05, decision 8): the cancellation time of a cancelled case; otherwise its
+     * newest appointment's start, all of them past; or, without an appointment, because late cancellations forfeited
+     * every credit, its purchase time, the last date its customer sees.
+     */
+    private Instant pastOrderKey() {
+        return cancelledAt.orElseGet(this::completedOrderKey);
+    }
+
+    private Instant completedOrderKey() {
+        return Appointment.past(appointments, asOf).stream().findFirst().map(CustomerAppointment::start)
+                .orElse(purchasedAt);
     }
 }
