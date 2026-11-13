@@ -5,7 +5,7 @@
 | Increment | [05 Cancel a consultation appointment or case](../../specs/05-cancel-consultation-appointment-or-case.md) |
 | Type | AFK |
 | Blocked by | [03](03-cancel-case.md) |
-| Status | Todo |
+| Status | Done |
 
 ## Goal
 
@@ -24,11 +24,11 @@ Work in this order, test first:
 
 ## Acceptance criteria
 
-- [ ] A cancelled case is `PAST`, also one that had an upcoming or a running appointment, or open credits (domain).
-- [ ] Past is sorted newest first: a completed case by its last appointment's start, one without an appointment by its purchase time, a cancelled case by its cancellation time, mixed in one order (domain).
-- [ ] The REST test's cancelled case comes under Past with `cancelledAt`; Customer 2's list shows none of Customer 1's cases.
-- [ ] On the dev server, a cancelled case's card under **Past** says "Cancelled", without the next appointment and the credits (Playwright).
-- [ ] `openapi.json` and `schema.d.ts` have the new field; every check passes.
+- [x] A cancelled case is `PAST`, also one that had an upcoming or a running appointment, or open credits (domain).
+- [x] Past is sorted newest first: a completed case by its last appointment's start, one without an appointment by its purchase time, a cancelled case by its cancellation time, mixed in one order (domain).
+- [x] The REST test's cancelled case comes under Past with `cancelledAt`; Customer 2's list shows none of Customer 1's cases.
+- [x] On the dev server, a cancelled case's card under **Past** says "Cancelled", without the next appointment and the credits (Playwright).
+- [x] `openapi.json` and `schema.d.ts` have the new field; every check passes.
 
 ## Tests
 
@@ -41,3 +41,10 @@ Work in this order, test first:
 - Cancelled enrollments under Past: with the trainings (UC-09).
 
 ## Notes
+
+- **The domain:** `CustomerConsultationCaseSummary` has `Optional<Instant> cancelledAt` (before `asOf`). `group()` answers `PAST` first for a cancelled case, whatever appointments or credits it has; `pastOrderKey()` is `cancelledAt`, otherwise the newest past appointment's start, otherwise the purchase time (01). The domain tests give a cancelled case upcoming, running and no appointments, and sort all three keys in one list, with a cancelled case bought long before and one whose appointment lies in the future.
+- **Persistence:** no migration (V10 has `cancelled_at`). `findCustomerCases` selects `c.cancelledAt` into `CustomerConsultationCaseSummaryRow` (a nullable field); still one query scoped to the customer, with the appointments' and forfeited credits' queries unchanged. A cancelled case has no `BOOKED` appointment (task 03 cancelled them), so the list's `nextAppointment` is `null`; its `openCredits` and `totalCredits` are still sent, but the card doesn't show them.
+- **The API:** `CustomerConsultationCaseSummaryResponse.cancelledAt` is `@Nullable`; `openapi.json` and `schema.d.ts` regenerated (one field).
+- **The card:** `ConsultationCaseCard` shows "Cancelled" (medium weight, as the credits line) in place of the next appointment and the credits, and keeps the expert and "Bought <date>". The cancellation time isn't on the card: the case detail has it, and the order uses it.
+- **Tests:** `CustomerConsultationCaseSummaryTest` (a cancelled case is Past with an upcoming, a running or no appointment, and with open credits; the Past order with a completed case, a case without an appointment and cancelled cases; a cancelled case after the active groups). REST: `ConsultationCaseCancellationTest.aCancelledCaseIsPastOnMyPurchasesAfterTheActiveOne` (Customer 1's cancelled case with an upcoming appointment comes `PAST` with `cancelledAt`, after the active one; Customer 2's list has neither); `CustomerConsultationCaseControllerTest`'s strict list expectations have `"cancelledAt": null`. No frontend test, as the task says.
+- **Playwright** (by hand, dev server on the real clock, Fri 13 Nov 2026): Customer 1 bought Career Coaching twice through the API (two rounds, four cases), opened one case of each round, **Cancel case** and confirmed in the dialog ("Cancelled on …" appeared). **My purchases** shows the two active cases under Needs booking with "3 of 3 credits open", and **Past (2)**, opened, with two cards that say the expert line, "Cancelled" and "Bought 13 Nov 2026", without the credits or a next appointment. A cancelled case that had an upcoming appointment is covered by the REST test, not by hand.
