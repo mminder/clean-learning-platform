@@ -20,6 +20,18 @@ export type BookableSlot = components['schemas']['BookableSlotResponse']
 export type BookConsultationAppointmentRequest =
   components['schemas']['BookConsultationAppointmentRequest']
 
+export type CustomerUpcomingAppointment =
+  components['schemas']['CustomerUpcomingAppointmentResponse']
+
+export type CustomerAppointment =
+  components['schemas']['CustomerAppointmentResponse']
+
+/** The appointment to cancel, and the outcome the dialog stated: whether the credit is returned (spec 05, decision 4). */
+export interface AppointmentCancellation {
+  appointmentId: string
+  creditRefunded: boolean
+}
+
 // The list's key is the detail keys' prefix, so invalidating it invalidates every detail, too. A case's experts and
 // slots are under its key, so invalidating the case invalidates them, too.
 const customerConsultationCasesKey = ['customer', 'consultation-cases']
@@ -171,6 +183,42 @@ export function useBookConsultationAppointment(caseId: string) {
       if (data === undefined) {
         throw new ApiError(
           `Booking the appointment failed: ${response.status}`,
+          response.status,
+          problemOf(response.status, error),
+        )
+      }
+      return data
+    },
+    onSuccess: reloadCases,
+    onError: (error) => (isConflict(error) ? reloadCases() : undefined),
+  })
+}
+
+/**
+ * Cancels an appointment of the case with the outcome the dialog stated (UC-07 steps 3–5), and answers the case.
+ * Afterwards, and after a 409, which comes from a stale dialog, it reloads the cases, as a booking does: the list,
+ * every case, and their experts and slots, so the freed time is offered again. It stays pending until the queries on
+ * the screen have reloaded.
+ */
+export function useCancelConsultationAppointment(caseId: string) {
+  const queryClient = useQueryClient()
+  const reloadCases = () =>
+    queryClient.invalidateQueries({ queryKey: customerConsultationCasesKey })
+  return useMutation({
+    mutationFn: async ({
+      appointmentId,
+      creditRefunded,
+    }: AppointmentCancellation) => {
+      const { data, error, response } = await client.POST(
+        '/api/customer/consultation-cases/{id}/appointments/{appointmentId}/cancel',
+        {
+          params: { path: { id: caseId, appointmentId } },
+          body: { creditRefunded },
+        },
+      )
+      if (data === undefined) {
+        throw new ApiError(
+          `Cancelling the appointment failed: ${response.status}`,
           response.status,
           problemOf(response.status, error),
         )

@@ -806,6 +806,91 @@
         "tags" : [ "customer-consultation-case-controller" ]
       }
     },
+    "/api/customer/consultation-cases/{id}/appointments/{appointmentId}/cancel" : {
+      "post" : {
+        "operationId" : "cancelConsultationAppointment",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "appointmentId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CancelConsultationAppointmentRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CustomerConsultationCaseResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "415" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Unsupported Media Type"
+          }
+        },
+        "tags" : [ "customer-consultation-case-controller" ]
+      }
+    },
     "/api/customer/consultation-cases/{id}/bookable-slots" : {
       "get" : {
         "operationId" : "listBookableSlots",
@@ -1323,6 +1408,15 @@
         },
         "required" : [ "end", "start" ]
       },
+      "CancelConsultationAppointmentRequest" : {
+        "type" : "object",
+        "properties" : {
+          "creditRefunded" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "creditRefunded" ]
+      },
       "ConsultationOfferingDetailResponse" : {
         "type" : "object",
         "properties" : {
@@ -1561,7 +1655,7 @@
           "upcomingAppointments" : {
             "type" : "array",
             "items" : {
-              "$ref" : "#/components/schemas/CustomerAppointmentResponse"
+              "$ref" : "#/components/schemas/CustomerUpcomingAppointmentResponse"
             }
           }
         },
@@ -1609,6 +1703,38 @@
           }
         },
         "required" : [ "group", "id", "offeringName", "openCredits", "purchasedAt", "totalCredits" ]
+      },
+      "CustomerUpcomingAppointmentResponse" : {
+        "type" : "object",
+        "properties" : {
+          "canCancel" : {
+            "type" : "boolean"
+          },
+          "creditRefundedIfCancelledNow" : {
+            "type" : "boolean"
+          },
+          "end" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "freeCancellationUntil" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "start" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "BOOKED", "CONSUMED" ]
+          }
+        },
+        "required" : [ "canCancel", "creditRefundedIfCancelledNow", "end", "freeCancellationUntil", "id", "start", "status" ]
       },
       "EligibleExpertResponse" : {
         "type" : "object",

@@ -69,6 +69,8 @@ class OpenApiContractTest {
         // 201 without a Location: an appointment has no route of its own (spec 04, decision 17)
         assertResponsesOf("/api/customer/consultation-cases/{id}/appointments", "post")
                 .containsOnlyKeys("201", "400", "404", "409", "415");
+        assertResponsesOf("/api/customer/consultation-cases/{id}/appointments/{appointmentId}/cancel", "post")
+                .containsOnlyKeys("200", "400", "404", "409", "415");
         assertResponsesOf("/api/expert/availability", "put").containsOnlyKeys("200", "400", "415");
     }
 

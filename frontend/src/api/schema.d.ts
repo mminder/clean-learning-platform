@@ -164,6 +164,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/customer/consultation-cases/{id}/appointments/{appointmentId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancelConsultationAppointment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/customer/consultation-cases/{id}/bookable-slots": {
         parameters: {
             query?: never;
@@ -356,6 +372,9 @@ export interface components {
             /** Format: date-time */
             start: string;
         };
+        CancelConsultationAppointmentRequest: {
+            creditRefunded: boolean;
+        };
         ConsultationOfferingDetailResponse: {
             /** Format: int32 */
             cancellationDeadlineHours: number;
@@ -441,7 +460,7 @@ export interface components {
             purchasedAt: string;
             /** Format: int32 */
             totalCredits: number;
-            upcomingAppointments: components["schemas"]["CustomerAppointmentResponse"][];
+            upcomingAppointments: components["schemas"]["CustomerUpcomingAppointmentResponse"][];
         };
         CustomerConsultationCaseSummaryResponse: {
             expertDisplayName?: string | null;
@@ -459,6 +478,20 @@ export interface components {
             purchasedAt: string;
             /** Format: int32 */
             totalCredits: number;
+        };
+        CustomerUpcomingAppointmentResponse: {
+            canCancel: boolean;
+            creditRefundedIfCancelledNow: boolean;
+            /** Format: date-time */
+            end: string;
+            /** Format: date-time */
+            freeCancellationUntil: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            start: string;
+            /** @enum {string} */
+            status: "BOOKED" | "CONSUMED";
         };
         EligibleExpertResponse: {
             bio: string;
@@ -1212,6 +1245,69 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CustomerAppointmentResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    cancelConsultationAppointment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                appointmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelConsultationAppointmentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerConsultationCaseResponse"];
                 };
             };
             /** @description Bad Request */

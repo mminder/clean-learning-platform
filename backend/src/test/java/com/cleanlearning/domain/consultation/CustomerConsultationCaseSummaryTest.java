@@ -49,19 +49,30 @@ class CustomerConsultationCaseSummaryTest {
 
     private static CustomerConsultationCaseSummary summary(ConsultationCaseId id, int sessionCount,
             Instant purchasedAt, Instant asOf, String... startsOfAppointments) {
+        return withForfeited(id, sessionCount, 0, purchasedAt, asOf, startsOfAppointments);
+    }
+
+    /** A case with this many credits forfeited, by appointments cancelled late, which it doesn't list. */
+    private static CustomerConsultationCaseSummary withForfeited(int sessionCount, int forfeitedCredits,
+            Instant purchasedAt, Instant asOf, String... startsOfAppointments) {
+        return withForfeited(new ConsultationCaseId(UUID.randomUUID()), sessionCount, forfeitedCredits, purchasedAt,
+                asOf, startsOfAppointments);
+    }
+
+    private static CustomerConsultationCaseSummary withForfeited(ConsultationCaseId id, int sessionCount,
+            int forfeitedCredits, Instant purchasedAt, Instant asOf, String... startsOfAppointments) {
         List<Appointment> appointments = Arrays.stream(startsOfAppointments)
                 .map(start -> appointment(id, start)).toList();
         return new CustomerConsultationCaseSummary(id, new OfferingName("Career Coaching"), Optional.empty(),
-                new SessionCount(sessionCount), purchasedAt,
-                appointments.isEmpty() ? Optional.empty() : Optional.of(new DisplayName("Expert 2")), appointments,
-                asOf);
+                new SessionCount(sessionCount), purchasedAt, Optional.of(new DisplayName("Expert 2")), appointments,
+                forfeitedCredits, asOf);
     }
 
     private static CustomerConsultationCaseSummary withAppointment(int sessionCount, Instant asOf) {
         ConsultationCaseId id = new ConsultationCaseId(UUID.randomUUID());
         return new CustomerConsultationCaseSummary(id, new OfferingName("Career Coaching"), Optional.empty(),
                 new SessionCount(sessionCount), PURCHASED, Optional.of(new DisplayName("Expert 2")),
-                List.of(new Appointment(new AppointmentId(UUID.randomUUID()), id, START, END)), asOf);
+                List.of(new Appointment(new AppointmentId(UUID.randomUUID()), id, START, END)), 0, asOf);
     }
 
     @Test
@@ -210,6 +221,51 @@ class CustomerConsultationCaseSummaryTest {
         assertThat(List.of(endedFirst, endedBetween, endedLast).stream()
                 .sorted(CustomerConsultationCaseSummary.MY_PURCHASES_ORDER).toList())
                 .containsExactly(endedLast, endedBetween, endedFirst);
+    }
+
+    /** Spec 05: a forfeited credit is used, as a booked one is; one cancelled in time is neither. */
+    @Test
+    void aForfeitedCreditIsNotOpen() {
+        assertThat(withForfeited(3, 1, PURCHASED, NOW).openCredits()).isEqualTo(2);
+        // one consumed, one cancelled in time, one late
+        assertThat(withForfeited(3, 1, PURCHASED, Instant.parse("2026-11-18T09:00:00Z"), "2026-11-17T09:00:00Z")
+                .openCredits()).isOne();
+        assertThat(withForfeited(3, 1, PURCHASED, Instant.parse("2026-11-18T09:00:00Z"), "2026-11-17T09:00:00Z")
+                .group()).isEqualTo(PurchaseGroup.NEEDS_BOOKING);
+    }
+
+    /** Spec 05: two consumed appointments and one cancelled late leave no open credit, so the case is Past. */
+    @Test
+    void aForfeitedCreditCanCompleteTheCase() {
+        CustomerConsultationCaseSummary summary = withForfeited(3, 1, PURCHASED,
+                Instant.parse("2026-11-18T09:00:00Z"), "2026-11-16T09:00:00Z", "2026-11-17T09:00:00Z");
+
+        assertThat(summary.openCredits()).isZero();
+        assertThat(summary.group()).isEqualTo(PurchaseGroup.PAST);
+    }
+
+    @Test
+    void aCaseWhoseEveryCreditWasForfeitedIsPastWithoutAnAppointment() {
+        CustomerConsultationCaseSummary summary = withForfeited(1, 1, PURCHASED, NOW);
+
+        assertThat(summary.openCredits()).isZero();
+        assertThat(summary.nextAppointment()).isEmpty();
+        assertThat(summary.group()).isEqualTo(PurchaseGroup.PAST);
+    }
+
+    /** Spec 05, decision 8: a past case without an appointment sorts by its purchase time, among the others. */
+    @Test
+    void pastComesByThePurchaseTimeWithoutAnAppointment() {
+        Instant asOf = Instant.parse("2026-11-25T09:00:00Z");
+        CustomerConsultationCaseSummary endedOnTheSeventeenth = summary(1, PURCHASED, asOf, "2026-11-17T09:00:00Z");
+        CustomerConsultationCaseSummary boughtOnTheTwentieth = withForfeited(1, 1,
+                Instant.parse("2026-11-20T09:00:00Z"), asOf);
+        CustomerConsultationCaseSummary boughtOnTheTenth = withForfeited(1, 1, Instant.parse("2026-11-10T09:00:00Z"),
+                asOf);
+
+        assertThat(List.of(boughtOnTheTenth, endedOnTheSeventeenth, boughtOnTheTwentieth).stream()
+                .sorted(CustomerConsultationCaseSummary.MY_PURCHASES_ORDER).toList())
+                .containsExactly(boughtOnTheTwentieth, endedOnTheSeventeenth, boughtOnTheTenth);
     }
 
     @Test

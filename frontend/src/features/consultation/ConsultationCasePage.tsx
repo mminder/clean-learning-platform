@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 import { ImagePlaceholder } from '@/components/ImagePlaceholder'
 import { OfferingImage } from '@/components/OfferingImage'
@@ -10,23 +10,32 @@ import { formatMoney } from '@/lib/money'
 import { formatDateAndTimes } from './appointment-times'
 import { BookAppointmentDialog } from './BookAppointmentDialog'
 import {
+  CancelAppointmentDialog,
+  type AppointmentToCancel,
+} from './CancelAppointmentDialog'
+import {
   useCustomerConsultationCase,
-  type CustomerConsultationCase,
+  type CustomerAppointment,
 } from './queries'
-
-type CustomerAppointment =
-  CustomerConsultationCase['upcomingAppointments'][number]
 
 /**
  * UC-05's case detail, as far as a case has data yet: the offering, the expert ("Not assigned yet" before the first
  * booking), the credits, the purchase terms and the purchase time; **Book appointment** (UC-06), disabled without an
- * open credit; the expert's profile; and the upcoming and past appointments, in Zurich time. The server decides
- * `canBook` and each appointment's status. Another customer's case is "Case not found", like an unknown one.
+ * open credit; the expert's profile; and the upcoming and past appointments, in Zurich time, each upcoming one with
+ * **Cancel** while it can be cancelled (UC-07), but no free-cancellation time (spec 05, decision 1). A cancelled
+ * appointment isn't listed (decision 3). The server decides `canBook`, each appointment's status and `canCancel`.
+ * Another customer's case is "Case not found", like an unknown one.
  */
 export function ConsultationCasePage() {
   // The route /my/cases/:id always has an id.
   const { id = '' } = useParams()
   const consultationCase = useCustomerConsultationCase(id)
+  // The cancel dialog's state stays here, outside the list a reload changes: the appointment it was opened for stays
+  // after it closes, so the closing dialog keeps its title.
+  const [cancelDialog, setCancelDialog] = useState<{
+    open: boolean
+    appointment?: AppointmentToCancel
+  }>({ open: false })
 
   if (consultationCase.isPending) {
     return <p className="text-muted-foreground">Loading the case…</p>
@@ -103,7 +112,8 @@ export function ConsultationCasePage() {
         <BookAppointmentDialog consultationCase={consultationCase.data}>
           <Button disabled={!canBook}>Book appointment</Button>
         </BookAppointmentDialog>
-        {!hasAppointment && (
+        {/* Not after late cancellations forfeited every credit: nothing is left to book. */}
+        {!hasAppointment && canBook && (
           <p className="text-muted-foreground">Book your first session</p>
         )}
       </div>
@@ -126,6 +136,24 @@ export function ConsultationCasePage() {
           {upcomingAppointments.map((appointment) => (
             <AppointmentItem key={appointment.id} appointment={appointment}>
               {appointment.status === 'CONSUMED' && <Badge>Now</Badge>}
+              {appointment.canCancel && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setCancelDialog({
+                      open: true,
+                      appointment: {
+                        id: appointment.id,
+                        start: appointment.start,
+                        end: appointment.end,
+                      },
+                    })
+                  }
+                >
+                  Cancel
+                </Button>
+              )}
             </AppointmentItem>
           ))}
         </Appointments>
@@ -139,6 +167,15 @@ export function ConsultationCasePage() {
           ))}
         </Appointments>
       )}
+      <CancelAppointmentDialog
+        consultationCase={consultationCase.data}
+        reloadCase={consultationCase.refetch}
+        appointment={cancelDialog.appointment}
+        open={cancelDialog.open}
+        onOpenChange={(open) =>
+          setCancelDialog((dialog) => ({ ...dialog, open }))
+        }
+      />
     </article>
   )
 }
