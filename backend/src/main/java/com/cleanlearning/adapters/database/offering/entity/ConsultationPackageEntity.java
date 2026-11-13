@@ -14,7 +14,7 @@ public class ConsultationPackageEntity {
     @Id
     private UUID id;
 
-    // consultation_offering shares its id with offering, so this is also the offering's id.
+    /** Foreign key to {@link ConsultationOfferingEntity}, whose id is also the {@link OfferingEntity}'s id. */
     private UUID consultationOfferingId;
 
     private int sessionCount;

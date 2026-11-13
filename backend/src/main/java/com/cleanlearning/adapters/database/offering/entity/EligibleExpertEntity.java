@@ -15,7 +15,10 @@ public class EligibleExpertEntity {
     @Id
     private UUID consultationOfferingId;
 
-    // The expert's user id, which is also the id of their expert profile.
+    /**
+     * Foreign key to {@link com.cleanlearning.adapters.database.user.entity.ExpertProfileEntity}, whose id is also the
+     * {@link com.cleanlearning.adapters.database.user.entity.UserEntity}'s id.
+     */
     @Id
     private UUID expertId;
 

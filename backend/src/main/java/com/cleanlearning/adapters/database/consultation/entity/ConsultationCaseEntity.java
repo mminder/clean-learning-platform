@@ -27,7 +27,10 @@ public class ConsultationCaseEntity {
 
     private UUID customerId;
 
-    // consultation_offering shares its id with offering, so this is also the offering's id.
+    /**
+     * Foreign key to {@link com.cleanlearning.adapters.database.offering.entity.ConsultationOfferingEntity}, whose id
+     * is also the {@link com.cleanlearning.adapters.database.offering.entity.OfferingEntity}'s id.
+     */
     private UUID consultationOfferingId;
 
     private BigDecimal pricePaid;
