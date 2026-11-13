@@ -5,7 +5,7 @@
 | Increment | [05 Cancel a consultation appointment or case](../../specs/05-cancel-consultation-appointment-or-case.md) |
 | Type | AFK |
 | Blocked by | [03](03-cancel-case.md) |
-| Status | Todo |
+| Status | Done |
 
 ## Goal
 
@@ -26,11 +26,11 @@ A new test in `ConsultationCaseConcurrencyTest`, with the clock set and Expert 2
 
 ## Acceptance criteria
 
-- [ ] The test passes five runs out of five and in `./mvnw verify`.
-- [ ] It fails without the cancellation's case lock, and without the booking's (three runs each, noted).
-- [ ] No request waits beyond the test's timeout, with or without the locks: the test ends with a clear assertion, not a hang.
-- [ ] [backend.md](../../architecture/backend.md#concurrency) says how this test makes its race certain, in a sentence next to the booking's tests.
-- [ ] Every check passes; `git diff` shows nothing left under `src/main` from the checks.
+- [x] The test passes five runs out of five and in `./mvnw verify`.
+- [x] It fails without the cancellation's case lock, and without the booking's (three runs each, noted).
+- [x] No request waits beyond the test's timeout, with or without the locks: the test ends with a clear assertion, not a hang.
+- [x] [backend.md](../../architecture/backend.md#concurrency) says how this test makes its race certain, in a sentence next to the booking's tests.
+- [x] Every check passes; `git diff` shows nothing left under `src/main` from the checks.
 
 ## Tests
 
@@ -42,3 +42,9 @@ A new test in `ConsultationCaseConcurrencyTest`, with the clock set and Expert 2
 - Any change to the cancellation or the booking. If the test shows one is wrong, note it and fix it in this task only if the fix is in the lock order the plan describes; otherwise tell the orchestrator.
 
 ## Notes
+
+- **`aCaseCancelledDuringABookingKeepsNoFutureBookedAppointment`** in `ConsultationCaseConcurrencyTest`, with its helpers (the row lock from the test's own connection, the 10-second `await`, the shut-down that waits for the requests). A new helper `cancel` answers the status as `book` does (both through `answer`). The clock is Mon 9 Nov 2026, 15:00 (Zurich); Expert 2 saves 17 Nov, 09:00–12:00; Customer 1 buys Career Coaching (3 sessions) and books Expert 2 on 17 Nov, 10:00, so the case has its expert.
+- **How the race is certain:** the test holds Expert 2's `app_user` row (`for no key update`), starts the booking of 17 Nov, 11:00, and waits until `pg_stat_activity` shows one statement on `app_user` or `consultation_case` waiting for a lock (the booking's lock of the expert, with or without its case lock before). It starts the cancellation with `{"refundEligible": true}` and waits until it has answered or two statements wait for a lock: with its case lock, its lock of the case, held by the booking; without it, its `update consultation_case`, which the answer's query flushes, after it read the appointments without the new one; with the booking's case lock gone, it answers at once. Only then does the test commit, and it waits for both answers, each bounded by the timeout. It asserts `["201", "200"]`, the case `CANCELLED`, and both appointments `CANCELLED` with their credits refunded, in start order.
+- **The plain variant:** none was added. `ConsultationCaseRepository.findCustomerCaseEntity` is the same query without `@Lock`, already used by the slots' `LoadCaseForBookingPort.load`; for each check the adapter's method called it in place of `lockCustomerCaseEntity`, and was restored afterwards.
+- **Checked:** with the code as it is, the test passed five runs out of five (about 1.0–1.3 s). With `lockForCancellation` on `findCustomerCaseEntity` (the booking's lock kept), it failed three runs out of three (about 0.9 s each); with `lock` (the booking's) on it and the cancellation's kept, three out of three (about 0.9 s each). Every failure answered `["201", "200"]` and then failed at the appointments: `["2026-11-17T09:00:00Z CANCELLED true", "2026-11-17T10:00:00Z BOOKED -"]`, a cancelled case with a future booked appointment. No run hung. With the code restored, `git diff` showed nothing under `src/main`. The cancellation and the booking needed no change.
+- **Docs:** backend.md's concurrency section has a sentence on how this test makes its race certain, next to the booking's tests.
