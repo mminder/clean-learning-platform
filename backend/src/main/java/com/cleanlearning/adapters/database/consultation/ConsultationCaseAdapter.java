@@ -316,6 +316,6 @@ class ConsultationCaseAdapter implements LockConsultationOfferingForPurchasePort
                 new OfferingName(row.offeringName()), Optional.ofNullable(row.offeringImageId()).map(ImageId::new),
                 new SessionCount(row.sessionCount()), row.purchasedAt(),
                 Optional.ofNullable(row.expertDisplayName()).map(DisplayName::new), appointments, forfeitedCredits,
-                asOf);
+                Optional.ofNullable(row.cancelledAt()), asOf);
     }
 }

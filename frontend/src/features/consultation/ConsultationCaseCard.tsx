@@ -14,7 +14,8 @@ import type { CustomerConsultationCaseSummary } from './queries'
 /**
  * A case on My purchases (UC-05 step 2): the offering, the expert's name or "Not assigned yet", the next appointment
  * in Zurich time, "Next" before it starts and "Now" while it runs (spec 04, decision 21), the credits and the
- * purchase date.
+ * purchase date. A cancelled case says "Cancelled" in place of the next appointment and the credits (spec 05,
+ * decision 6); the API puts it under Past.
  */
 export function ConsultationCaseCard({
   consultationCase,
@@ -45,16 +46,22 @@ export function ConsultationCaseCard({
         </CardDescription>
       </CardHeader>
       <CardFooter className="mt-auto flex-col items-start gap-1 text-sm">
-        {next && (
-          <p className="font-medium">
-            {next.status === 'CONSUMED' ? 'Now' : 'Next'}:{' '}
-            {formatDateAndTimes(next.start, next.end)}
-          </p>
+        {consultationCase.cancelledAt ? (
+          <p className="font-medium">Cancelled</p>
+        ) : (
+          <>
+            {next && (
+              <p className="font-medium">
+                {next.status === 'CONSUMED' ? 'Now' : 'Next'}:{' '}
+                {formatDateAndTimes(next.start, next.end)}
+              </p>
+            )}
+            <p className="font-medium">
+              {consultationCase.openCredits} of {consultationCase.totalCredits}{' '}
+              credits open
+            </p>
+          </>
         )}
-        <p className="font-medium">
-          {consultationCase.openCredits} of {consultationCase.totalCredits}{' '}
-          credits open
-        </p>
         <p className="text-muted-foreground">
           Bought {formatDate(consultationCase.purchasedAt)}
         </p>

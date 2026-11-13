@@ -490,6 +490,8 @@ export interface components {
             upcomingAppointments: components["schemas"]["CustomerUpcomingAppointmentResponse"][];
         };
         CustomerConsultationCaseSummaryResponse: {
+            /** Format: date-time */
+            cancelledAt?: string | null;
             expertDisplayName?: string | null;
             /** @enum {string} */
             group: "UPCOMING" | "NEEDS_BOOKING" | "PAST";

@@ -65,14 +65,26 @@ class CustomerConsultationCaseSummaryTest {
                 .map(start -> appointment(id, start)).toList();
         return new CustomerConsultationCaseSummary(id, new OfferingName("Career Coaching"), Optional.empty(),
                 new SessionCount(sessionCount), purchasedAt, Optional.of(new DisplayName("Expert 2")), appointments,
-                forfeitedCredits, asOf);
+                forfeitedCredits, Optional.empty(), asOf);
+    }
+
+    /** A case cancelled at {@code cancelledAt}; it keeps whatever appointments and credits the test gives it. */
+    private static CustomerConsultationCaseSummary cancelled(int sessionCount, Instant purchasedAt,
+            Instant cancelledAt, Instant asOf, String... startsOfAppointments) {
+        ConsultationCaseId id = new ConsultationCaseId(UUID.randomUUID());
+        List<Appointment> appointments = Arrays.stream(startsOfAppointments)
+                .map(start -> appointment(id, start)).toList();
+        return new CustomerConsultationCaseSummary(id, new OfferingName("Career Coaching"), Optional.empty(),
+                new SessionCount(sessionCount), purchasedAt, Optional.of(new DisplayName("Expert 2")), appointments,
+                0, Optional.of(cancelledAt), asOf);
     }
 
     private static CustomerConsultationCaseSummary withAppointment(int sessionCount, Instant asOf) {
         ConsultationCaseId id = new ConsultationCaseId(UUID.randomUUID());
         return new CustomerConsultationCaseSummary(id, new OfferingName("Career Coaching"), Optional.empty(),
                 new SessionCount(sessionCount), PURCHASED, Optional.of(new DisplayName("Expert 2")),
-                List.of(new Appointment(new AppointmentId(UUID.randomUUID()), id, START, END)), 0, asOf);
+                List.of(new Appointment(new AppointmentId(UUID.randomUUID()), id, START, END)), 0, Optional.empty(),
+                asOf);
     }
 
     @Test
@@ -266,6 +278,68 @@ class CustomerConsultationCaseSummaryTest {
         assertThat(List.of(boughtOnTheTenth, endedOnTheSeventeenth, boughtOnTheTwentieth).stream()
                 .sorted(CustomerConsultationCaseSummary.MY_PURCHASES_ORDER).toList())
                 .containsExactly(boughtOnTheTwentieth, endedOnTheSeventeenth, boughtOnTheTenth);
+    }
+
+    /** Spec 05, decision 6: a cancelled case is Past, whatever it had: open credits, an upcoming or a running one. */
+    @Test
+    void aCancelledCaseIsPastWhateverItHad() {
+        Instant cancelledAt = Instant.parse("2026-11-09T13:30:00Z");
+
+        assertThat(cancelled(3, PURCHASED, cancelledAt, NOW).group()).isEqualTo(PurchaseGroup.PAST);
+        assertThat(cancelled(3, PURCHASED, cancelledAt, NOW, "2026-11-17T09:00:00Z").group())
+                .isEqualTo(PurchaseGroup.PAST);
+        // running at asOf
+        assertThat(cancelled(3, PURCHASED, cancelledAt, Instant.parse("2026-11-17T09:30:00Z"), "2026-11-17T09:00:00Z")
+                .group()).isEqualTo(PurchaseGroup.PAST);
+        assertThat(cancelled(1, PURCHASED, cancelledAt, NOW).openCredits()).isOne();
+    }
+
+    /** Spec 05, decision 8: Past newest first, a completed case by its last appointment, a case without one by its
+     * purchase time, a cancelled one by its cancellation time, all in one order. */
+    @Test
+    void pastComesByTheCancellationTimeForACancelledCaseAmongTheOthers() {
+        Instant asOf = Instant.parse("2026-11-25T09:00:00Z");
+        CustomerConsultationCaseSummary endedOnTheSeventeenth = summary(1, PURCHASED, asOf, "2026-11-17T09:00:00Z");
+        CustomerConsultationCaseSummary boughtOnTheTwentieth = withForfeited(1, 1,
+                Instant.parse("2026-11-20T09:00:00Z"), asOf);
+        // bought long before, cancelled last: the cancellation, not the purchase or the appointment, decides
+        CustomerConsultationCaseSummary cancelledOnTheTwentySecond = cancelled(3, PURCHASED.minusSeconds(864_000),
+                Instant.parse("2026-11-22T09:00:00Z"), asOf, "2026-11-30T09:00:00Z");
+        CustomerConsultationCaseSummary cancelledOnTheNineteenth = cancelled(1, Instant.parse("2026-11-21T09:00:00Z"),
+                Instant.parse("2026-11-19T09:00:00Z"), asOf);
+
+        assertThat(List.of(endedOnTheSeventeenth, cancelledOnTheNineteenth, boughtOnTheTwentieth,
+                cancelledOnTheTwentySecond).stream().sorted(CustomerConsultationCaseSummary.MY_PURCHASES_ORDER)
+                .toList()).containsExactly(cancelledOnTheTwentySecond, boughtOnTheTwentieth,
+                        cancelledOnTheNineteenth, endedOnTheSeventeenth);
+    }
+
+    @Test
+    void aCancelledCaseComesAfterTheActiveGroups() {
+        CustomerConsultationCaseSummary upcoming = withAppointment(3, NOW);
+        CustomerConsultationCaseSummary needsBooking = summary(3, PURCHASED, NOW);
+        CustomerConsultationCaseSummary cancelled = cancelled(3, PURCHASED.minusSeconds(3_600),
+                Instant.parse("2026-11-09T13:30:00Z"), NOW);
+
+        assertThat(List.of(cancelled, needsBooking, upcoming).stream()
+                .sorted(CustomerConsultationCaseSummary.MY_PURCHASES_ORDER).toList())
+                .containsExactly(upcoming, needsBooking, cancelled);
+    }
+
+    /** Spec 05, decision 6: a running appointment isn't cancelled with its case, and stays its next appointment; the
+     * case is still Past, by its cancellation time, among the cases of the other groups. */
+    @Test
+    void aCancelledCaseWithARunningAppointmentIsPastByItsCancellationTime() {
+        Instant asOf = START.plusSeconds(1_800);
+        CustomerConsultationCaseSummary running = cancelled(3, PURCHASED, START.plusSeconds(600), asOf,
+                START.toString());
+        CustomerConsultationCaseSummary cancelledEarlier = cancelled(3, PURCHASED, START.minusSeconds(86_400), asOf);
+        CustomerConsultationCaseSummary upcoming = summary(3, PURCHASED, asOf, "2026-11-18T09:00:00Z");
+
+        assertThat(running.nextAppointment()).isPresent();
+        assertThat(List.of(cancelledEarlier, running, upcoming).stream()
+                .sorted(CustomerConsultationCaseSummary.MY_PURCHASES_ORDER).toList())
+                .containsExactly(upcoming, running, cancelledEarlier);
     }
 
     @Test

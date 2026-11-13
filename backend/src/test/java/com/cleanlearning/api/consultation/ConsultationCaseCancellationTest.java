@@ -277,6 +277,36 @@ class ConsultationCaseCancellationTest {
         assertThat(booked(ofCustomer2, TEN, SeedData.CUSTOMER_2)).isNotBlank();
     }
 
+    /** Spec 05, decision 6: My purchases puts a cancelled case under Past with its cancellation time, after the
+     * active. */
+    @Test
+    void aCancelledCaseIsPastOnMyPurchasesAfterTheActiveOne() throws Exception {
+        expert2Available("2026-11-17");
+        String cancelledId = boughtCareerCoaching(SeedData.CUSTOMER_1);
+        booked(cancelledId, TEN, SeedData.CUSTOMER_1);
+        String activeId = boughtCareerCoaching(SeedData.CUSTOMER_1);
+        clock.set(SUNDAY_NOON);
+        assertThat(cancel(cancelledId, true, SeedData.CUSTOMER_1)).hasStatusOk();
+
+        MvcTestResult list = mockMvc.get().uri(PATH).with(LoggedIn.as(SeedData.CUSTOMER_1, Role.CUSTOMER)).exchange();
+
+        assertThat(list).hasStatusOk();
+        String body = list.getResponse().getContentAsString();
+        assertThat(JsonPath.<List<String>>read(body, "$[*].id")).containsExactly(activeId, cancelledId);
+        assertThat(JsonPath.<List<String>>read(body, "$[*].group")).containsExactly("NEEDS_BOOKING", "PAST");
+        assertThat(list).bodyJson().isLenientlyEqualTo("""
+                [
+                  { "id": "%s", "cancelledAt": null, "nextAppointment": null },
+                  { "id": "%s", "cancelledAt": "%s", "nextAppointment": null }
+                ]
+                """.formatted(activeId, cancelledId, SUNDAY_NOON));
+        // another customer's list has none of them
+        MvcTestResult ofCustomer2 = mockMvc.get().uri(PATH).with(LoggedIn.as(SeedData.CUSTOMER_2, Role.CUSTOMER))
+                .exchange();
+        assertThat(JsonPath.<List<String>>read(ofCustomer2.getResponse().getContentAsString(), "$[*].id"))
+                .doesNotContain(activeId, cancelledId);
+    }
+
     /** Spec 05: a case without appointments, refund-eligible. */
     @Test
     void cancelsACaseWithoutAppointments() throws Exception {

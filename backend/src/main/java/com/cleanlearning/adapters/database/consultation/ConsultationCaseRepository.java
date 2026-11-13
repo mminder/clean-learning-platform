@@ -40,12 +40,12 @@ interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, 
 
     /**
      * The customer's cases with their offerings, in every status of the offering (UC-16), and their assigned experts'
-     * display names, in no particular order: the use case sorts them (D-17). Scoped to the customer in SQL
-     * (security.md).
+     * display names and their cancellation times, in no particular order: the use case sorts them (D-17). Scoped to
+     * the customer in SQL (security.md).
      */
     @Query("""
             select new com.cleanlearning.adapters.database.consultation.row.CustomerConsultationCaseSummaryRow(
-                c.id, o.name, o.imageId, c.sessionCount, c.purchasedAt, p.displayName)
+                c.id, o.name, o.imageId, c.sessionCount, c.purchasedAt, p.displayName, c.cancelledAt)
             from ConsultationCaseEntity c
             join OfferingEntity o on o.id = c.consultationOfferingId
             left join ExpertProfileEntity p on p.userId = c.assignedExpertId
