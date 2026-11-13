@@ -19,6 +19,7 @@ import com.cleanlearning.domain.availability.Availability;
 import com.cleanlearning.domain.availability.value.TimeRange;
 import com.cleanlearning.domain.consultation.value.BookableSlot;
 import com.cleanlearning.domain.consultation.value.BusyTime;
+import com.cleanlearning.domain.consultation.value.CaseStatus;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.consultation.value.PurchaseTerms;
 import com.cleanlearning.domain.offering.EligibleExpert;
@@ -73,6 +74,7 @@ class CaseForBookingTest {
             List.of());
 
     private static final String NO_OPEN_CREDITS = "This case has no open credits.";
+    private static final String CASE_CANCELLED = "This case was cancelled.";
     private static final String EXPERT_CHANGED = "This case already has an expert. Please choose a time with them.";
     private static final String EXPERT_NOT_ELIGIBLE =
             "This expert is no longer available for this offering. Please choose another.";
@@ -89,12 +91,13 @@ class CaseForBookingTest {
 
     /** A case of three sessions without an expert, with these booked appointments, Expert 1 and 2 eligible. */
     private static CaseForBooking withoutExpert(int bookedAppointments) {
-        return new CaseForBooking(CASE, THREE_SESSIONS, Optional.empty(), bookedAppointments, 0,
+        return new CaseForBooking(CASE, CaseStatus.ACTIVE, THREE_SESSIONS, Optional.empty(), bookedAppointments, 0,
                 List.of(EXPERT_1, EXPERT_2));
     }
 
     private static CaseForBooking withExpert(UserId expert, int bookedAppointments, List<EligibleExpert> eligible) {
-        return new CaseForBooking(CASE, THREE_SESSIONS, Optional.of(expert), bookedAppointments, 0, eligible);
+        return new CaseForBooking(CASE, CaseStatus.ACTIVE, THREE_SESSIONS, Optional.of(expert), bookedAppointments, 0,
+                eligible);
     }
 
     private static void assertRefused(Runnable booking, String code, String message) {
@@ -114,20 +117,36 @@ class CaseForBookingTest {
     /** Spec 05: a forfeited credit is used, as a booked one is; one cancelled in time is neither. */
     @Test
     void openCreditsAlsoLackTheForfeitedCredits() {
-        assertThat(new CaseForBooking(CASE, THREE_SESSIONS, Optional.of(EXPERT_2.id()), 1, 1, List.of(EXPERT_2))
-                .openCredits()).isOne();
-        assertThat(new CaseForBooking(CASE, THREE_SESSIONS, Optional.empty(), 0, 3, List.of(EXPERT_2)).openCredits())
-                .isZero();
+        assertThat(new CaseForBooking(CASE, CaseStatus.ACTIVE, THREE_SESSIONS, Optional.of(EXPERT_2.id()), 1, 1,
+                List.of(EXPERT_2)).openCredits()).isOne();
+        assertThat(new CaseForBooking(CASE, CaseStatus.ACTIVE, THREE_SESSIONS, Optional.empty(), 0, 3,
+                List.of(EXPERT_2)).openCredits()).isZero();
     }
 
     @Test
     void anOpenCreditIsRequiredAndAForfeitedOneIsNone() {
-        new CaseForBooking(CASE, THREE_SESSIONS, Optional.of(EXPERT_2.id()), 1, 1, List.of(EXPERT_2))
-                .requireOpenCredit();
+        new CaseForBooking(CASE, CaseStatus.ACTIVE, THREE_SESSIONS, Optional.of(EXPERT_2.id()), 1, 1,
+                List.of(EXPERT_2)).requireOpenCredit();
 
-        assertRefused(() -> new CaseForBooking(CASE, THREE_SESSIONS, Optional.of(EXPERT_2.id()), 2, 1,
-                List.of(EXPERT_2)).book(EXPERT_2.id(), zurich("2026-11-17T10:00"), SEVENTEENTH_NINE_TO_TWELVE, NOW),
+        assertRefused(() -> new CaseForBooking(CASE, CaseStatus.ACTIVE, THREE_SESSIONS, Optional.of(EXPERT_2.id()), 2,
+                1, List.of(EXPERT_2)).book(EXPERT_2.id(), zurich("2026-11-17T10:00"), SEVENTEENTH_NINE_TO_TWELVE, NOW),
                 CaseForBooking.NO_OPEN_CREDITS, NO_OPEN_CREDITS);
+    }
+
+    /** UC-06: a case cancelled in another tab can't be booked, and that's checked first, before the credits. */
+    @Test
+    void aCancelledCaseCantBeBookedWhateverElse() {
+        CaseForBooking cancelled = new CaseForBooking(CASE, CaseStatus.CANCELLED, THREE_SESSIONS, Optional.empty(), 0,
+                0, List.of(EXPERT_2));
+        CaseForBooking cancelledWithoutCredits = new CaseForBooking(CASE, CaseStatus.CANCELLED, THREE_SESSIONS,
+                Optional.of(EXPERT_2.id()), 2, 1, List.of(EXPERT_2));
+
+        assertRefused(cancelled::requireActive, CaseForCancellation.CASE_CANCELLED, CASE_CANCELLED);
+        assertRefused(() -> cancelled.book(EXPERT_2.id(), zurich("2026-11-17T10:00"), SEVENTEENTH_NINE_TO_TWELVE, NOW),
+                CaseForCancellation.CASE_CANCELLED, CASE_CANCELLED);
+        assertRefused(() -> cancelledWithoutCredits.book(EXPERT_1.id(), zurich("2026-11-17T10:00"),
+                SEVENTEENTH_NINE_TO_TWELVE, NOW), CaseForCancellation.CASE_CANCELLED, CASE_CANCELLED);
+        withoutExpert(3).requireActive();
     }
 
     @Test
@@ -144,8 +163,8 @@ class CaseForBookingTest {
 
         assertRefused(() -> withoutExpert(0).expertFor(SOMEONE_ELSE), CaseForBooking.EXPERT_NOT_ELIGIBLE,
                 EXPERT_NOT_ELIGIBLE);
-        assertRefused(() -> new CaseForBooking(CASE, THREE_SESSIONS, Optional.empty(), 0, 0, List.of())
-                .expertFor(EXPERT_2.id()), CaseForBooking.EXPERT_NOT_ELIGIBLE, EXPERT_NOT_ELIGIBLE);
+        assertRefused(() -> new CaseForBooking(CASE, CaseStatus.ACTIVE, THREE_SESSIONS, Optional.empty(), 0, 0,
+                List.of()).expertFor(EXPERT_2.id()), CaseForBooking.EXPERT_NOT_ELIGIBLE, EXPERT_NOT_ELIGIBLE);
     }
 
     @Test
@@ -177,9 +196,10 @@ class CaseForBookingTest {
 
     @Test
     void theSlotsFollowTheCasesTermsNotTheOfferings() {
-        CaseForBooking ninetyMinutesFortyEightHours = new CaseForBooking(CASE, new PurchaseTerms(Money.chf("300.00"),
-                new SessionCount(2), new SessionDuration(90), new CancellationDeadline(48)), Optional.empty(), 0,
-                0, List.of(EXPERT_2));
+        CaseForBooking ninetyMinutesFortyEightHours = new CaseForBooking(CASE, CaseStatus.ACTIVE,
+                new PurchaseTerms(Money.chf("300.00"), new SessionCount(2), new SessionDuration(90),
+                        new CancellationDeadline(48)),
+                Optional.empty(), 0, 0, List.of(EXPERT_2));
 
         assertThat(ninetyMinutesFortyEightHours.bookableSlots(SEVENTEENTH_NINE_TO_TWELVE, NOW)).containsExactly(
                 slot("2026-11-17T09:00", "2026-11-17T10:30", "2026-11-15T09:00"),
@@ -190,8 +210,8 @@ class CaseForBookingTest {
 
     @Test
     void aSlotWithinTheCancellationDeadlineHasNoFreeCancellationTime() {
-        CaseForBooking consultationCase = new CaseForBooking(CASE, FORTY_EIGHT_HOURS, Optional.empty(), 0, 0,
-                List.of(EXPERT_2));
+        CaseForBooking consultationCase = new CaseForBooking(CASE, CaseStatus.ACTIVE, FORTY_EIGHT_HOURS,
+                Optional.empty(), 0, 0, List.of(EXPERT_2));
 
         // 48 hours before 14:00, 14:30 and 15:00 is before now or now: cancelling is free only before it (D-11).
         assertThat(consultationCase.bookableSlots(ELEVENTH_TWO_TO_FIVE, NOW)).containsExactly(
@@ -204,8 +224,8 @@ class CaseForBookingTest {
 
     @Test
     void freeCancellationEndingNowHasPassed() {
-        CaseForBooking consultationCase = new CaseForBooking(CASE, FORTY_EIGHT_HOURS, Optional.empty(), 0, 0,
-                List.of(EXPERT_2));
+        CaseForBooking consultationCase = new CaseForBooking(CASE, CaseStatus.ACTIVE, FORTY_EIGHT_HOURS,
+                Optional.empty(), 0, 0, List.of(EXPERT_2));
 
         // 15:00's free cancellation ends at now; a second before now, it's still ahead.
         assertThat(consultationCase.bookableSlots(ELEVENTH_TWO_TO_FIVE, NOW))
@@ -282,8 +302,8 @@ class CaseForBookingTest {
         assertRefused(() -> withExpert(EXPERT_2.id(), 3, List.of(EXPERT_2)).book(EXPERT_1.id(),
                 zurich("2026-11-17T10:00"), SEVENTEENTH_NINE_TO_TWELVE, NOW), CaseForBooking.NO_OPEN_CREDITS,
                 NO_OPEN_CREDITS);
-        assertRefused(() -> new CaseForBooking(CASE, THREE_SESSIONS, Optional.empty(), 3, 0, List.of())
-                .book(SOMEONE_ELSE, zurich("2026-11-17T10:00"), SEVENTEENTH_NINE_TO_TWELVE, NOW),
+        assertRefused(() -> new CaseForBooking(CASE, CaseStatus.ACTIVE, THREE_SESSIONS, Optional.empty(), 3, 0,
+                List.of()).book(SOMEONE_ELSE, zurich("2026-11-17T10:00"), SEVENTEENTH_NINE_TO_TWELVE, NOW),
                 CaseForBooking.NO_OPEN_CREDITS, NO_OPEN_CREDITS);
     }
 
@@ -296,8 +316,8 @@ class CaseForBookingTest {
 
     @Test
     void refusesAnExpertNoLongerEligibleOnTheFirstBooking() {
-        assertRefused(() -> new CaseForBooking(CASE, THREE_SESSIONS, Optional.empty(), 0, 0, List.of(EXPERT_1))
-                .book(EXPERT_2.id(), zurich("2026-11-17T10:00"), SEVENTEENTH_NINE_TO_TWELVE, NOW),
+        assertRefused(() -> new CaseForBooking(CASE, CaseStatus.ACTIVE, THREE_SESSIONS, Optional.empty(), 0, 0,
+                List.of(EXPERT_1)).book(EXPERT_2.id(), zurich("2026-11-17T10:00"), SEVENTEENTH_NINE_TO_TWELVE, NOW),
                 CaseForBooking.EXPERT_NOT_ELIGIBLE, EXPERT_NOT_ELIGIBLE);
     }
 

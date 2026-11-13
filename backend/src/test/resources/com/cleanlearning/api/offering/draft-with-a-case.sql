@@ -11,6 +11,6 @@ insert into consultation_package (id, consultation_offering_id, session_count, p
 values ('00000000-0000-0000-0000-000000009061', '00000000-0000-0000-0000-000000009006', 1, 100.00);
 
 insert into consultation_case (id, customer_id, consultation_offering_id, price_paid, session_count,
-                               session_duration_minutes, cancellation_deadline_hours, purchased_at)
+                               session_duration_minutes, cancellation_deadline_hours, purchased_at, status)
 values ('00000000-0000-0000-0000-000000009601', '00000000-0000-0000-0000-000000000101',
-        '00000000-0000-0000-0000-000000009006', 100.00, 1, 60, 24, '2026-11-09T14:00:00Z');
+        '00000000-0000-0000-0000-000000009006', 100.00, 1, 60, 24, '2026-11-09T14:00:00Z', 'ACTIVE');

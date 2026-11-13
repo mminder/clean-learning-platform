@@ -23,13 +23,14 @@ interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, 
 
     /**
      * The customer's case with its offering, in every status of the offering: an archived offering's cases keep
-     * working (UC-16). Its assigned expert's profile, if it has one. Scoped to the customer in SQL, so another
-     * customer's case isn't found (security.md).
+     * working (UC-16). Its assigned expert's profile, if it has one, and its status with its cancellation. Scoped to
+     * the customer in SQL, so another customer's case isn't found (security.md).
      */
     @Query("""
             select new com.cleanlearning.adapters.database.consultation.row.CustomerConsultationCaseRow(
                 c.id, o.name, o.imageId, c.pricePaid, c.sessionCount, c.sessionDurationMinutes,
-                c.cancellationDeadlineHours, c.purchasedAt, p.userId, p.displayName, p.bio)
+                c.cancellationDeadlineHours, c.purchasedAt, p.userId, p.displayName, p.bio, c.status, c.cancelledAt,
+                c.refundEligible)
             from ConsultationCaseEntity c
             join OfferingEntity o on o.id = c.consultationOfferingId
             left join ExpertProfileEntity p on p.userId = c.assignedExpertId

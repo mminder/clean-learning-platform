@@ -8,20 +8,23 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.cleanlearning.domain.consultation.value.AppointmentId;
+import com.cleanlearning.domain.consultation.value.CancellationOutcome;
+import com.cleanlearning.domain.consultation.value.CaseStatus;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.consultation.value.PurchaseTerms;
+import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import com.cleanlearning.domain.shared.BusinessRuleException;
 import com.cleanlearning.domain.shared.NotFoundException;
 
 /**
- * A case as a cancellation needs it (UC-07): its purchase terms, which hold the cancellation deadline, its booked
- * appointments, consumed or not, and its cancelled ones. It holds UC-07's rules; {@link #cancelAppointment} checks
- * every one itself, in the plan's order.
+ * A case as a cancellation needs it (UC-07, UC-08): its stored status, its purchase terms, which hold the cancellation
+ * deadline, its booked appointments, consumed or not, and its cancelled ones. It holds UC-07's and UC-08's rules;
+ * {@link #cancelAppointment} and {@link #cancel} each check every one itself, in the plan's order.
  *
  * @param bookedAppointments the case's {@code BOOKED} appointments
  * @param cancelledAppointments the case's {@code CANCELLED} appointments, each with whether its credit was refunded
  */
-public record CaseForCancellation(ConsultationCaseId id, PurchaseTerms purchaseTerms,
+public record CaseForCancellation(ConsultationCaseId id, CaseStatus status, PurchaseTerms purchaseTerms,
         List<Appointment> bookedAppointments, List<AppointmentCancellation> cancelledAppointments) {
 
     /** The appointment was cancelled before, in another tab or with its case. */
@@ -36,8 +39,24 @@ public record CaseForCancellation(ConsultationCaseId id, PurchaseTerms purchaseT
      */
     public static final String DEADLINE_PASSED = "DEADLINE_PASSED";
 
+    /** The case was cancelled before, in another tab; a booking on it answers this too (UC-06). */
+    public static final String CASE_CANCELLED = "CASE_CANCELLED";
+
+    /** The case is completed: no open credit, and its last appointment has ended. */
+    public static final String CASE_COMPLETED = "CASE_COMPLETED";
+
+    /**
+     * Whether the case is refund-eligible now isn't what the customer confirmed: from the dialog, an appointment's free
+     * cancellation deadline passed while it was open (spec 05, decision 4).
+     */
+    public static final String REFUND_ELIGIBILITY_CHANGED = "REFUND_ELIGIBILITY_CHANGED";
+
+    /** {@link #CASE_CANCELLED}'s detail, for the cancellation and the booking alike. */
+    static final String CASE_CANCELLED_DETAIL = "This case was cancelled.";
+
     public CaseForCancellation {
         Objects.requireNonNull(id, "id");
+        Objects.requireNonNull(status, "status");
         Objects.requireNonNull(purchaseTerms, "purchaseTerms");
         bookedAppointments = List.copyOf(bookedAppointments);
         cancelledAppointments = List.copyOf(cancelledAppointments);
@@ -82,5 +101,42 @@ public record CaseForCancellation(ConsultationCaseId id, PurchaseTerms purchaseT
                     "The free cancellation deadline has just passed. Please confirm again.");
         }
         return new AppointmentCancellation(appointmentId, creditRefunded);
+    }
+
+    /** Whether cancelling the case at {@code now} would refund its purchase price, and if not, why (UC-08, D-12). */
+    public RefundEligibility refundEligibility(Instant now) {
+        return RefundEligibility.at(bookedAppointments, forfeitedCredits(), purchaseTerms.cancellationDeadline(), now);
+    }
+
+    /**
+     * Cancels the case (UC-08 step 4), only with the outcome the customer confirmed (spec 05, decision 4), and with it
+     * every booked appointment that hasn't started, each as {@link #cancelAppointment} would cancel it at {@code now}:
+     * its credit refunded before its free-cancellation time, forfeited after (decision 7). A running appointment is
+     * consumed and stays booked. It checks every rule itself, in this order: not cancelled yet, not completed, the
+     * outcome.
+     *
+     * @param refundEligibleConfirmed whether the dialog said the purchase price would be refunded
+     * @throws BusinessRuleException {@link #CASE_CANCELLED}, {@link #CASE_COMPLETED}, or
+     *     {@link #REFUND_ELIGIBILITY_CHANGED} if whether the case is refund-eligible at {@code now} isn't what was
+     *     confirmed
+     */
+    public CaseCancellation cancel(boolean refundEligibleConfirmed, Instant now) {
+        if (status == CaseStatus.CANCELLED) {
+            throw new BusinessRuleException(CASE_CANCELLED, CASE_CANCELLED_DETAIL);
+        }
+        if (Appointment.isCompleted(purchaseTerms.sessionCount(), bookedAppointments, forfeitedCredits(), now)) {
+            throw new BusinessRuleException(CASE_COMPLETED, "This case is completed.");
+        }
+        boolean refundEligible = refundEligibility(now).isRefundEligible();
+        if (refundEligible != refundEligibleConfirmed) {
+            throw new BusinessRuleException(REFUND_ELIGIBILITY_CHANGED,
+                    "Whether the purchase price would be refunded has changed. Please confirm again.");
+        }
+        CancellationDeadline deadline = purchaseTerms.cancellationDeadline();
+        return new CaseCancellation(id, new CancellationOutcome(now, refundEligible),
+                bookedAppointments.stream().filter(appointment -> appointment.isCancellableAt(now))
+                        .map(appointment -> new AppointmentCancellation(appointment.id(),
+                                appointment.isCreditRefundedIfCancelledAt(deadline, now)))
+                        .toList());
     }
 }

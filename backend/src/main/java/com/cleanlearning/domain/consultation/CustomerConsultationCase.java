@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import com.cleanlearning.domain.consultation.value.CancellationOutcome;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.consultation.value.PurchaseTerms;
 import com.cleanlearning.domain.image.value.ImageId;
@@ -13,18 +14,21 @@ import com.cleanlearning.domain.offering.value.OfferingName;
 /**
  * A case as its customer sees it at {@code asOf} (UC-05's case detail): the offering's name and image, read live
  * (D-08), the purchase terms, the purchase time, the assigned expert, the appointments with the upcoming ones'
- * cancellation preview, and the credits. What depends on the time is derived at {@code asOf}, never stored (D-11);
- * {@link Appointment} holds the appointments' rules. A cancelled appointment isn't shown (spec 05, decision 3): only
- * its forfeited credit counts. Every case is active until UC-08 exists.
+ * cancellation preview, the credits, and its cancellation, if it was cancelled, or else whether it can be cancelled and
+ * whether that would refund it (UC-08). What depends on the time is derived at {@code asOf}, never stored (D-11);
+ * {@link Appointment} holds the appointments' rules and completion, and {@link RefundEligibility} the refund's. A
+ * cancelled appointment isn't shown (spec 05, decision 3): only its forfeited credit counts.
  *
  * @param expert the assigned expert, empty until the first booking
  * @param appointments the case's {@code BOOKED} appointments, in any order
  * @param forfeitedCredits the case's appointments cancelled late
+ * @param cancellation the case's cancellation, empty while it's active
  * @param asOf the time the case is shown at, from the {@code Clock}
  */
 public record CustomerConsultationCase(ConsultationCaseId id, OfferingName offeringName,
         Optional<ImageId> offeringImageId, PurchaseTerms purchaseTerms, Instant purchasedAt,
-        Optional<AssignedExpert> expert, List<Appointment> appointments, int forfeitedCredits, Instant asOf) {
+        Optional<AssignedExpert> expert, List<Appointment> appointments, int forfeitedCredits,
+        Optional<CancellationOutcome> cancellation, Instant asOf) {
 
     public CustomerConsultationCase {
         Objects.requireNonNull(id, "id");
@@ -38,6 +42,7 @@ public record CustomerConsultationCase(ConsultationCaseId id, OfferingName offer
             throw new IllegalArgumentException(
                     "A case has no negative number of forfeited credits: " + forfeitedCredits);
         }
+        Objects.requireNonNull(cancellation, "cancellation");
         Objects.requireNonNull(asOf, "asOf");
     }
 
@@ -54,9 +59,30 @@ public record CustomerConsultationCase(ConsultationCaseId id, OfferingName offer
         return Appointment.openCredits(purchaseTerms.sessionCount(), appointments.size(), forfeitedCredits);
     }
 
-    /** Whether the customer can book an appointment: an open credit is left. UC-08 adds "and the case is active". */
+    /** Whether the customer can book an appointment: the case is active and an open credit is left. */
     public boolean canBook() {
-        return openCredits() > 0;
+        return cancellation.isEmpty() && openCredits() > 0;
+    }
+
+    /**
+     * Whether the customer can cancel the case (UC-08): it's active and not completed, so also while its last session
+     * runs.
+     */
+    public boolean canCancel() {
+        return cancellation.isEmpty()
+                && !Appointment.isCompleted(purchaseTerms.sessionCount(), appointments, forfeitedCredits, asOf);
+    }
+
+    /**
+     * Whether cancelling the case at {@code asOf} would refund its purchase price, and if not, why: the cancel dialog's
+     * preview (spec 05, decision 12), the rule the cancellation decides with. Present exactly when {@link #canCancel}.
+     */
+    public Optional<RefundEligibility> refundIfCancelledNow() {
+        if (!canCancel()) {
+            return Optional.empty();
+        }
+        return Optional.of(RefundEligibility.at(appointments, forfeitedCredits, purchaseTerms.cancellationDeadline(),
+                asOf));
     }
 
     /**

@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-import com.cleanlearning.domain.consultation.value.AppointmentStatus;
 import com.cleanlearning.domain.consultation.value.NonRefundableReason;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
 
@@ -34,23 +33,25 @@ public record RefundEligibility(Optional<NonRefundableReason> reason, Optional<A
     /**
      * The rule at {@code asOf}, for the case's booked appointments (not the cancelled ones: a credit refunded by a
      * cancellation in time doesn't count) and its forfeited credits. A running appointment is consumed. An appointment
-     * that hasn't started is late from its free-cancellation time on, that moment included.
+     * that hasn't started is late from its free-cancellation time on, that moment included: exactly when cancelling it
+     * would forfeit its credit, as {@link Appointment}'s cancellation rules decide (UC-07), so a case cancelled
+     * refund-eligible cancels no appointment late.
      */
     public static RefundEligibility at(List<Appointment> bookedAppointments, int forfeitedCredits,
             CancellationDeadline deadline, Instant asOf) {
-        if (bookedAppointments.stream().anyMatch(a -> a.statusAt(asOf) == AppointmentStatus.CONSUMED)) {
+        if (bookedAppointments.stream().anyMatch(a -> !a.isCancellableAt(asOf))) {
             return withReason(NonRefundableReason.SESSION_TOOK_PLACE);
         }
         if (forfeitedCredits > 0) {
             return withReason(NonRefundableReason.CREDIT_FORFEITED);
         }
         Optional<Appointment> soonestLate = bookedAppointments.stream()
-                .filter(a -> !deadline.freeUntil(a.start()).isAfter(asOf))
+                .filter(a -> !a.isCreditRefundedIfCancelledAt(deadline, asOf))
                 .min(Comparator.comparing(Appointment::start));
         if (soonestLate.isPresent()) {
             Appointment late = soonestLate.get();
             return new RefundEligibility(Optional.of(NonRefundableReason.DEADLINE_PASSED), Optional.of(late),
-                    Optional.of(deadline.freeUntil(late.start())));
+                    Optional.of(late.freeCancellationUntil(deadline)));
         }
         return new RefundEligibility(Optional.empty(), Optional.empty(), Optional.empty());
     }

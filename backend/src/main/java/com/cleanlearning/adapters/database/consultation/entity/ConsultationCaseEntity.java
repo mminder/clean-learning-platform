@@ -6,14 +6,19 @@ import java.util.UUID;
 
 import org.jspecify.annotations.Nullable;
 
+import com.cleanlearning.domain.consultation.value.CaseStatus;
+
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 /**
  * Written by {@code ConsultationCaseAdapter}, and read through the projections in {@code ConsultationCaseRepository};
- * a booking reads and locks it as an entity, and its first booking sets the assigned expert. The database sets
- * {@code created_at} and {@code updated_at}.
+ * a booking and a cancellation read and lock it as an entity, its first booking sets the assigned expert, and its
+ * cancellation the status, {@code cancelled_at} and {@code refund_eligible}. The purchase writes {@code ACTIVE}. The
+ * database sets {@code created_at} and {@code updated_at}.
  */
 @Entity
 @Table(name = "consultation_case")
@@ -40,6 +45,14 @@ public class ConsultationCaseEntity {
     // The expert's user id, which is also the id of their expert profile; null until the first booking (UC-06).
     private @Nullable UUID assignedExpertId;
 
+    @Enumerated(EnumType.STRING)
+    private CaseStatus status;
+
+    // Both null while the case is ACTIVE, both set once it's CANCELLED (V10's checks).
+    private @Nullable Instant cancelledAt;
+
+    private @Nullable Boolean refundEligible;
+
     protected ConsultationCaseEntity() {
         // for JPA
     }
@@ -54,6 +67,7 @@ public class ConsultationCaseEntity {
         this.sessionDurationMinutes = sessionDurationMinutes;
         this.cancellationDeadlineHours = cancellationDeadlineHours;
         this.purchasedAt = purchasedAt;
+        this.status = CaseStatus.ACTIVE;
     }
 
     public UUID getId() {
@@ -86,5 +100,21 @@ public class ConsultationCaseEntity {
 
     public void setAssignedExpertId(UUID assignedExpertId) {
         this.assignedExpertId = assignedExpertId;
+    }
+
+    public CaseStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(CaseStatus status) {
+        this.status = status;
+    }
+
+    public void setCancelledAt(Instant cancelledAt) {
+        this.cancelledAt = cancelledAt;
+    }
+
+    public void setRefundEligible(boolean refundEligible) {
+        this.refundEligible = refundEligible;
     }
 }
