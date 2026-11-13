@@ -5,7 +5,7 @@ import java.util.UUID;
 
 public record ImageId(UUID value) {
 
-    public ImageId {
-        Objects.requireNonNull(value, "value");
-    }
+  public ImageId {
+    Objects.requireNonNull(value, "value");
+  }
 }

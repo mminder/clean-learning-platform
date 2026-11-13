@@ -3,6 +3,13 @@ package com.cleanlearning.api.consultation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.context.jdbc.Sql.ExecutionPhase.AFTER_TEST_METHOD;
 
+import com.cleanlearning.Csrf;
+import com.cleanlearning.IntegrationTest;
+import com.cleanlearning.LoggedIn;
+import com.cleanlearning.SeedData;
+import com.cleanlearning.TestClock;
+import com.cleanlearning.domain.user.value.Role;
+import com.jayway.jsonpath.JsonPath;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -16,9 +23,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
-
 import javax.sql.DataSource;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,331 +34,423 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
-import com.cleanlearning.Csrf;
-import com.cleanlearning.IntegrationTest;
-import com.cleanlearning.LoggedIn;
-import com.cleanlearning.SeedData;
-import com.cleanlearning.TestClock;
-import com.cleanlearning.domain.user.value.Role;
-import com.jayway.jsonpath.JsonPath;
-
 /**
- * The booking's two locks (D-27): two bookings with one expert at once can't both take the expert's slot, and two
- * bookings of one case at once can't both take its last credit. A booking locks the case
- * ({@code LockCaseForBookingPort}), then the expert's user row ({@code LockExpertPort}), so they run one after the
- * other. And the case's lock of a cancellation ({@code LockCaseForCancellationPort}): a case cancelled while a booking
- * on it runs never keeps a future booked appointment (spec 05, decision 10).
- * <p>
- * As in {@code ConsultationOfferingConcurrencyTest}, a test makes its race certain rather than likely: it holds the
- * contended row lock itself while the requests start, waits until Postgres shows them waiting for a lock (in the
- * cancellation test, until the cancellation waits or has answered), and only then lets go. With the lock, they wait at
- * the lock and then run one after the other. Without it, they read at once, and both pass. "Now" is Mon 9 Nov 2026, 15:00 in Zurich; in November, Zurich is UTC+1.
+ * The booking's two locks (D-27): two bookings with one expert at once can't both take the expert's
+ * slot, and two bookings of one case at once can't both take its last credit. A booking locks the
+ * case ({@code LockCaseForBookingPort}), then the expert's user row ({@code LockExpertPort}), so
+ * they run one after the other. And the case's lock of a cancellation ({@code
+ * LockCaseForCancellationPort}): a case cancelled while a booking on it runs never keeps a future
+ * booked appointment (spec 05, decision 10).
+ *
+ * <p>As in {@code ConsultationOfferingConcurrencyTest}, a test makes its race certain rather than
+ * likely: it holds the contended row lock itself while the requests start, waits until Postgres
+ * shows them waiting for a lock (in the cancellation test, until the cancellation waits or has
+ * answered), and only then lets go. With the lock, they wait at the lock and then run one after the
+ * other. Without it, they read at once, and both pass. "Now" is Mon 9 Nov 2026, 15:00 in Zurich; in
+ * November, Zurich is UTC+1.
  */
 @IntegrationTest
 class ConsultationCaseConcurrencyTest {
 
-    private static final String PATH = "/api/customer/consultation-cases";
+  private static final String PATH = "/api/customer/consultation-cases";
 
-    /** Mon 9 Nov 2026, 15:00 in Zurich. */
-    private static final Instant NOW = Instant.parse("2026-11-09T14:00:00Z");
+  /** Mon 9 Nov 2026, 15:00 in Zurich. */
+  private static final Instant NOW = Instant.parse("2026-11-09T14:00:00Z");
 
-    /** Tue 17 Nov 2026, 10:00 and 11:00 in Zurich. */
-    private static final String TEN = "2026-11-17T09:00:00Z";
-    private static final String ELEVEN = "2026-11-17T10:00:00Z";
+  /** Tue 17 Nov 2026, 10:00 and 11:00 in Zurich. */
+  private static final String TEN = "2026-11-17T09:00:00Z";
 
-    // Mock Interview from one-session-offering.sql: published, 60 minutes, both experts eligible
-    private static final UUID MOCK_INTERVIEW = UUID.fromString("00000000-0000-0000-0000-000000009007");
+  private static final String ELEVEN = "2026-11-17T10:00:00Z";
 
-    // its only package: 1 session for CHF 150
-    private static final UUID MOCK_INTERVIEW_1_SESSION = UUID.fromString("00000000-0000-0000-0000-000000009071");
+  // Mock Interview from one-session-offering.sql: published, 60 minutes, both experts eligible
+  private static final UUID MOCK_INTERVIEW =
+      UUID.fromString("00000000-0000-0000-0000-000000009007");
 
-    private static final Duration TIMEOUT = Duration.ofSeconds(10);
+  // its only package: 1 session for CHF 150
+  private static final UUID MOCK_INTERVIEW_1_SESSION =
+      UUID.fromString("00000000-0000-0000-0000-000000009071");
 
-    @Autowired
-    MockMvcTester mockMvc;
+  private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
-    @Autowired
-    TestClock clock;
+  @Autowired MockMvcTester mockMvc;
 
-    @Autowired
-    DataSource dataSource;
+  @Autowired TestClock clock;
 
-    @Autowired
-    JdbcClient jdbc;
+  @Autowired DataSource dataSource;
 
-    @BeforeEach
-    void setNow() {
-        clock.set(NOW);
+  @Autowired JdbcClient jdbc;
+
+  @BeforeEach
+  void setNow() {
+    clock.set(NOW);
+  }
+
+  /**
+   * The expert's lock: two customers book Expert 2 at the same start, each on their own case, so
+   * only the expert's lock can order them. Without it, both find the slot free, and both book it.
+   *
+   * <p>Besides Expert 2's {@code app_user} row, which the expert's lock takes, the test holds their
+   * {@code expert_profile} row, which each first booking's foreign key check of the case's expert
+   * waits for: so a booking that has found the slot free can't commit until the test lets go. With
+   * the expert's lock, both wait at the {@code app_user} row; then the first waits at the foreign
+   * key and holds the lock, and the second waits for it. Without the lock, both wait at the foreign
+   * key. Only then does the test let go of the foreign key.
+   */
+  @Test
+  @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
+  void twoCustomersCantBothBookOneSlotOfAnExpert() throws Exception {
+    available(SeedData.EXPERT_2);
+    String ofCustomer1 =
+        bought(
+            SeedData.CUSTOMER_1,
+            SeedData.CAREER_COACHING,
+            SeedData.CAREER_COACHING_3_SESSIONS,
+            "450.00",
+            3);
+    String ofCustomer2 =
+        bought(
+            SeedData.CUSTOMER_2,
+            SeedData.CAREER_COACHING,
+            SeedData.CAREER_COACHING_3_SESSIONS,
+            "450.00",
+            3);
+
+    ExecutorService requests = Executors.newFixedThreadPool(2);
+    List<String> answers;
+    try (Connection expertLock = dataSource.getConnection();
+        Connection foreignKeyLock = dataSource.getConnection()) {
+      lock(expertLock, "select id from app_user where id = ? for no key update", SeedData.EXPERT_2);
+      lock(
+          foreignKeyLock,
+          "select user_id from expert_profile where user_id = ? for update",
+          SeedData.EXPERT_2);
+      int foreignKeyBackend = backend(foreignKeyLock);
+      List<Integer> testBackends = List.of(backend(expertLock), foreignKeyBackend);
+
+      Future<String> first =
+          requests.submit(() -> book(ofCustomer1, SeedData.EXPERT_2, TEN, SeedData.CUSTOMER_1));
+      Future<String> second =
+          requests.submit(() -> book(ofCustomer2, SeedData.EXPERT_2, TEN, SeedData.CUSTOMER_2));
+      awaitRequestsWaitingForALock(2);
+
+      expertLock.commit();
+      // with the expert's lock, one waits at the foreign key and the other for it; without it, both
+      // at the key
+      await(
+          "2 requests waiting for the expert profile or for each other",
+          () -> requestsWaitingForTheForeignKeyOrEachOther(foreignKeyBackend, testBackends) >= 2);
+      foreignKeyLock.commit();
+
+      answers =
+          List.of(
+              first.get(TIMEOUT.toSeconds(), TimeUnit.SECONDS),
+              second.get(TIMEOUT.toSeconds(), TimeUnit.SECONDS));
+    } finally {
+      shutDown(requests);
     }
 
-    /**
-     * The expert's lock: two customers book Expert 2 at the same start, each on their own case, so only the expert's
-     * lock can order them. Without it, both find the slot free, and both book it.
-     * <p>
-     * Besides Expert 2's {@code app_user} row, which the expert's lock takes, the test holds their
-     * {@code expert_profile} row, which each first booking's foreign key check of the case's expert waits for: so a
-     * booking that has found the slot free can't commit until the test lets go. With the expert's lock, both wait at
-     * the {@code app_user} row; then the first waits at the foreign key and holds the lock, and the second waits for
-     * it. Without the lock, both wait at the foreign key. Only then does the test let go of the foreign key.
-     */
-    @Test
-    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
-    void twoCustomersCantBothBookOneSlotOfAnExpert() throws Exception {
-        available(SeedData.EXPERT_2);
-        String ofCustomer1 = bought(SeedData.CUSTOMER_1, SeedData.CAREER_COACHING,
-                SeedData.CAREER_COACHING_3_SESSIONS, "450.00", 3);
-        String ofCustomer2 = bought(SeedData.CUSTOMER_2, SeedData.CAREER_COACHING,
-                SeedData.CAREER_COACHING_3_SESSIONS, "450.00", 3);
+    assertThat(answers)
+        .as("the two bookings")
+        .containsExactlyInAnyOrder("201", "409 SLOT_NOT_AVAILABLE");
+    assertThat(
+            jdbc.sql(
+                    """
+                    select count(*) from appointment a join consultation_case c on c.id = a.consultation_case_id
+                    where c.assigned_expert_id = :expert and a.starts_at = :start::timestamptz
+                    """)
+                .param("expert", SeedData.EXPERT_2)
+                .param("start", TEN)
+                .query(Long.class)
+                .single())
+        .as("Expert 2's appointments at the start")
+        .isOne();
+  }
 
-        ExecutorService requests = Executors.newFixedThreadPool(2);
-        List<String> answers;
-        try (Connection expertLock = dataSource.getConnection();
-                Connection foreignKeyLock = dataSource.getConnection()) {
-            lock(expertLock, "select id from app_user where id = ? for no key update", SeedData.EXPERT_2);
-            lock(foreignKeyLock, "select user_id from expert_profile where user_id = ? for update",
-                    SeedData.EXPERT_2);
-            int foreignKeyBackend = backend(foreignKeyLock);
-            List<Integer> testBackends = List.of(backend(expertLock), foreignKeyBackend);
+  /**
+   * The case's lock: Customer 1 books their case's one credit twice at once, as from two tabs, once
+   * with Expert 1 and once with Expert 2, so each locks another expert and only the case's lock can
+   * order them. Without it, both find the credit open, and both book.
+   *
+   * <p>The test holds the case's row. With the case's lock, both wait at it. Without it, both wait
+   * at their update of the case's expert, which needs the same row lock.
+   */
+  @Test
+  @Sql("/com/cleanlearning/api/consultation/one-session-offering.sql")
+  @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
+  void twoBookingsOfOneCaseCantBothTakeItsLastCredit() throws Exception {
+    available(SeedData.EXPERT_1);
+    available(SeedData.EXPERT_2);
+    String caseId =
+        bought(SeedData.CUSTOMER_1, MOCK_INTERVIEW, MOCK_INTERVIEW_1_SESSION, "150.00", 1);
 
-            Future<String> first = requests.submit(() -> book(ofCustomer1, SeedData.EXPERT_2, TEN,
-                    SeedData.CUSTOMER_1));
-            Future<String> second = requests.submit(() -> book(ofCustomer2, SeedData.EXPERT_2, TEN,
-                    SeedData.CUSTOMER_2));
-            awaitRequestsWaitingForALock(2);
+    ExecutorService requests = Executors.newFixedThreadPool(2);
+    List<String> answers;
+    try (Connection caseLock = dataSource.getConnection()) {
+      lock(
+          caseLock,
+          "select id from consultation_case where id = ? for no key update",
+          UUID.fromString(caseId));
 
-            expertLock.commit();
-            // with the expert's lock, one waits at the foreign key and the other for it; without it, both at the key
-            await("2 requests waiting for the expert profile or for each other",
-                    () -> requestsWaitingForTheForeignKeyOrEachOther(foreignKeyBackend, testBackends) >= 2);
-            foreignKeyLock.commit();
+      Future<String> withExpert1 =
+          requests.submit(() -> book(caseId, SeedData.EXPERT_1, TEN, SeedData.CUSTOMER_1));
+      Future<String> withExpert2 =
+          requests.submit(() -> book(caseId, SeedData.EXPERT_2, ELEVEN, SeedData.CUSTOMER_1));
+      awaitRequestsWaitingForALock(2);
+      caseLock.commit();
 
-            answers = List.of(first.get(TIMEOUT.toSeconds(), TimeUnit.SECONDS),
-                    second.get(TIMEOUT.toSeconds(), TimeUnit.SECONDS));
-        } finally {
-            shutDown(requests);
-        }
-
-        assertThat(answers).as("the two bookings").containsExactlyInAnyOrder("201", "409 SLOT_NOT_AVAILABLE");
-        assertThat(jdbc.sql("""
-                select count(*) from appointment a join consultation_case c on c.id = a.consultation_case_id
-                where c.assigned_expert_id = :expert and a.starts_at = :start::timestamptz
-                """).param("expert", SeedData.EXPERT_2).param("start", TEN).query(Long.class).single())
-                .as("Expert 2's appointments at the start").isOne();
+      answers =
+          List.of(
+              withExpert1.get(TIMEOUT.toSeconds(), TimeUnit.SECONDS),
+              withExpert2.get(TIMEOUT.toSeconds(), TimeUnit.SECONDS));
+    } finally {
+      shutDown(requests);
     }
 
-    /**
-     * The case's lock: Customer 1 books their case's one credit twice at once, as from two tabs, once with Expert 1 and
-     * once with Expert 2, so each locks another expert and only the case's lock can order them. Without it, both find
-     * the credit open, and both book.
-     * <p>
-     * The test holds the case's row. With the case's lock, both wait at it. Without it, both wait at their update of
-     * the case's expert, which needs the same row lock.
-     */
-    @Test
-    @Sql("/com/cleanlearning/api/consultation/one-session-offering.sql")
-    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
-    void twoBookingsOfOneCaseCantBothTakeItsLastCredit() throws Exception {
-        available(SeedData.EXPERT_1);
-        available(SeedData.EXPERT_2);
-        String caseId = bought(SeedData.CUSTOMER_1, MOCK_INTERVIEW, MOCK_INTERVIEW_1_SESSION, "150.00", 1);
+    assertThat(answers)
+        .as("the two bookings")
+        .containsExactlyInAnyOrder("201", "409 NO_OPEN_CREDITS");
+    assertThat(
+            jdbc.sql("select count(*) from appointment where consultation_case_id = :id::uuid")
+                .param("id", caseId)
+                .query(Long.class)
+                .single())
+        .as("the case's appointments")
+        .isOne();
+  }
 
-        ExecutorService requests = Executors.newFixedThreadPool(2);
-        List<String> answers;
-        try (Connection caseLock = dataSource.getConnection()) {
-            lock(caseLock, "select id from consultation_case where id = ? for no key update", UUID.fromString(caseId));
+  /**
+   * The case's lock of both a booking and a cancellation: Customer 1 books on their case while
+   * cancelling it, as from two tabs. The case already has Expert 2 from a first booking, so the
+   * second booking doesn't write the case's row: only the case's locks can order the two requests.
+   * Without either, the cancellation misses the new appointment, and the case is cancelled with a
+   * future booked appointment.
+   *
+   * <p>The test holds Expert 2's {@code app_user} row, which the booking locks after the case, so
+   * the booking waits there, with the case locked, or without its case lock having read the case as
+   * active. Then the cancellation starts, and the test waits until it waits for a lock or has
+   * answered: with both locks it waits for the booking's case lock; without its own, it reads the
+   * case's appointments without the new one and waits at its update of the case; without the
+   * booking's, nothing holds it up, and it answers. Only then does the test let go of the expert.
+   */
+  @Test
+  @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
+  void aCaseCancelledDuringABookingKeepsNoFutureBookedAppointment() throws Exception {
+    available(SeedData.EXPERT_2);
+    String caseId =
+        bought(
+            SeedData.CUSTOMER_1,
+            SeedData.CAREER_COACHING,
+            SeedData.CAREER_COACHING_3_SESSIONS,
+            "450.00",
+            3);
+    assertThat(book(caseId, SeedData.EXPERT_2, TEN, SeedData.CUSTOMER_1))
+        .as("the first booking")
+        .isEqualTo("201");
 
-            Future<String> withExpert1 = requests.submit(() -> book(caseId, SeedData.EXPERT_1, TEN,
-                    SeedData.CUSTOMER_1));
-            Future<String> withExpert2 = requests.submit(() -> book(caseId, SeedData.EXPERT_2, ELEVEN,
-                    SeedData.CUSTOMER_1));
-            awaitRequestsWaitingForALock(2);
-            caseLock.commit();
+    ExecutorService requests = Executors.newFixedThreadPool(2);
+    List<String> answers;
+    try (Connection expertLock = dataSource.getConnection()) {
+      lock(expertLock, "select id from app_user where id = ? for no key update", SeedData.EXPERT_2);
 
-            answers = List.of(withExpert1.get(TIMEOUT.toSeconds(), TimeUnit.SECONDS),
-                    withExpert2.get(TIMEOUT.toSeconds(), TimeUnit.SECONDS));
-        } finally {
-            shutDown(requests);
-        }
+      Future<String> booking =
+          requests.submit(() -> book(caseId, SeedData.EXPERT_2, ELEVEN, SeedData.CUSTOMER_1));
+      awaitRequestsWaitingForALock(1);
+      Future<String> cancellation = requests.submit(() -> cancel(caseId, SeedData.CUSTOMER_1));
+      // with its case lock, it waits for the booking's; without it, at its update of the case; with
+      // the
+      // booking's lock gone, nothing holds it up
+      await(
+          "the cancellation waiting for a lock or answered",
+          () -> cancellation.isDone() || requestsWaitingForALock() >= 2);
+      expertLock.commit();
 
-        assertThat(answers).as("the two bookings").containsExactlyInAnyOrder("201", "409 NO_OPEN_CREDITS");
-        assertThat(jdbc.sql("select count(*) from appointment where consultation_case_id = :id::uuid")
-                .param("id", caseId).query(Long.class).single()).as("the case's appointments").isOne();
+      answers =
+          List.of(
+              booking.get(TIMEOUT.toSeconds(), TimeUnit.SECONDS),
+              cancellation.get(TIMEOUT.toSeconds(), TimeUnit.SECONDS));
+    } finally {
+      shutDown(requests);
     }
 
-    /**
-     * The case's lock of both a booking and a cancellation: Customer 1 books on their case while cancelling it, as from
-     * two tabs. The case already has Expert 2 from a first booking, so the second booking doesn't write the case's row:
-     * only the case's locks can order the two requests. Without either, the cancellation misses the new appointment,
-     * and the case is cancelled with a future booked appointment.
-     * <p>
-     * The test holds Expert 2's {@code app_user} row, which the booking locks after the case, so the booking waits
-     * there, with the case locked, or without its case lock having read the case as active. Then the cancellation
-     * starts, and the test waits until it waits for a lock or has answered: with both locks it waits for the booking's
-     * case lock; without its own, it reads the case's appointments without the new one and waits at its update of the
-     * case; without the booking's, nothing holds it up, and it answers. Only then does the test let go of the expert.
-     */
-    @Test
-    @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
-    void aCaseCancelledDuringABookingKeepsNoFutureBookedAppointment() throws Exception {
-        available(SeedData.EXPERT_2);
-        String caseId = bought(SeedData.CUSTOMER_1, SeedData.CAREER_COACHING, SeedData.CAREER_COACHING_3_SESSIONS,
-                "450.00", 3);
-        assertThat(book(caseId, SeedData.EXPERT_2, TEN, SeedData.CUSTOMER_1)).as("the first booking").isEqualTo("201");
+    assertThat(answers).as("the booking and the cancellation").containsExactly("201", "200");
+    assertThat(
+            jdbc.sql("select status from consultation_case where id = :id::uuid")
+                .param("id", caseId)
+                .query(String.class)
+                .single())
+        .as("the case's status")
+        .isEqualTo("CANCELLED");
+    assertThat(
+            jdbc.sql(
+                    """
+                    select to_char(starts_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') || ' ' || status
+                           || ' ' || coalesce(credit_refunded::text, '-') from appointment
+                    where consultation_case_id = :id::uuid order by starts_at
+                    """)
+                .param("id", caseId)
+                .query(String.class)
+                .list())
+        .as("the case's appointments: none still booked, each credit refunded")
+        .containsExactly(TEN + " CANCELLED true", ELEVEN + " CANCELLED true");
+  }
 
-        ExecutorService requests = Executors.newFixedThreadPool(2);
-        List<String> answers;
-        try (Connection expertLock = dataSource.getConnection()) {
-            lock(expertLock, "select id from app_user where id = ? for no key update", SeedData.EXPERT_2);
-
-            Future<String> booking = requests.submit(() -> book(caseId, SeedData.EXPERT_2, ELEVEN,
-                    SeedData.CUSTOMER_1));
-            awaitRequestsWaitingForALock(1);
-            Future<String> cancellation = requests.submit(() -> cancel(caseId, SeedData.CUSTOMER_1));
-            // with its case lock, it waits for the booking's; without it, at its update of the case; with the
-            // booking's lock gone, nothing holds it up
-            await("the cancellation waiting for a lock or answered",
-                    () -> cancellation.isDone() || requestsWaitingForALock() >= 2);
-            expertLock.commit();
-
-            answers = List.of(booking.get(TIMEOUT.toSeconds(), TimeUnit.SECONDS),
-                    cancellation.get(TIMEOUT.toSeconds(), TimeUnit.SECONDS));
-        } finally {
-            shutDown(requests);
-        }
-
-        assertThat(answers).as("the booking and the cancellation").containsExactly("201", "200");
-        assertThat(jdbc.sql("select status from consultation_case where id = :id::uuid").param("id", caseId)
-                .query(String.class).single()).as("the case's status").isEqualTo("CANCELLED");
-        assertThat(jdbc.sql("""
-                select to_char(starts_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') || ' ' || status
-                       || ' ' || coalesce(credit_refunded::text, '-') from appointment
-                where consultation_case_id = :id::uuid order by starts_at
-                """).param("id", caseId).query(String.class).list())
-                .as("the case's appointments: none still booked, each credit refunded")
-                .containsExactly(TEN + " CANCELLED true", ELEVEN + " CANCELLED true");
-    }
-
-    /** The expert saves Tue 17 Nov 2026, 09:00–12:00 in Zurich. */
-    private void available(UUID expert) {
-        assertThat(mockMvc.put().uri("/api/expert/availability")
+  /** The expert saves Tue 17 Nov 2026, 09:00–12:00 in Zurich. */
+  private void available(UUID expert) {
+    assertThat(
+            mockMvc
+                .put()
+                .uri("/api/expert/availability")
                 .with(LoggedIn.as(expert, Role.EXPERT))
                 .with(Csrf.token())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        { "dates": ["2026-11-17"], "timeRanges": [{ "start": "09:00", "end": "12:00" }] }
-                        """))
-                .hasStatusOk();
-    }
+                .content(
+                    """
+                    { "dates": ["2026-11-17"], "timeRanges": [{ "start": "09:00", "end": "12:00" }] }
+                    """))
+        .hasStatusOk();
+  }
 
-    /** The customer buys the package; returns the new case's id. */
-    private String bought(UUID customer, UUID offeringId, UUID packageId, String price, int sessionCount)
-            throws Exception {
-        MvcTestResult bought = mockMvc.post().uri(PATH)
-                .with(LoggedIn.as(customer, Role.CUSTOMER))
-                .with(Csrf.token())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        { "offeringId": "%s", "packageId": "%s", "price": "%s", "sessionCount": %d }
-                        """.formatted(offeringId, packageId, price, sessionCount))
-                .exchange();
-        assertThat(bought).hasStatus(HttpStatus.CREATED);
-        return JsonPath.read(bought.getResponse().getContentAsString(), "$.id");
-    }
+  /** The customer buys the package; returns the new case's id. */
+  private String bought(
+      UUID customer, UUID offeringId, UUID packageId, String price, int sessionCount)
+      throws Exception {
+    MvcTestResult bought =
+        mockMvc
+            .post()
+            .uri(PATH)
+            .with(LoggedIn.as(customer, Role.CUSTOMER))
+            .with(Csrf.token())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(
+                """
+                { "offeringId": "%s", "packageId": "%s", "price": "%s", "sessionCount": %d }
+                """
+                    .formatted(offeringId, packageId, price, sessionCount))
+            .exchange();
+    assertThat(bought).hasStatus(HttpStatus.CREATED);
+    return JsonPath.read(bought.getResponse().getContentAsString(), "$.id");
+  }
 
-    /** Books the start with the expert; answers the status, and for a 409 its code too, as in "409 NO_OPEN_CREDITS". */
-    private String book(String caseId, UUID expert, String start, UUID customer) throws Exception {
-        MvcTestResult booked = mockMvc.post().uri(PATH + "/{id}/appointments", caseId)
-                .with(LoggedIn.as(customer, Role.CUSTOMER))
-                .with(Csrf.token())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        { "expertId": "%s", "start": "%s" }
-                        """.formatted(expert, start))
-                .exchange();
-        return answer(booked);
-    }
+  /**
+   * Books the start with the expert; answers the status, and for a 409 its code too, as in "409
+   * NO_OPEN_CREDITS".
+   */
+  private String book(String caseId, UUID expert, String start, UUID customer) throws Exception {
+    MvcTestResult booked =
+        mockMvc
+            .post()
+            .uri(PATH + "/{id}/appointments", caseId)
+            .with(LoggedIn.as(customer, Role.CUSTOMER))
+            .with(Csrf.token())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(
+                """
+                { "expertId": "%s", "start": "%s" }
+                """
+                    .formatted(expert, start))
+            .exchange();
+    return answer(booked);
+  }
 
-    /** Cancels the case as refund-eligible; answers the status, and for a 409 its code too. */
-    private String cancel(String caseId, UUID customer) throws Exception {
-        MvcTestResult cancelled = mockMvc.post().uri(PATH + "/{id}/cancel", caseId)
-                .with(LoggedIn.as(customer, Role.CUSTOMER))
-                .with(Csrf.token())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        { "refundEligible": true }
-                        """)
-                .exchange();
-        return answer(cancelled);
-    }
+  /** Cancels the case as refund-eligible; answers the status, and for a 409 its code too. */
+  private String cancel(String caseId, UUID customer) throws Exception {
+    MvcTestResult cancelled =
+        mockMvc
+            .post()
+            .uri(PATH + "/{id}/cancel", caseId)
+            .with(LoggedIn.as(customer, Role.CUSTOMER))
+            .with(Csrf.token())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(
+                """
+                { "refundEligible": true }
+                """)
+            .exchange();
+    return answer(cancelled);
+  }
 
-    /** The answer's status, and for a 409 its code too, as in "409 CASE_CANCELLED". */
-    private static String answer(MvcTestResult result) throws Exception {
-        int status = result.getResponse().getStatus();
-        return status == HttpStatus.CONFLICT.value()
-                ? status + " " + JsonPath.read(result.getResponse().getContentAsString(), "$.code")
-                : String.valueOf(status);
-    }
+  /** The answer's status, and for a 409 its code too, as in "409 CASE_CANCELLED". */
+  private static String answer(MvcTestResult result) throws Exception {
+    int status = result.getResponse().getStatus();
+    return status == HttpStatus.CONFLICT.value()
+        ? status + " " + JsonPath.read(result.getResponse().getContentAsString(), "$.code")
+        : String.valueOf(status);
+  }
 
-    /** Opens a transaction on the connection and locks the row with the statement, until it commits. */
-    private static void lock(Connection connection, String statement, UUID id) throws SQLException {
-        connection.setAutoCommit(false);
-        try (PreparedStatement lock = connection.prepareStatement(statement)) {
-            lock.setObject(1, id);
-            lock.executeQuery().close();
-        }
+  /**
+   * Opens a transaction on the connection and locks the row with the statement, until it commits.
+   */
+  private static void lock(Connection connection, String statement, UUID id) throws SQLException {
+    connection.setAutoCommit(false);
+    try (PreparedStatement lock = connection.prepareStatement(statement)) {
+      lock.setObject(1, id);
+      lock.executeQuery().close();
     }
+  }
 
-    /** The connection's Postgres backend, as {@code pg_stat_activity} and {@code pg_blocking_pids} name it. */
-    private static int backend(Connection connection) throws SQLException {
-        try (PreparedStatement query = connection.prepareStatement("select pg_backend_pid()");
-                ResultSet result = query.executeQuery()) {
-            result.next();
-            return result.getInt(1);
-        }
+  /**
+   * The connection's Postgres backend, as {@code pg_stat_activity} and {@code pg_blocking_pids}
+   * name it.
+   */
+  private static int backend(Connection connection) throws SQLException {
+    try (PreparedStatement query = connection.prepareStatement("select pg_backend_pid()");
+        ResultSet result = query.executeQuery()) {
+      result.next();
+      return result.getInt(1);
     }
+  }
 
-    private static void shutDown(ExecutorService requests) throws InterruptedException {
-        requests.shutdownNow();
-        // A failed run waits for its requests, so they can't race the cleanup script.
-        requests.awaitTermination(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
-    }
+  private static void shutDown(ExecutorService requests) throws InterruptedException {
+    requests.shutdownNow();
+    // A failed run waits for its requests, so they can't race the cleanup script.
+    requests.awaitTermination(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+  }
 
-    private void awaitRequestsWaitingForALock(int count) throws InterruptedException {
-        await(count + " requests waiting for a lock", () -> requestsWaitingForALock() >= count);
-    }
+  private void awaitRequestsWaitingForALock(int count) throws InterruptedException {
+    await(count + " requests waiting for a lock", () -> requestsWaitingForALock() >= count);
+  }
 
-    private static void await(String description, BooleanSupplier condition) throws InterruptedException {
-        Instant deadline = Instant.now().plus(TIMEOUT);
-        while (!condition.getAsBoolean()) {
-            assertThat(Instant.now()).as(description).isBefore(deadline);
-            Thread.sleep(10);
-        }
+  private static void await(String description, BooleanSupplier condition)
+      throws InterruptedException {
+    Instant deadline = Instant.now().plus(TIMEOUT);
+    while (!condition.getAsBoolean()) {
+      assertThat(Instant.now()).as(description).isBefore(deadline);
+      Thread.sleep(10);
     }
+  }
 
-    /**
-     * The requests' statements waiting for a lock: a booking's or a cancellation's lock of the expert's
-     * {@code app_user} row or of the case, or an update of the case, a word in their text.
-     */
-    private long requestsWaitingForALock() {
-        return jdbc.sql("""
-                select count(*) from pg_stat_activity
-                where datname = current_database() and wait_event_type = 'Lock'
-                  and query ~ '\\m(app_user|consultation_case)\\M'
-                """).query(Long.class).single();
-    }
+  /**
+   * The requests' statements waiting for a lock: a booking's or a cancellation's lock of the
+   * expert's {@code app_user} row or of the case, or an update of the case, a word in their text.
+   */
+  private long requestsWaitingForALock() {
+    return jdbc.sql(
+            """
+            select count(*) from pg_stat_activity
+            where datname = current_database() and wait_event_type = 'Lock'
+              and query ~ '\\m(app_user|consultation_case)\\M'
+            """)
+        .query(Long.class)
+        .single();
+  }
 
-    /**
-     * The requests waiting for a lock that the test's {@code expert_profile} transaction holds, or that neither of the
-     * test's transactions holds: one of the other request.
-     */
-    private long requestsWaitingForTheForeignKeyOrEachOther(int foreignKeyLock, List<Integer> testBackends) {
-        return jdbc.sql("""
-                select count(*) from pg_stat_activity a
-                where a.datname = current_database() and a.wait_event_type = 'Lock'
-                  and exists (
-                    select 1 from unnest(pg_blocking_pids(a.pid)) as blocking(pid)
-                    where blocking.pid = :foreignKeyLock or blocking.pid not in (:testBackends))
-                """).param("foreignKeyLock", foreignKeyLock).param("testBackends", testBackends)
-                .query(Long.class).single();
-    }
+  /**
+   * The requests waiting for a lock that the test's {@code expert_profile} transaction holds, or
+   * that neither of the test's transactions holds: one of the other request.
+   */
+  private long requestsWaitingForTheForeignKeyOrEachOther(
+      int foreignKeyLock, List<Integer> testBackends) {
+    return jdbc.sql(
+            """
+            select count(*) from pg_stat_activity a
+            where a.datname = current_database() and a.wait_event_type = 'Lock'
+              and exists (
+                select 1 from unnest(pg_blocking_pids(a.pid)) as blocking(pid)
+                where blocking.pid = :foreignKeyLock or blocking.pid not in (:testBackends))
+            """)
+        .param("foreignKeyLock", foreignKeyLock)
+        .param("testBackends", testBackends)
+        .query(Long.class)
+        .single();
+  }
 }

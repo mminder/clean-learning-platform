@@ -8,6 +8,8 @@ Java 25 · Spring Boot 4.x · Maven (wrapper) · Spring Data JPA / Hibernate · 
 
 There's no Lombok and no MapStruct. Value objects, commands and DTOs are Java `record`s (D-28).
 
+Java code is formatted by google-java-format through Spotless (D-38): `./mvnw spotless:apply` formats, and `./mvnw verify` fails on unformatted code.
+
 ## Packages
 
 The layers are the root packages (D-22), and the features are sub-packages within each layer (D-23). Within a feature package, the supporting types sit in a sub-package per role (D-37): `entity` and `row` in `adapters.database`, `response` and `request` in `api`, `port` in `application`, `value` in `domain`.

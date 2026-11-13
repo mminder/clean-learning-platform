@@ -97,7 +97,8 @@ CI (GitHub Actions, `.github/workflows/ci.yml`) runs the same commands on every 
 | Where | Command | Does |
 |---|---|---|
 | root | `docker compose up -d` | Postgres 18 on :5432 (`docker compose down -v` stops it and drops the data) |
-| `backend/` | `./mvnw verify` | all backend tests, including `LayerRulesTest` (needs Docker for Testcontainers) |
+| `backend/` | `./mvnw verify` | all backend tests, including `LayerRulesTest` (needs Docker for Testcontainers), and the Spotless format check |
+| `backend/` | `./mvnw spotless:apply` | format the Java code with google-java-format |
 | `backend/` | `./mvnw spring-boot:run -Dspring-boot.run.profiles=poc` | API on :8080 against the docker-compose Postgres, Flyway migrates and seeds on start |
 | `backend/` | `./mvnw -Pfrontend package` | one jar with the SPA: runs `npm ci` and `npm run build` in `frontend/` (installed Node and npm), copies `dist/` into `static/`. Without `-Pfrontend` the backend build doesn't touch the frontend |
 | `backend/` | `java -jar target/clean-learning-platform-*.jar --spring.profiles.active=poc` | the jar serves the SPA and the API on :8080 against the docker-compose Postgres; client routes like `/offerings/<id>` get `index.html` |

@@ -5,7 +5,7 @@ import java.util.UUID;
 
 public record ConsultationPackageId(UUID value) {
 
-    public ConsultationPackageId {
-        Objects.requireNonNull(value, "value");
-    }
+  public ConsultationPackageId {
+    Objects.requireNonNull(value, "value");
+  }
 }

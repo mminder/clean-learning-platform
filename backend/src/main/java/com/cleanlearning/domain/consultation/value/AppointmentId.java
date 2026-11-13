@@ -5,7 +5,7 @@ import java.util.UUID;
 
 public record AppointmentId(UUID value) {
 
-    public AppointmentId {
-        Objects.requireNonNull(value, "value");
-    }
+  public AppointmentId {
+    Objects.requireNonNull(value, "value");
+  }
 }

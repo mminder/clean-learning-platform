@@ -8,7 +8,7 @@ import org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoCon
 @SpringBootApplication(exclude = UserDetailsServiceAutoConfiguration.class)
 public class CleanLearningApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(CleanLearningApplication.class, args);
-    }
+  public static void main(String[] args) {
+    SpringApplication.run(CleanLearningApplication.class, args);
+  }
 }

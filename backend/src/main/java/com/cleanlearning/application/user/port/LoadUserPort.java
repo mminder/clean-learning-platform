@@ -1,14 +1,11 @@
 package com.cleanlearning.application.user.port;
 
-import java.util.Optional;
-
 import com.cleanlearning.domain.user.User;
 import com.cleanlearning.domain.user.value.UserId;
+import java.util.Optional;
 
 public interface LoadUserPort {
 
-    /**
-     * The user with their roles.
-     */
-    Optional<User> load(UserId id);
+  /** The user with their roles. */
+  Optional<User> load(UserId id);
 }

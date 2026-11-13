@@ -1,13 +1,10 @@
 package com.cleanlearning.application.offering.port;
 
-import java.util.List;
-
 import com.cleanlearning.domain.offering.ConsultationOfferingSummary;
+import java.util.List;
 
 public interface LoadConsultationOfferingSummariesPort {
 
-    /**
-     * Every consultation offering in every status, sorted by name, then id.
-     */
-    List<ConsultationOfferingSummary> loadSummaries();
+  /** Every consultation offering in every status, sorted by name, then id. */
+  List<ConsultationOfferingSummary> loadSummaries();
 }
