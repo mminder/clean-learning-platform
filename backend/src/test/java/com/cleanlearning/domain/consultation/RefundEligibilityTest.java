@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,31 +15,41 @@ import com.cleanlearning.domain.consultation.value.AppointmentId;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.consultation.value.NonRefundableReason;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
+import com.cleanlearning.domain.shared.BusinessTimeZone;
 
 /**
- * UC-08's refund rule. Instants are in UTC; Zurich is UTC+1 in November and UTC+2 in summer time.
+ * UC-08's refund rule, as spec 05's "Cancel a case" scenarios describe it: 60-minute sessions, a 24-hour deadline, and
+ * "now" is Mon 16 Nov 2026, 11:00 in Zurich, an hour after the free cancellation of the appointment on 17 Nov 2026,
+ * 10:00–11:00 ended. Instants are written with their Zurich time, so the tests read like the scenarios.
  */
 class RefundEligibilityTest {
 
     private static final ConsultationCaseId CASE = new ConsultationCaseId(UUID.randomUUID());
     private static final CancellationDeadline DAY = new CancellationDeadline(24);
 
-    /** Mon 16 Nov 2026, 10:00 in Zurich. */
-    private static final Instant NOW = Instant.parse("2026-11-16T09:00:00Z");
+    private static final Instant NOW = zurich("2026-11-16T11:00");
 
-    private static Appointment at(String start) {
-        Instant s = Instant.parse(start);
-        return new Appointment(new AppointmentId(UUID.randomUUID()), CASE, s, s.plusSeconds(3600));
+    private static Instant zurich(String localDateTime) {
+        return LocalDateTime.parse(localDateTime).atZone(BusinessTimeZone.ZONE).toInstant();
     }
 
-    private static RefundEligibility rule(List<Appointment> booked, int forfeited, CancellationDeadline deadline,
-            Instant asOf) {
-        return RefundEligibility.at(booked, forfeited, deadline, asOf);
+    /** A 60-minute appointment of the case, starting at {@code start}. */
+    private static Appointment appointment(Instant start) {
+        return new Appointment(new AppointmentId(UUID.randomUUID()), CASE, start, start.plusSeconds(3600));
+    }
+
+    /** A 60-minute appointment of the case, starting at {@code start} in Zurich. */
+    private static Appointment appointment(String start) {
+        return appointment(zurich(start));
+    }
+
+    private static RefundEligibility rule(List<Appointment> booked, int forfeited) {
+        return RefundEligibility.at(booked, forfeited, DAY, NOW);
     }
 
     @Test
     void aCaseWithoutAppointmentsAndForfeitedCreditsIsRefundEligible() {
-        RefundEligibility result = rule(List.of(), 0, DAY, NOW);
+        RefundEligibility result = rule(List.of(), 0);
 
         assertThat(result.isRefundEligible()).isTrue();
         assertThat(result.reason()).isEmpty();
@@ -48,13 +59,13 @@ class RefundEligibilityTest {
 
     @Test
     void appointmentsBeforeTheirDeadlineAreRefundEligible() {
-        assertThat(rule(List.of(at("2026-11-20T09:00:00Z"), at("2026-11-25T09:00:00Z")), 0, DAY, NOW)
+        assertThat(rule(List.of(appointment("2026-11-20T10:00"), appointment("2026-11-25T10:00")), 0)
                 .isRefundEligible()).isTrue();
     }
 
     @Test
     void aConsumedAppointmentIsASessionThatTookPlace() {
-        RefundEligibility result = rule(List.of(at("2026-11-10T09:00:00Z"), at("2026-11-25T09:00:00Z")), 0, DAY, NOW);
+        RefundEligibility result = rule(List.of(appointment("2026-11-10T10:00"), appointment("2026-11-25T10:00")), 0);
 
         assertThat(result.isRefundEligible()).isFalse();
         assertThat(result.reason()).contains(NonRefundableReason.SESSION_TOOK_PLACE);
@@ -64,21 +75,19 @@ class RefundEligibilityTest {
 
     @Test
     void aRunningAppointmentIsASessionThatTookPlace() {
-        // Started a minute ago, ends in 59 minutes.
-        RefundEligibility result = rule(List.of(at("2026-11-16T08:59:00Z")), 0, DAY, NOW);
-
-        assertThat(result.reason()).contains(NonRefundableReason.SESSION_TOOK_PLACE);
-    }
-
-    @Test
-    void anAppointmentStartingNowIsASessionThatTookPlace() {
-        assertThat(rule(List.of(at("2026-11-16T09:00:00Z")), 0, DAY, NOW).reason())
+        // 10:30–11:30: it started half an hour ago.
+        assertThat(rule(List.of(appointment("2026-11-16T10:30")), 0).reason())
                 .contains(NonRefundableReason.SESSION_TOOK_PLACE);
     }
 
     @Test
+    void anAppointmentStartingNowIsASessionThatTookPlace() {
+        assertThat(rule(List.of(appointment(NOW)), 0).reason()).contains(NonRefundableReason.SESSION_TOOK_PLACE);
+    }
+
+    @Test
     void aForfeitedCreditIsReportedAlone() {
-        RefundEligibility result = rule(List.of(), 1, DAY, NOW);
+        RefundEligibility result = rule(List.of(), 1);
 
         assertThat(result.isRefundEligible()).isFalse();
         assertThat(result.reason()).contains(NonRefundableReason.CREDIT_FORFEITED);
@@ -88,83 +97,96 @@ class RefundEligibilityTest {
 
     @Test
     void severalForfeitedCreditsAreTheSameReason() {
-        assertThat(rule(List.of(), 3, DAY, NOW).reason()).contains(NonRefundableReason.CREDIT_FORFEITED);
+        assertThat(rule(List.of(), 3).reason()).contains(NonRefundableReason.CREDIT_FORFEITED);
     }
 
     @Test
     void anAppointmentPastItsDeadlineButNotStartedNamesItAndItsFreeCancellationTime() {
-        // Starts Tue 17 Nov 08:00 UTC; free until Mon 16 Nov 08:00 UTC, an hour before NOW.
-        Appointment late = at("2026-11-17T08:00:00Z");
-        RefundEligibility result = rule(List.of(late), 0, DAY, NOW);
+        // The spec's scenario: 17 Nov 2026, 10:00–11:00, free until 16 Nov 2026, 10:00.
+        Appointment late = appointment("2026-11-17T10:00");
+        RefundEligibility result = rule(List.of(late), 0);
 
         assertThat(result.isRefundEligible()).isFalse();
         assertThat(result.reason()).contains(NonRefundableReason.DEADLINE_PASSED);
         assertThat(result.deadlinePassedAppointment()).contains(late);
-        assertThat(result.freeCancellationUntil()).contains(Instant.parse("2026-11-16T08:00:00Z"));
+        assertThat(result.freeCancellationUntil()).contains(zurich("2026-11-16T10:00"));
     }
 
     @Test
     void exactlyAtTheDeadlineTheAppointmentCountsAsPassed() {
-        Appointment appointment = at("2026-11-17T09:00:00Z");
+        Appointment appointment = appointment("2026-11-17T11:00");
 
-        RefundEligibility result = rule(List.of(appointment), 0, DAY, NOW);
+        RefundEligibility result = rule(List.of(appointment), 0);
 
         assertThat(result.reason()).contains(NonRefundableReason.DEADLINE_PASSED);
+        assertThat(result.deadlinePassedAppointment()).contains(appointment);
         assertThat(result.freeCancellationUntil()).contains(NOW);
     }
 
     @Test
     void aSecondBeforeTheDeadlineTheAppointmentIsStillFree() {
-        Appointment appointment = at("2026-11-17T09:00:01Z");
+        Appointment appointment = appointment(zurich("2026-11-17T11:00").plusSeconds(1));
 
-        assertThat(rule(List.of(appointment), 0, DAY, NOW).isRefundEligible()).isTrue();
+        assertThat(rule(List.of(appointment), 0).isRefundEligible()).isTrue();
     }
 
     @Test
     void withoutADeadlineAnAppointmentIsFreeUntilItStarts() {
         CancellationDeadline none = new CancellationDeadline(0);
 
-        assertThat(rule(List.of(at("2026-11-16T09:00:01Z")), 0, none, NOW).isRefundEligible()).isTrue();
-        assertThat(rule(List.of(at("2026-11-16T09:00:00Z")), 0, none, NOW).reason())
+        assertThat(RefundEligibility.at(List.of(appointment(NOW.plusSeconds(1))), 0, none, NOW).isRefundEligible())
+                .isTrue();
+        assertThat(RefundEligibility.at(List.of(appointment(NOW)), 0, none, NOW).reason())
                 .contains(NonRefundableReason.SESSION_TOOK_PLACE);
     }
 
     @Test
-    void deadlinePassedNamesTheSoonestLateAppointmentNotTheSoonestAppointment() {
-        // The soonest appointment (in 14 days) is free; the next two (in 11 and 23 hours) are late.
-        Appointment soonestLate = at("2026-11-16T20:00:00Z");
-        Appointment laterLate = at("2026-11-17T08:00:00Z");
-        Appointment free = at("2026-11-30T09:00:00Z");
-        // Order of the list doesn't matter.
-        RefundEligibility result = rule(List.of(free, laterLate, soonestLate), 0, DAY, NOW);
+    void deadlinePassedNamesTheSoonestLateAppointmentWhateverTheListOrder() {
+        // Today 22:00 and tomorrow 10:00 are both late; 30 Nov is free.
+        Appointment soonestLate = appointment("2026-11-16T22:00");
+        Appointment laterLate = appointment("2026-11-17T10:00");
+        Appointment free = appointment("2026-11-30T10:00");
 
-        assertThat(result.deadlinePassedAppointment()).contains(soonestLate);
-        assertThat(result.freeCancellationUntil()).contains(Instant.parse("2026-11-15T20:00:00Z"));
+        for (List<Appointment> booked : List.of(List.of(free, laterLate, soonestLate),
+                List.of(soonestLate, laterLate, free))) {
+            RefundEligibility result = rule(booked, 0);
+
+            assertThat(result.deadlinePassedAppointment()).contains(soonestLate);
+            assertThat(result.freeCancellationUntil()).contains(zurich("2026-11-15T22:00"));
+        }
     }
 
     @Test
-    void aSoonerFreeAppointmentIsNotNamedWhenALaterOneIsLate() {
-        // With a 7-day deadline, the appointment in 3 days is late and the one in 10 days isn't; with the list
-        // reversed the answer is the same.
+    void aFreeAppointmentDoesNotHideALateOne() {
+        // With a 7-day deadline, the appointment in 3 days is late and the one in 10 days isn't.
         CancellationDeadline week = new CancellationDeadline(168);
-        Appointment late = at("2026-11-19T09:00:00Z");
-        Appointment free = at("2026-11-26T09:00:00Z");
+        Appointment late = appointment("2026-11-19T10:00");
+        Appointment free = appointment("2026-11-26T10:00");
 
-        assertThat(rule(List.of(free, late), 0, week, NOW).deadlinePassedAppointment()).contains(late);
-        assertThat(rule(List.of(late, free), 0, week, NOW).deadlinePassedAppointment()).contains(late);
+        RefundEligibility result = RefundEligibility.at(List.of(free, late), 0, week, NOW);
+
+        assertThat(result.deadlinePassedAppointment()).contains(late);
+        assertThat(result.freeCancellationUntil()).contains(zurich("2026-11-12T10:00"));
     }
 
     @Test
     void aSessionThatTookPlaceComesBeforeAForfeitedCreditAndAPassedDeadline() {
-        RefundEligibility result = rule(List.of(at("2026-11-10T09:00:00Z"), at("2026-11-17T08:00:00Z")), 1, DAY, NOW);
+        RefundEligibility result = rule(List.of(appointment("2026-11-10T10:00"), appointment("2026-11-17T10:00")), 1);
 
         assertThat(result.reason()).contains(NonRefundableReason.SESSION_TOOK_PLACE);
         assertThat(result.deadlinePassedAppointment()).isEmpty();
     }
 
     @Test
+    void aSessionThatTookPlaceComesBeforeAForfeitedCredit() {
+        // The spec's "Only the first reason".
+        assertThat(rule(List.of(appointment("2026-11-10T10:00")), 2).reason())
+                .contains(NonRefundableReason.SESSION_TOOK_PLACE);
+    }
+
+    @Test
     void aForfeitedCreditComesBeforeAPassedDeadline() {
-        RefundEligibility result = rule(List.of(at("2026-11-17T08:00:00Z")), 1, DAY, NOW);
+        RefundEligibility result = rule(List.of(appointment("2026-11-17T10:00")), 1);
 
         assertThat(result.reason()).contains(NonRefundableReason.CREDIT_FORFEITED);
         assertThat(result.deadlinePassedAppointment()).isEmpty();
@@ -172,45 +194,42 @@ class RefundEligibilityTest {
     }
 
     @Test
-    void aSessionThatTookPlaceComesBeforeAForfeitedCredit() {
-        assertThat(rule(List.of(at("2026-11-10T09:00:00Z")), 2, DAY, NOW).reason())
-                .contains(NonRefundableReason.SESSION_TOOK_PLACE);
-    }
-
-    @Test
     void aRefundedCreditDoesNotCount() {
-        // Appointments cancelled in time aren't booked and aren't forfeited: nothing is left to count.
-        assertThat(rule(List.of(), 0, DAY, NOW).isRefundEligible()).isTrue();
+        // An appointment cancelled in time is neither booked nor forfeited, so nothing is left to count.
+        assertThat(rule(List.of(), 0).isRefundEligible()).isTrue();
+        assertThat(rule(List.of(appointment("2026-11-25T10:00")), 0).isRefundEligible()).isTrue();
     }
 
     @Test
     void countsRealHoursAcrossTheChangeToSummerTime() {
-        // Sun 28 Mar 2027, 12:00 in Zurich (UTC+2) = 10:00 UTC; 24 real hours before is Sat 27 Mar 10:00 UTC.
-        Appointment appointment = at("2027-03-28T10:00:00Z");
+        // Sun 28 Mar 2027, 10:00 (CEST): 24 real hours earlier is Sat 27 Mar, 09:00 (CET), not 10:00.
+        List<Appointment> booked = List.of(appointment("2027-03-28T10:00"));
 
-        assertThat(rule(List.of(appointment), 0, DAY, Instant.parse("2027-03-27T09:59:59Z")).isRefundEligible())
-                .isTrue();
-        RefundEligibility late = rule(List.of(appointment), 0, DAY, Instant.parse("2027-03-27T10:00:00Z"));
+        assertThat(RefundEligibility.at(booked, 0, DAY, zurich("2027-03-27T09:00").minusSeconds(1))
+                .isRefundEligible()).isTrue();
+        RefundEligibility late = RefundEligibility.at(booked, 0, DAY, zurich("2027-03-27T09:30"));
         assertThat(late.reason()).contains(NonRefundableReason.DEADLINE_PASSED);
-        assertThat(late.freeCancellationUntil()).contains(Instant.parse("2027-03-27T10:00:00Z"));
+        assertThat(late.freeCancellationUntil()).contains(zurich("2027-03-27T09:00"));
     }
 
     @Test
     void theConstructorRefusesAnAppointmentWithoutDeadlinePassed() {
-        Appointment appointment = at("2026-11-17T08:00:00Z");
-        Optional<Instant> until = Optional.of(Instant.parse("2026-11-16T08:00:00Z"));
+        Appointment appointment = appointment("2026-11-17T10:00");
+        Optional<Instant> until = Optional.of(zurich("2026-11-16T10:00"));
 
         assertThatIllegalArgumentException().isThrownBy(() -> new RefundEligibility(
                 Optional.of(NonRefundableReason.CREDIT_FORFEITED), Optional.of(appointment), until));
         assertThatIllegalArgumentException().isThrownBy(
                 () -> new RefundEligibility(Optional.empty(), Optional.of(appointment), until));
+        assertThatIllegalArgumentException().isThrownBy(
+                () -> new RefundEligibility(Optional.empty(), Optional.empty(), until));
     }
 
     @Test
     void theConstructorRefusesDeadlinePassedWithoutTheAppointmentOrItsTime() {
-        Appointment appointment = at("2026-11-17T08:00:00Z");
+        Appointment appointment = appointment("2026-11-17T10:00");
         Optional<NonRefundableReason> reason = Optional.of(NonRefundableReason.DEADLINE_PASSED);
-        Optional<Instant> until = Optional.of(Instant.parse("2026-11-16T08:00:00Z"));
+        Optional<Instant> until = Optional.of(zurich("2026-11-16T10:00"));
 
         assertThatIllegalArgumentException()
                 .isThrownBy(() -> new RefundEligibility(reason, Optional.empty(), Optional.empty()));
