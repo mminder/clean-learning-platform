@@ -5,7 +5,7 @@
 | Increment | [05 Cancel a consultation appointment or case](../../specs/05-cancel-consultation-appointment-or-case.md) |
 | Type | AFK |
 | Blocked by | – |
-| Status | Todo |
+| Status | Done |
 
 ## Goal
 
@@ -24,13 +24,13 @@ It uses only what exists today: `Appointment.statusAt` and `start`, and `Cancell
 
 ## Acceptance criteria
 
-- [ ] No appointments, and no forfeited credit: refund-eligible.
-- [ ] Each reason alone: a consumed appointment, also one that's running; a forfeited credit; a booked appointment that hasn't started and whose free-cancellation time isn't after `asOf`.
-- [ ] Reasons together give the first in UC-08's order.
-- [ ] `DEADLINE_PASSED` names the soonest appointment whose deadline passed, not the soonest appointment, and its free-cancellation time.
-- [ ] At the deadline exactly, the appointment counts as passed; a second before, it doesn't.
-- [ ] A refunded credit doesn't count: no booked appointment and no forfeited credit is refund-eligible, whatever was cancelled in time.
-- [ ] Every check passes.
+- [x] No appointments, and no forfeited credit: refund-eligible.
+- [x] Each reason alone: a consumed appointment, also one that's running; a forfeited credit; a booked appointment that hasn't started and whose free-cancellation time isn't after `asOf`.
+- [x] Reasons together give the first in UC-08's order.
+- [x] `DEADLINE_PASSED` names the soonest appointment whose deadline passed, not the soonest appointment, and its free-cancellation time.
+- [x] At the deadline exactly, the appointment counts as passed; a second before, it doesn't.
+- [x] A refunded credit doesn't count: no booked appointment and no forfeited credit is refund-eligible, whatever was cancelled in time.
+- [x] Every check passes.
 
 ## Tests
 
@@ -42,3 +42,8 @@ It uses only what exists today: `Appointment.statusAt` and `start`, and `Cancell
 - The texts of the reasons: [03](03-cancel-case.md), in the frontend.
 
 ## Notes
+
+- Followed the plan without deviation. The record is `RefundEligibility(Optional<NonRefundableReason> reason, Optional<Appointment> deadlinePassedAppointment, Optional<Instant> freeCancellationUntil)`; the constructor requires the two optionals present exactly when the reason is `DEADLINE_PASSED`.
+- The caller passes only booked appointments; the rule doesn't filter cancelled ones. "Late" is `!freeUntil(start).isAfter(asOf)`; an appointment starting at `asOf` is consumed, so it never reaches the deadline check.
+- With one deadline per case, a sooner appointment's free cancellation ends sooner, and a consumed one gives `SESSION_TOOK_PLACE` first, so the soonest late appointment is always the soonest booked one; "not the soonest appointment" is covered by a later free appointment not hiding a late one, and by several late ones in any list order.
+- `RefundEligibilityTest` writes its instants in Zurich time, with the spec's scenarios (now Mon 16 Nov 2026, 11:00; the appointment on 17 Nov, 10:00–11:00, free until 16 Nov, 10:00). It covers: no appointments, eligible with free appointments, consumed, running, starting now, forfeited credit (one and several), each reason alone, the order of the reasons together, the soonest late appointment in any list order, a free appointment not hiding a late one, exactly at the deadline and a second before, no deadline (0 hours), the summer-time change (28 Mar 2027, 10:00 is free until 27 Mar, 09:00), a refunded credit not counting, and the constructor's check in both directions.
