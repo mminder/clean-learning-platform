@@ -113,13 +113,17 @@ class ConsultationCaseCancellationTest {
     }
 
     private MvcTestResult book(String caseId, String start, UUID customer) {
+        return book(caseId, SeedData.EXPERT_2, start, customer);
+    }
+
+    private MvcTestResult book(String caseId, UUID expert, String start, UUID customer) {
         return mockMvc.post().uri(PATH + "/{id}/appointments", caseId)
                 .with(LoggedIn.as(customer, Role.CUSTOMER))
                 .with(Csrf.token())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         { "expertId": "%s", "start": "%s" }
-                        """.formatted(SeedData.EXPERT_2, start))
+                        """.formatted(expert, start))
                 .exchange();
     }
 
@@ -143,8 +147,12 @@ class ConsultationCaseCancellationTest {
     }
 
     private MvcTestResult slots(String caseId, UUID customer) {
+        return slots(caseId, SeedData.EXPERT_2, customer);
+    }
+
+    private MvcTestResult slots(String caseId, UUID expert, UUID customer) {
         return mockMvc.get()
-                .uri(PATH + "/{id}/bookable-slots?expertId={expertId}", caseId, SeedData.EXPERT_2)
+                .uri(PATH + "/{id}/bookable-slots?expertId={expertId}", caseId, expert)
                 .with(LoggedIn.as(customer, Role.CUSTOMER))
                 .exchange();
     }
@@ -519,6 +527,10 @@ class ConsultationCaseCancellationTest {
             assertConflict(slots(cancelledCase, SeedData.CUSTOMER_1), "CASE_CANCELLED", CASE_CANCELLED);
             assertConflict(book(cancelledCase, ELEVEN, SeedData.CUSTOMER_1), "CASE_CANCELLED", CASE_CANCELLED);
         }
+        // checked before the expert: with another expert than the case's, it's still CASE_CANCELLED, not EXPERT_CHANGED
+        assertConflict(slots(withExpert, SeedData.EXPERT_1, SeedData.CUSTOMER_1), "CASE_CANCELLED", CASE_CANCELLED);
+        assertConflict(book(withExpert, SeedData.EXPERT_1, ELEVEN, SeedData.CUSTOMER_1), "CASE_CANCELLED",
+                CASE_CANCELLED);
 
         assertThat(jdbc.sql("""
                 select count(*) from appointment
