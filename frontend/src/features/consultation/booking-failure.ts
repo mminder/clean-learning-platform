@@ -1,16 +1,17 @@
 import { ApiError, isNotFound } from '@/lib/api-error'
 
 /**
- * What a failed booking, or a failed load of the times on a first booking, means for the booking dialog (UC-06, the
- * plan's error table): `slotTaken` goes back to the dates, `expertNotEligible` back to the experts, `expertChanged` on
- * to the dates with the case's expert, `noOpenCredits` and `caseNotFound` leave only **Close**, and `failed` stays
- * where it is.
+ * What a failed booking, or a failed load of the times, means for the booking dialog (UC-06, the plan's error table):
+ * `slotTaken` goes back to the dates, `expertNotEligible` back to the experts, `expertChanged` on to the dates with the
+ * case's expert, `noOpenCredits`, `caseCancelled` (the case was cancelled in another tab, UC-08) and `caseNotFound`
+ * leave only **Close**, and `failed` stays where it is.
  */
 export type BookingFailure =
   | 'slotTaken'
   | 'expertNotEligible'
   | 'expertChanged'
   | 'noOpenCredits'
+  | 'caseCancelled'
   | 'caseNotFound'
   | 'failed'
 
@@ -25,6 +26,8 @@ export function bookingFailure(failure: unknown): BookingFailure {
       return 'expertChanged'
     case 'NO_OPEN_CREDITS':
       return 'noOpenCredits'
+    case 'CASE_CANCELLED':
+      return 'caseCancelled'
   }
   return isNotFound(failure) ? 'caseNotFound' : 'failed'
 }

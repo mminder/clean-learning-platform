@@ -185,7 +185,7 @@ consultation_case  + status          text not null, check (status in ('ACTIVE', 
   3. `DEADLINE_PASSED`: a booked appointment that hasn't started is no longer before its free-cancellation time; the result names the soonest such appointment and that time.
 - **The record** holds the reason (empty when refund-eligible) and, only with `DEADLINE_PASSED`, the appointment and its free-cancellation time; the constructor checks that they come together. `isRefundEligible()` is "no reason".
 - **Refunded credits don't count**: an appointment cancelled in time isn't in the booked ones and isn't forfeited.
-- **It uses only what `Appointment` and `CancellationDeadline` have today** (`statusAt`, `start`, `freeUntil`), so 02 runs in parallel with 01. 03 may switch it to 01's `Appointment` methods; the rule stays the same.
+- **It uses only what `Appointment` and `CancellationDeadline` have today** (`statusAt`, `start`, `freeUntil`), so 02 runs in parallel with 01. 03 switched it to 01's `Appointment` methods (`isCancellableAt`, `isCreditRefundedIfCancelledAt`, `freeCancellationUntil`); the rule stayed the same, so a refund-eligible case cancels no appointment late.
 - **One rule decides the preview and the cancellation**: the case detail's `refundIfCancelledNow` and `CaseForCancellation.cancel` both call `RefundEligibility.at` (03).
 
 ### Cancelling a case
@@ -201,7 +201,7 @@ consultation_case  + status          text not null, check (status in ('ACTIVE', 
   | | `CASE_COMPLETED`: it's completed at `now` | This case is completed. |
   | | `REFUND_ELIGIBILITY_CHANGED`: whether it's refund-eligible at `now` isn't what was confirmed | Whether the purchase price would be refunded has changed. Please confirm again. |
 
-  `cancel` returns the `CaseCancellation`: the case's id, `cancelledAt = now`, `refundEligible`, and an `AppointmentCancellation` for every booked appointment that is cancellable at `now`, each with its credit refunded as `isCreditRefundedIfCancelledAt(deadline, now)` decides (spec decision 7). A running appointment isn't cancelled: it's consumed.
+  `cancel` returns the `CaseCancellation`: the case's id, its `CancellationOutcome` (`cancelledAt = now`, `refundEligible`), and an `AppointmentCancellation` for every booked appointment that is cancellable at `now`, each with its credit refunded as `isCreditRefundedIfCancelledAt(deadline, now)` decides (spec decision 7). A running appointment isn't cancelled: it's consumed.
 - **`CancelConsultationCaseUseCase.invoke(CurrentUser, CancelConsultationCaseCommand)`**, the command holding the case's id and `refundEligible`: lock the case with `LockCaseForCancellationPort` (404), take the time, `cancel(refundEligible, now)`, write with `SaveCaseCancellationPort.save(cancellation)` (the managed case entity gets `CANCELLED`, `cancelledAt` and `refundEligible`; each appointment entity `CANCELLED` and `creditRefunded`), and answer the case, as the appointment's cancellation does.
 - **A cancelled case can't be booked**: `CaseForBooking` gains the `CaseStatus`, and `requireActive()` throws `CASE_CANCELLED` ("This case was cancelled.", one constant, on `CaseForCancellation`, which `CaseForBooking` uses). `book` checks it first, before the credits; the booking use case calls it first under the case lock, and `ListBookableSlotsUseCase` before `expertFor`. The eligible experts route doesn't check it: it shows the offering's experts and books nothing.
 - **Under the case lock** a cancellation sees every booking that came before it, and a booking that comes after sees `CANCELLED` ([D-27](../../decisions.md#architecture), spec decision 10). Task 05 proves it.
@@ -249,7 +249,7 @@ No new route, page or shadcn component: the dialogs use `alert-dialog`, which `C
 | Title | "Cancel the appointment with Expert 2 on 17 Nov 2026, 10:00–11:00 (Zurich time)?" | "Cancel this case?" |
 | In time / refund-eligible | "The session credit will be returned to your case." | "The purchase price of CHF 450.00 would be refunded." |
 | Late / not refund-eligible | "The free cancellation deadline passed on 16 Nov 2026, 10:00. If you cancel, the session credit is **not** refunded. Cancel anyway?" | "The purchase price would **not** be refunded because <reason> Cancel anyway?", with the reasons of spec decision 5 |
-| Listed | – | with future appointments, "These appointments are cancelled with the case:" and each "17 Nov 2026, 10:00–11:00 with Expert 2": the upcoming appointments with `canCancel`, which are exactly the ones the case's cancellation cancels |
+| Listed | – | with future appointments, "These appointments are cancelled with the case (Zurich time):" and each "17 Nov 2026, 10:00–11:00 with Expert 2": the upcoming appointments with `canCancel`, which are exactly the ones the case's cancellation cancels |
 | Buttons | **Keep appointment**; **Cancel appointment**, destructive | **Keep case**; **Cancel case**, destructive |
 
 - **Errors** show in the dialog (`role="alert"`), as the booking's do. `cancellationFailure(error)` in `cancellation-failure.ts` turns an error into its kind:
@@ -261,7 +261,7 @@ No new route, page or shadcn component: the dialogs use `alert-dialog`, which `C
   | 404 | `notFound` | "This appointment was not found." or "This case was not found." | only **Close** is left |
   | anything else | `failed` | "Cancelling failed. Please try again." | stays as it is |
 
-- **The booking dialog** (03) shows a 409 `CASE_CANCELLED`, of the times or of the booking, with its `detail` and only **Close**, as `NO_OPEN_CREDITS`: `booking-failure.ts` gains the kind `caseCancelled`.
+- **The booking dialog** (03) shows a 409 `CASE_CANCELLED`, of the times or of the booking, with its `detail` and only **Close**, as `NO_OPEN_CREDITS`: `booking-failure.ts` gains the kind `caseCancelled`. A 409 of the times reloads the case, as the booking's does. The page keeps the booking dialog mounted on a cancelled case, without its trigger, so the reload that shows the cancelled case doesn't close the dialog while it says so.
 
 ### Case detail
 

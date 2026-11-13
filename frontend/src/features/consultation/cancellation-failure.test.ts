@@ -19,11 +19,26 @@ describe('cancellationFailure', () => {
     )
   })
 
+  it("shows the case's new outcome to confirm again after REFUND_ELIGIBILITY_CHANGED", () => {
+    expect(cancellationFailure(conflict('REFUND_ELIGIBILITY_CHANGED'))).toBe(
+      'outcomeChanged',
+    )
+  })
+
   it('leaves only Close after APPOINTMENT_CANCELLED or APPOINTMENT_STARTED', () => {
     expect(cancellationFailure(conflict('APPOINTMENT_CANCELLED'))).toBe(
       'notCancellable',
     )
     expect(cancellationFailure(conflict('APPOINTMENT_STARTED'))).toBe(
+      'notCancellable',
+    )
+  })
+
+  it('leaves only Close after CASE_CANCELLED or CASE_COMPLETED', () => {
+    expect(cancellationFailure(conflict('CASE_CANCELLED'))).toBe(
+      'notCancellable',
+    )
+    expect(cancellationFailure(conflict('CASE_COMPLETED'))).toBe(
       'notCancellable',
     )
   })
