@@ -7,8 +7,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 /**
- * Written and read by {@code ImageAdapter}. An image is never changed, only inserted and deleted. The database sets
- * {@code created_at} and {@code updated_at}.
+ * An image is never changed, only inserted and deleted.
  */
 @Entity
 @Table(name = "image")

@@ -7,10 +7,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-/**
- * Read through the projection in {@code OfferingRepository}, and read and written by
- * {@code ConsultationOfferingAdapter}. The database sets {@code created_at} and {@code updated_at}.
- */
 @Entity
 @Table(name = "consultation_package")
 public class ConsultationPackageEntity {

@@ -6,9 +6,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-/**
- * Read through the projection in {@code UserRepository}.
- */
 @Entity
 @Table(name = "app_user")
 public class UserEntity {

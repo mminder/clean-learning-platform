@@ -15,10 +15,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 /**
- * Written by {@code ConsultationCaseAdapter}, and read through the projections in {@code ConsultationCaseRepository};
- * a booking and a cancellation read and lock it as an entity, its first booking sets the assigned expert, and its
- * cancellation the status, {@code cancelled_at} and {@code refund_eligible}. The purchase writes {@code ACTIVE}. The
- * database sets {@code created_at} and {@code updated_at}.
+ * The purchase writes {@code ACTIVE}. Its first booking sets the assigned expert, and its cancellation the status,
+ * {@code cancelled_at} and {@code refund_eligible}.
  */
 @Entity
 @Table(name = "consultation_case")

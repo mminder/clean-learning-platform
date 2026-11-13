@@ -11,9 +11,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 
-/**
- * Read through the projection in {@code UserRepository}.
- */
 @Entity
 @Table(name = "user_role")
 @IdClass(UserRoleEntity.Key.class)

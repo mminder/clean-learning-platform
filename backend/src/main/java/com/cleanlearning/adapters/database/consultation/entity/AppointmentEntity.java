@@ -12,9 +12,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 /**
- * Written and read by {@code ConsultationCaseAdapter}. The database sets {@code created_at} and {@code updated_at}. Its
- * expert is its case's assigned expert. The status is a {@link StoredAppointmentStatus}; a booking writes
- * {@code BOOKED}, and a cancellation changes the managed entity to {@code CANCELLED} with {@code creditRefunded}.
+ * Its expert is its case's assigned expert. The status is a {@link StoredAppointmentStatus}; a booking writes
+ * {@code BOOKED}, and a cancellation changes it to {@code CANCELLED} with {@code creditRefunded}.
  */
 @Entity
 @Table(name = "appointment")

@@ -7,14 +7,13 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 /**
- * The public fields of an expert profile. The shop's offering detail reads them through a projection in the offering
- * adapter (D-23).
+ * The public fields of an expert profile.
  */
 @Entity
 @Table(name = "expert_profile")
 public class ExpertProfileEntity {
 
-    // The expert's user id.
+    /** Primary key and foreign key to {@link UserEntity}'s id: one row per expert. */
     @Id
     private UUID userId;
 

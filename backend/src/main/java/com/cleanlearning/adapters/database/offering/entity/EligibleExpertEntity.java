@@ -7,9 +7,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 
-/**
- * Read through the projection in {@code OfferingRepository}; the admin's adapter reads and writes it as an entity.
- */
 @Entity
 @Table(name = "eligible_expert")
 @IdClass(EligibleExpertEntity.Key.class)

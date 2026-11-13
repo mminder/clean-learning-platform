@@ -13,10 +13,6 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-/**
- * Read through the projections in {@code OfferingRepository} and {@code ConsultationOfferingRepository}, and read and
- * written by {@code ConsultationOfferingAdapter}. The database sets {@code created_at} and {@code updated_at}.
- */
 @Entity
 @Table(name = "offering")
 public class OfferingEntity {

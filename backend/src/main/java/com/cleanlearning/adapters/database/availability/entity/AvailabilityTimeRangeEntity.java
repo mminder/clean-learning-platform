@@ -9,8 +9,7 @@ import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 
 /**
- * Written and read by {@code AvailabilityAdapter}. The database sets {@code created_at} and {@code updated_at}. An
- * expert's ranges never overlap, so their starts are unique.
+ * An expert's ranges never overlap, so their starts are unique.
  */
 @Entity
 @Table(name = "availability_time_range")
