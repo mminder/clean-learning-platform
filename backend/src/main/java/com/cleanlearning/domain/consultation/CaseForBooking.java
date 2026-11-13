@@ -17,15 +17,16 @@ import com.cleanlearning.domain.user.value.UserId;
 
 /**
  * A case as a booking needs it (UC-06): its purchase terms, its assigned expert, if any, the number of its booked
- * appointments, and its offering's current eligible experts, by display name. It holds UC-06's rules: a booking needs
- * an open credit, is with the case's expert or, on the first booking, with an eligible one, and starts at a bookable
- * slot. {@link #book} checks every rule itself, credits first.
+ * appointments and of its forfeited credits, and its offering's current eligible experts, by display name. It holds
+ * UC-06's rules: a booking needs an open credit, is with the case's expert or, on the first booking, with an eligible
+ * one, and starts at a bookable slot. {@link #book} checks every rule itself, credits first.
  *
  * @param assignedExpertId the case's expert, empty until the first booking
  * @param bookedAppointments the case's {@code BOOKED} appointments, consumed or not
+ * @param forfeitedCredits the case's appointments cancelled late (UC-07)
  */
 public record CaseForBooking(ConsultationCaseId id, PurchaseTerms purchaseTerms, Optional<UserId> assignedExpertId,
-        int bookedAppointments, List<EligibleExpert> eligibleExperts) {
+        int bookedAppointments, int forfeitedCredits, List<EligibleExpert> eligibleExperts) {
 
     /** Every credit of the case is booked. */
     public static final String NO_OPEN_CREDITS = "NO_OPEN_CREDITS";
@@ -47,15 +48,19 @@ public record CaseForBooking(ConsultationCaseId id, PurchaseTerms purchaseTerms,
             throw new IllegalArgumentException(
                     "A case has no negative number of booked appointments: " + bookedAppointments);
         }
+        if (forfeitedCredits < 0) {
+            throw new IllegalArgumentException(
+                    "A case has no negative number of forfeited credits: " + forfeitedCredits);
+        }
         eligibleExperts = List.copyOf(eligibleExperts);
     }
 
-    /** The session count less the booked appointments, counted as the case detail counts them. */
+    /** The session count less the booked appointments and the forfeited credits, as the case detail counts them. */
     public int openCredits() {
-        return Appointment.openCredits(purchaseTerms.sessionCount(), bookedAppointments);
+        return Appointment.openCredits(purchaseTerms.sessionCount(), bookedAppointments, forfeitedCredits);
     }
 
-    /** @throws BusinessRuleException {@link #NO_OPEN_CREDITS} if every credit is booked */
+    /** @throws BusinessRuleException {@link #NO_OPEN_CREDITS} if every credit is booked or forfeited */
     public void requireOpenCredit() {
         if (openCredits() <= 0) {
             throw new BusinessRuleException(NO_OPEN_CREDITS, "This case has no open credits.");

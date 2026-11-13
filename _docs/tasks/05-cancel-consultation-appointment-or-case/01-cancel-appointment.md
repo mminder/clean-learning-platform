@@ -5,7 +5,7 @@
 | Increment | [05 Cancel a consultation appointment or case](../../specs/05-cancel-consultation-appointment-or-case.md) |
 | Type | AFK |
 | Blocked by | – |
-| Status | Todo |
+| Status | In progress |
 
 ## Goal
 

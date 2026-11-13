@@ -23,8 +23,9 @@ import com.cleanlearning.domain.user.value.UserId;
 
 /**
  * A case as its customer sees it at a given time (UC-05's case detail): the credits, which every booked appointment
- * uses, consumed or not (spec 04, decision 15), whether the customer can book, and the upcoming and past appointments
- * (decision 21). Instants are in UTC; Zurich is UTC+1 in November.
+ * uses, consumed or not (spec 04, decision 15), and every forfeited one (spec 05), whether the customer can book, and
+ * the upcoming appointments with their cancellation preview (UC-07) and the past ones (spec 04, decision 21).
+ * Instants are in UTC; Zurich is UTC+1 in November.
  */
 class CustomerConsultationCaseTest {
 
@@ -51,19 +52,19 @@ class CustomerConsultationCaseTest {
     }
 
     private static CustomerConsultationCase withSessions(int sessionCount) {
-        return withSessions(sessionCount, Optional.empty(), List.of(), NOW);
+        return withSessions(sessionCount, Optional.empty(), List.of(), 0, NOW);
     }
 
     private static CustomerConsultationCase withSessions(int sessionCount, Optional<AssignedExpert> expert,
-            List<Appointment> appointments, Instant asOf) {
+            List<Appointment> appointments, int forfeitedCredits, Instant asOf) {
         return new CustomerConsultationCase(CASE, new OfferingName("Career Coaching"), Optional.empty(),
                 new PurchaseTerms(Money.chf("450.00"), new SessionCount(sessionCount), new SessionDuration(60),
                         new CancellationDeadline(24)),
-                Instant.parse("2026-11-09T14:03:12.345Z"), expert, appointments, asOf);
+                Instant.parse("2026-11-09T14:03:12.345Z"), expert, appointments, forfeitedCredits, asOf);
     }
 
     private static CustomerConsultationCase withAppointments(List<Appointment> appointments, Instant asOf) {
-        return withSessions(3, Optional.of(EXPERT_2), appointments, asOf);
+        return withSessions(3, Optional.of(EXPERT_2), appointments, 0, asOf);
     }
 
     @Test
@@ -102,9 +103,11 @@ class CustomerConsultationCaseTest {
     void beforeItsStartAnAppointmentIsUpcomingAndBooked() {
         CustomerConsultationCase consultationCase = withAppointments(List.of(WEDNESDAY, TUESDAY), NOW);
 
-        assertThat(consultationCase.upcomingAppointments()).containsExactly(
-                new CustomerAppointment(TUESDAY.id(), TUESDAY.start(), TUESDAY.end(), AppointmentStatus.BOOKED),
-                new CustomerAppointment(WEDNESDAY.id(), WEDNESDAY.start(), WEDNESDAY.end(), AppointmentStatus.BOOKED));
+        assertThat(consultationCase.upcomingAppointments()).extracting(CustomerUpcomingAppointment::appointment)
+                .containsExactly(
+                        new CustomerAppointment(TUESDAY.id(), TUESDAY.start(), TUESDAY.end(), AppointmentStatus.BOOKED),
+                        new CustomerAppointment(WEDNESDAY.id(), WEDNESDAY.start(), WEDNESDAY.end(),
+                                AppointmentStatus.BOOKED));
         assertThat(consultationCase.pastAppointments()).isEmpty();
     }
 
@@ -115,8 +118,9 @@ class CustomerConsultationCaseTest {
                 Instant.parse("2026-11-17T09:30:00Z"));
 
         for (CustomerConsultationCase consultationCase : List.of(atTheStart, whileItRuns)) {
-            assertThat(consultationCase.upcomingAppointments()).containsExactly(
-                    new CustomerAppointment(TUESDAY.id(), TUESDAY.start(), TUESDAY.end(), AppointmentStatus.CONSUMED));
+            assertThat(consultationCase.upcomingAppointments()).extracting(CustomerUpcomingAppointment::appointment)
+                    .containsExactly(new CustomerAppointment(TUESDAY.id(), TUESDAY.start(), TUESDAY.end(),
+                            AppointmentStatus.CONSUMED));
             assertThat(consultationCase.pastAppointments()).isEmpty();
             assertThat(consultationCase.openCredits()).isEqualTo(2);
         }
@@ -136,12 +140,67 @@ class CustomerConsultationCaseTest {
     void upcomingSoonestFirstAndPastNewestFirst() {
         Appointment friday = appointment("2026-11-20T09:00:00Z", "2026-11-20T10:00:00Z");
         CustomerConsultationCase consultationCase = withSessions(5, Optional.of(EXPERT_2),
-                List.of(TUESDAY, friday, MONDAY, WEDNESDAY), Instant.parse("2026-11-18T12:00:00Z"));
+                List.of(TUESDAY, friday, MONDAY, WEDNESDAY), 0, Instant.parse("2026-11-18T12:00:00Z"));
 
-        assertThat(consultationCase.upcomingAppointments()).extracting(CustomerAppointment::id)
+        assertThat(consultationCase.upcomingAppointments())
+                .extracting(upcoming -> upcoming.appointment().id())
                 .containsExactly(friday.id());
         assertThat(consultationCase.pastAppointments()).extracting(CustomerAppointment::id)
                 .containsExactly(WEDNESDAY.id(), TUESDAY.id(), MONDAY.id());
+    }
+
+    /** Spec 05: a forfeited credit is used and its appointment isn't shown; a refunded one is open again. */
+    @Test
+    void aForfeitedCreditIsNotOpen() {
+        // Monday's is consumed, one was cancelled in time and isn't here, one late
+        CustomerConsultationCase consultationCase = withSessions(3, Optional.of(EXPERT_2), List.of(MONDAY), 1,
+                Instant.parse("2026-11-17T12:00:00Z"));
+
+        assertThat(consultationCase.openCredits()).isOne();
+        assertThat(consultationCase.canBook()).isTrue();
+        assertThat(consultationCase.pastAppointments()).extracting(CustomerAppointment::id)
+                .containsExactly(MONDAY.id());
+    }
+
+    @Test
+    void withEveryCreditForfeitedTheCustomerCantBook() {
+        CustomerConsultationCase consultationCase = withSessions(1, Optional.of(EXPERT_2), List.of(), 1, NOW);
+
+        assertThat(consultationCase.openCredits()).isZero();
+        assertThat(consultationCase.canBook()).isFalse();
+        assertThat(consultationCase.upcomingAppointments()).isEmpty();
+        assertThat(consultationCase.pastAppointments()).isEmpty();
+    }
+
+    /** UC-07's preview, which the cancel dialog reads: free until Mon 16 Nov 2026, 10:00 in Zurich, 09:00Z. */
+    @Test
+    void anUpcomingAppointmentCarriesItsCancellationPreview() {
+        Instant freeUntil = Instant.parse("2026-11-16T09:00:00Z");
+
+        assertThat(withAppointments(List.of(TUESDAY), Instant.parse("2026-11-15T11:00:00Z")).upcomingAppointments())
+                .containsExactly(new CustomerUpcomingAppointment(TUESDAY.at(Instant.parse("2026-11-15T11:00:00Z")),
+                        true, freeUntil, true));
+        // at the deadline: late
+        assertThat(withAppointments(List.of(TUESDAY), freeUntil).upcomingAppointments())
+                .containsExactly(new CustomerUpcomingAppointment(TUESDAY.at(freeUntil), true, freeUntil, false));
+        // running: consumed, and it can't be cancelled
+        assertThat(withAppointments(List.of(TUESDAY), TUESDAY.start()).upcomingAppointments())
+                .containsExactly(new CustomerUpcomingAppointment(TUESDAY.at(TUESDAY.start()), false, freeUntil, false));
+    }
+
+    @Test
+    void thePreviewFollowsTheCasesDeadline() {
+        CustomerConsultationCase seventyTwoHours = new CustomerConsultationCase(CASE,
+                new OfferingName("Career Coaching"), Optional.empty(), new PurchaseTerms(Money.chf("450.00"), new SessionCount(3), new SessionDuration(60),
+                        new CancellationDeadline(72)),
+                Instant.parse("2026-11-09T14:03:12.345Z"), Optional.of(EXPERT_2), List.of(TUESDAY), 0,
+                Instant.parse("2026-11-15T11:00:00Z"));
+
+        assertThat(seventyTwoHours.upcomingAppointments()).singleElement().satisfies(upcoming -> {
+            assertThat(upcoming.canCancel()).isTrue();
+            assertThat(upcoming.freeCancellationUntil()).isEqualTo(Instant.parse("2026-11-14T09:00:00Z"));
+            assertThat(upcoming.creditRefundedIfCancelledNow()).isFalse();
+        });
     }
 
     @Test

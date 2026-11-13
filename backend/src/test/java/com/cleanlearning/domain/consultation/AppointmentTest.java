@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -13,11 +14,14 @@ import org.junit.jupiter.api.Test;
 import com.cleanlearning.domain.consultation.value.AppointmentId;
 import com.cleanlearning.domain.consultation.value.AppointmentStatus;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
+import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import com.cleanlearning.domain.offering.value.SessionCount;
+import com.cleanlearning.domain.shared.BusinessTimeZone;
 
 /**
  * A booked appointment at a given time (glossary, spec 04 decision 21): {@code BOOKED} until its start, then
- * {@code CONSUMED}; upcoming until its end, past from its end on; and the credits the booked appointments use.
+ * {@code CONSUMED}; upcoming until its end, past from its end on; the credits the booked appointments and the forfeited
+ * ones use; and UC-07's cancellation rules: cancellable until its start, free until the deadline before it.
  * Instants are in UTC; Zurich is UTC+1 in November.
  */
 class AppointmentTest {
@@ -33,6 +37,10 @@ class AppointmentTest {
 
     private static Appointment appointment(String start, String end) {
         return new Appointment(new AppointmentId(UUID.randomUUID()), CASE, Instant.parse(start), Instant.parse(end));
+    }
+
+    private static Instant zurich(String localDateTime) {
+        return LocalDateTime.parse(localDateTime).atZone(BusinessTimeZone.ZONE).toInstant();
     }
 
     @Test
@@ -98,10 +106,88 @@ class AppointmentTest {
 
     @Test
     void theOpenCreditsAreTheSessionsLessTheBookedAppointmentsConsumedOrNot() {
-        assertThat(Appointment.openCredits(new SessionCount(3), 0)).isEqualTo(3);
-        assertThat(Appointment.openCredits(new SessionCount(3), 2)).isEqualTo(1);
-        assertThat(Appointment.openCredits(new SessionCount(3), 3)).isZero();
-        assertThat(Appointment.openCredits(new SessionCount(5), 1)).isEqualTo(4);
+        assertThat(Appointment.openCredits(new SessionCount(3), 0, 0)).isEqualTo(3);
+        assertThat(Appointment.openCredits(new SessionCount(3), 2, 0)).isEqualTo(1);
+        assertThat(Appointment.openCredits(new SessionCount(3), 3, 0)).isZero();
+        assertThat(Appointment.openCredits(new SessionCount(5), 1, 0)).isEqualTo(4);
+    }
+
+    @Test
+    void theOpenCreditsAlsoLackTheForfeitedOnes() {
+        assertThat(Appointment.openCredits(new SessionCount(3), 0, 1)).isEqualTo(2);
+        // one consumed, one cancelled in time (neither booked nor forfeited), one cancelled late
+        assertThat(Appointment.openCredits(new SessionCount(3), 1, 1)).isOne();
+        assertThat(Appointment.openCredits(new SessionCount(3), 2, 1)).isZero();
+        assertThat(Appointment.openCredits(new SessionCount(1), 0, 1)).isZero();
+    }
+
+    @Test
+    void cancellingIsFreeUntilTheDeadlineBeforeItsStartInRealHours() {
+        assertThat(TEN_TO_ELEVEN.freeCancellationUntil(new CancellationDeadline(24)))
+                .isEqualTo(Instant.parse("2026-11-16T09:00:00Z"));
+        assertThat(TEN_TO_ELEVEN.freeCancellationUntil(new CancellationDeadline(72)))
+                .isEqualTo(Instant.parse("2026-11-14T09:00:00Z"));
+        assertThat(TEN_TO_ELEVEN.freeCancellationUntil(new CancellationDeadline(0))).isEqualTo(START);
+    }
+
+    @Test
+    void theCreditIsRefundedOnlyBeforeTheDeadlineAtTheDeadlineItIsLate() {
+        CancellationDeadline hours24 = new CancellationDeadline(24);
+        Instant freeUntil = Instant.parse("2026-11-16T09:00:00Z");
+
+        assertThat(TEN_TO_ELEVEN.isCreditRefundedIfCancelledAt(hours24, Instant.parse("2026-11-15T11:00:00Z")))
+                .isTrue();
+        assertThat(TEN_TO_ELEVEN.isCreditRefundedIfCancelledAt(hours24, freeUntil.minusMillis(1))).isTrue();
+        assertThat(TEN_TO_ELEVEN.isCreditRefundedIfCancelledAt(hours24, freeUntil)).isFalse();
+        assertThat(TEN_TO_ELEVEN.isCreditRefundedIfCancelledAt(hours24, freeUntil.plusSeconds(60))).isFalse();
+        assertThat(TEN_TO_ELEVEN.isCreditRefundedIfCancelledAt(hours24, START.minusSeconds(1))).isFalse();
+    }
+
+    @Test
+    void withADeadlineOfZeroHoursTheCreditIsRefundedUntilTheStart() {
+        CancellationDeadline none = new CancellationDeadline(0);
+
+        assertThat(TEN_TO_ELEVEN.isCreditRefundedIfCancelledAt(none, START.minusSeconds(1))).isTrue();
+        assertThat(TEN_TO_ELEVEN.isCreditRefundedIfCancelledAt(none, START)).isFalse();
+    }
+
+    /**
+     * Spec 05: on Sun 28 Mar 2027 Zurich's clocks jump from 02:00 to 03:00, so 10:00 that day (08:00Z) is 24 real
+     * hours after Sat 27 Mar, 09:00 (08:00Z), not 10:00. On Sun 31 Oct 2027 they go back from 03:00 to 02:00, so 10:00
+     * that day (09:00Z) is 24 real hours after Sat 30 Oct, 11:00 (09:00Z).
+     */
+    @Test
+    void onBothDaysOfTheSummerTimeChangesTheDeadlineIsTwentyFourRealHoursBeforeTheStart() {
+        CancellationDeadline hours24 = new CancellationDeadline(24);
+        Appointment spring = appointment("2027-03-28T08:00:00Z", "2027-03-28T09:00:00Z");
+        Appointment autumn = appointment("2027-10-31T09:00:00Z", "2027-10-31T10:00:00Z");
+
+        assertThat(spring.freeCancellationUntil(hours24)).isEqualTo(zurich("2027-03-27T09:00"));
+        assertThat(spring.isCreditRefundedIfCancelledAt(hours24, zurich("2027-03-27T08:59"))).isTrue();
+        assertThat(spring.isCreditRefundedIfCancelledAt(hours24, zurich("2027-03-27T09:00"))).isFalse();
+
+        assertThat(autumn.freeCancellationUntil(hours24)).isEqualTo(zurich("2027-10-30T11:00"));
+        assertThat(autumn.isCreditRefundedIfCancelledAt(hours24, zurich("2027-10-30T10:59"))).isTrue();
+        assertThat(autumn.isCreditRefundedIfCancelledAt(hours24, zurich("2027-10-30T11:00"))).isFalse();
+    }
+
+    @Test
+    void itCanBeCancelledUntilItStartsNotWhileItRuns() {
+        assertThat(TEN_TO_ELEVEN.isCancellableAt(Instant.parse("2026-11-15T11:00:00Z"))).isTrue();
+        assertThat(TEN_TO_ELEVEN.isCancellableAt(START.minusMillis(1))).isTrue();
+        assertThat(TEN_TO_ELEVEN.isCancellableAt(START)).isFalse();
+        assertThat(TEN_TO_ELEVEN.isCancellableAt(Instant.parse("2026-11-17T09:30:00Z"))).isFalse();
+        assertThat(TEN_TO_ELEVEN.isCancellableAt(END)).isFalse();
+    }
+
+    @Test
+    void theSortedUpcomingOnesAreTheAppointmentsThemselves() {
+        Appointment past = appointment("2026-11-16T09:00:00Z", "2026-11-16T10:00:00Z");
+        Appointment later = appointment("2026-11-20T09:00:00Z", "2026-11-20T10:00:00Z");
+        Appointment soon = appointment("2026-11-18T09:00:00Z", "2026-11-18T10:00:00Z");
+
+        assertThat(Appointment.sortedUpcoming(List.of(later, past, soon), Instant.parse("2026-11-17T09:30:00Z")))
+                .containsExactly(soon, later);
     }
 
     @Test

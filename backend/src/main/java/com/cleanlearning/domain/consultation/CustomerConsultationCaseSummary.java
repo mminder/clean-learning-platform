@@ -21,16 +21,19 @@ import com.cleanlearning.domain.user.value.DisplayName;
  *
  * @param expertDisplayName the assigned expert's name, empty until the first booking
  * @param appointments the case's {@code BOOKED} appointments, in any order
+ * @param forfeitedCredits the case's appointments cancelled late
  * @param asOf the time the case is shown at, from the {@code Clock}
  */
 public record CustomerConsultationCaseSummary(ConsultationCaseId id, OfferingName offeringName,
         Optional<ImageId> offeringImageId, SessionCount sessionCount, Instant purchasedAt,
-        Optional<DisplayName> expertDisplayName, List<Appointment> appointments, Instant asOf) {
+        Optional<DisplayName> expertDisplayName, List<Appointment> appointments, int forfeitedCredits,
+        Instant asOf) {
 
     /**
      * The order of "My purchases": by group, then Upcoming by the next appointment, soonest first, Needs booking by
-     * purchase time, oldest first, and Past by the last appointment, newest first; then by id (D-17), as text: that's
-     * Postgres's order of a uuid, which {@code UUID.compareTo} (signed) isn't.
+     * purchase time, oldest first, and Past by the last appointment, or the purchase time without one, newest first
+     * (spec 05, decision 8); then by id (D-17), as text: that's Postgres's order of a uuid, which
+     * {@code UUID.compareTo} (signed) isn't.
      */
     public static final Comparator<CustomerConsultationCaseSummary> MY_PURCHASES_ORDER = Comparator
             .comparing(CustomerConsultationCaseSummary::group)
@@ -45,6 +48,10 @@ public record CustomerConsultationCaseSummary(ConsultationCaseId id, OfferingNam
         Objects.requireNonNull(purchasedAt, "purchasedAt");
         Objects.requireNonNull(expertDisplayName, "expertDisplayName");
         appointments = List.copyOf(appointments);
+        if (forfeitedCredits < 0) {
+            throw new IllegalArgumentException(
+                    "A case has no negative number of forfeited credits: " + forfeitedCredits);
+        }
         Objects.requireNonNull(asOf, "asOf");
     }
 
@@ -53,9 +60,12 @@ public record CustomerConsultationCaseSummary(ConsultationCaseId id, OfferingNam
         return sessionCount.value();
     }
 
-    /** Every booked appointment uses a credit, consumed or not, counted as the booking counts them. */
+    /**
+     * Every booked appointment uses a credit, consumed or not, and so does every forfeited one, counted as the booking
+     * counts them.
+     */
     public int openCredits() {
-        return Appointment.openCredits(sessionCount, appointments.size());
+        return Appointment.openCredits(sessionCount, appointments.size(), forfeitedCredits);
     }
 
     /**
@@ -78,19 +88,24 @@ public record CustomerConsultationCaseSummary(ConsultationCaseId id, OfferingNam
         return openCredits() > 0 ? PurchaseGroup.NEEDS_BOOKING : PurchaseGroup.PAST;
     }
 
-    /** Compares two cases of the same group. A past case has an appointment: its credits are all booked. */
+    /** Compares two cases of the same group. */
     private static int compareWithinGroup(CustomerConsultationCaseSummary first,
             CustomerConsultationCaseSummary second) {
         return switch (first.group()) {
             case UPCOMING -> first.nextAppointment().orElseThrow().start()
                     .compareTo(second.nextAppointment().orElseThrow().start());
             case NEEDS_BOOKING -> first.purchasedAt().compareTo(second.purchasedAt());
-            case PAST -> second.lastAppointmentStart().compareTo(first.lastAppointmentStart());
+            case PAST -> second.pastOrderKey().compareTo(first.pastOrderKey());
         };
     }
 
-    /** The newest past appointment's start, of a case that has appointments, all of them past. */
-    private Instant lastAppointmentStart() {
-        return Appointment.past(appointments, asOf).getFirst().start();
+    /**
+     * A past case's key in Past's order (spec 05, decision 8): its newest appointment's start, all of them past; or,
+     * without an appointment, because late cancellations forfeited every credit, its purchase time, the last date its
+     * customer sees.
+     */
+    private Instant pastOrderKey() {
+        return Appointment.past(appointments, asOf).stream().findFirst().map(CustomerAppointment::start)
+                .orElse(purchasedAt);
     }
 }

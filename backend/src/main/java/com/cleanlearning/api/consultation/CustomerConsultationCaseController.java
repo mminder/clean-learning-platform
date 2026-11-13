@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.cleanlearning.api.ProblemResponses;
 import com.cleanlearning.api.consultation.request.BookConsultationAppointmentRequest;
+import com.cleanlearning.api.consultation.request.CancelConsultationAppointmentRequest;
 import com.cleanlearning.api.consultation.request.PurchaseConsultationPackageRequest;
 import com.cleanlearning.api.consultation.response.BookableSlotResponse;
 import com.cleanlearning.api.consultation.response.CustomerAppointmentResponse;
@@ -28,6 +29,8 @@ import com.cleanlearning.api.consultation.response.CustomerConsultationCaseSumma
 import com.cleanlearning.api.response.EligibleExpertResponse;
 import com.cleanlearning.application.consultation.BookConsultationAppointmentCommand;
 import com.cleanlearning.application.consultation.BookConsultationAppointmentUseCase;
+import com.cleanlearning.application.consultation.CancelConsultationAppointmentCommand;
+import com.cleanlearning.application.consultation.CancelConsultationAppointmentUseCase;
 import com.cleanlearning.application.consultation.GetCustomerConsultationCaseUseCase;
 import com.cleanlearning.application.consultation.ListBookableSlotsUseCase;
 import com.cleanlearning.application.consultation.ListCustomerConsultationCasesUseCase;
@@ -35,6 +38,7 @@ import com.cleanlearning.application.consultation.ListEligibleExpertsForCaseUseC
 import com.cleanlearning.application.consultation.PurchaseConsultationPackageCommand;
 import com.cleanlearning.application.consultation.PurchaseConsultationPackageUseCase;
 import com.cleanlearning.domain.consultation.CustomerConsultationCase;
+import com.cleanlearning.domain.consultation.value.AppointmentId;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.offering.value.ConsultationPackageId;
 import com.cleanlearning.domain.offering.value.OfferingId;
@@ -49,8 +53,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 
 /**
- * The customer's cases (UC-03, UC-05) and their bookings (UC-06). Security lets only users with {@code CUSTOMER} in;
- * each use case is scoped to the current user, so another customer's case answers 404.
+ * The customer's cases (UC-03, UC-05), their bookings (UC-06) and their appointments' cancellations (UC-07). Security
+ * lets only users with {@code CUSTOMER} in; each use case is scoped to the current user, so another customer's case
+ * answers 404.
  */
 @RestController
 @RequestMapping(CustomerConsultationCaseController.PATH)
@@ -71,17 +76,21 @@ class CustomerConsultationCaseController {
 
     private final BookConsultationAppointmentUseCase bookConsultationAppointment;
 
+    private final CancelConsultationAppointmentUseCase cancelConsultationAppointment;
+
     CustomerConsultationCaseController(PurchaseConsultationPackageUseCase purchaseConsultationPackage,
             GetCustomerConsultationCaseUseCase getCustomerConsultationCase,
             ListCustomerConsultationCasesUseCase listCustomerConsultationCases,
             ListEligibleExpertsForCaseUseCase listEligibleExpertsForCase, ListBookableSlotsUseCase listBookableSlots,
-            BookConsultationAppointmentUseCase bookConsultationAppointment) {
+            BookConsultationAppointmentUseCase bookConsultationAppointment,
+            CancelConsultationAppointmentUseCase cancelConsultationAppointment) {
         this.purchaseConsultationPackage = purchaseConsultationPackage;
         this.getCustomerConsultationCase = getCustomerConsultationCase;
         this.listCustomerConsultationCases = listCustomerConsultationCases;
         this.listEligibleExpertsForCase = listEligibleExpertsForCase;
         this.listBookableSlots = listBookableSlots;
         this.bookConsultationAppointment = bookConsultationAppointment;
+        this.cancelConsultationAppointment = cancelConsultationAppointment;
     }
 
     /** UC-05's landing page: the current user's own cases, in the order of "My purchases". */
@@ -166,6 +175,25 @@ class CustomerConsultationCaseController {
         return CustomerAppointmentResponse.from(bookConsultationAppointment.invoke(currentUser,
                 new BookConsultationAppointmentCommand(new ConsultationCaseId(id), new UserId(request.expertId()),
                         request.start())));
+    }
+
+    /**
+     * UC-07 steps 3–5: cancels an appointment of the case with the outcome the dialog stated, and answers the case
+     * without it (spec 05, decision 12). The appointment is addressed under its case, so the case's scoped query
+     * decides ownership, and an appointment of another case answers 404.
+     */
+    @PostMapping("/{id}/appointments/{appointmentId}/cancel")
+    @ResponseStatus(HttpStatus.OK)
+    @ProblemResponses.Status400
+    @ProblemResponses.Status404
+    @ProblemResponses.Status409
+    @ProblemResponses.Status415
+    CustomerConsultationCaseResponse cancelConsultationAppointment(@AuthenticationPrincipal CurrentUser currentUser,
+            @PathVariable UUID id, @PathVariable UUID appointmentId,
+            @Valid @RequestBody CancelConsultationAppointmentRequest request) {
+        return CustomerConsultationCaseResponse.from(cancelConsultationAppointment.invoke(currentUser,
+                new CancelConsultationAppointmentCommand(new ConsultationCaseId(id), new AppointmentId(appointmentId),
+                        request.creditRefunded())));
     }
 
     /** A value object that rejects a value Bean Validation let through throws, and the API answers 400. */
