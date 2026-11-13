@@ -242,7 +242,7 @@ No new route, page or shadcn component: the dialogs use `alert-dialog`, which `C
 - **Rendered once by the page, outside the parts a reload changes.** The page keeps which dialog is open, and for the appointment, the appointment it was opened for (its id, start and end). So a reload that removes the appointment, its **Cancel** or **Cancel case** doesn't close the dialog, as the booking dialog isn't a child of what its reload removes. `alert-dialog`, controlled; the action button doesn't close it by itself.
 - **The preview reloads when the dialog opens** (spec decision 12): it refetches the case, and until the answer is back it says "Checking the cancellation…", and the action button is disabled. Then it shows the outcome from the reloaded case: for the appointment, from the upcoming appointment with the same id; for the case, from `refundIfCancelledNow`. If the appointment is no longer cancellable, or the case has no `canCancel`, it says "This appointment can no longer be cancelled." or "This case can no longer be cancelled." with only **Close**.
 - **The request names the outcome the dialog shows** (`creditRefunded` or `refundEligible`, spec decision 4). While it runs, the action button is disabled.
-- **After the cancellation** the dialog closes; the case detail shows the new credits, or the cancelled case.
+- **After the cancellation** the dialog closes; the case detail shows the new credits, or the cancelled case. From sending the request until it closes, the dialog shows the outcome it sent, not the reloaded case: the reload that comes with the answer no longer has the appointment, or the case's `canCancel`, and the closing dialog would otherwise say it can no longer be cancelled.
 
 | | Appointment (01) | Case (03) |
 |---|---|---|

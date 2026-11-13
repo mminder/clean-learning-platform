@@ -17,6 +17,7 @@ import {
   useCancelConsultationAppointment,
   type CustomerAppointment,
   type CustomerConsultationCase,
+  type CustomerUpcomingAppointment,
 } from './queries'
 
 /** The appointment the dialog was opened for, as the page kept it: a reload that removes it doesn't change it. */
@@ -98,6 +99,9 @@ function CancelAppointmentContent({
   const cancel = useCancelConsultationAppointment(consultationCase.id)
   const [preview, setPreview] = useState<Preview>('checking')
   const [failure, setFailure] = useState<Failure>()
+  // The preview the request sent, while it runs and after it succeeded: the reload after the cancellation removes the
+  // appointment, and the closing dialog keeps what it showed instead of saying it can no longer be cancelled.
+  const [sent, setSent] = useState<CustomerUpcomingAppointment>()
 
   // The preview reloads when the dialog opens; an answer of a reload the dialog no longer waits for is ignored.
   useEffect(() => {
@@ -113,19 +117,23 @@ function CancelAppointmentContent({
   }, [reloadCase])
 
   const expert = consultationCase.expert?.displayName
-  const upcoming = consultationCase.upcomingAppointments.find(
-    ({ id }) => id === appointment.id,
-  )
+  const upcoming =
+    sent ??
+    consultationCase.upcomingAppointments.find(
+      ({ id }) => id === appointment.id,
+    )
 
-  async function confirm(creditRefunded: boolean) {
+  async function confirm(shown: CustomerUpcomingAppointment) {
     setFailure(undefined)
+    setSent(shown)
     try {
       // The mutation reloads the case before it settles: after a 409 the dialog shows what's current.
       await cancel.mutateAsync({
         appointmentId: appointment.id,
-        creditRefunded,
+        creditRefunded: shown.creditRefundedIfCancelledNow,
       })
     } catch (error) {
+      setSent(undefined)
       switch (cancellationFailure(error)) {
         case 'outcomeChanged':
           setFailure({
@@ -212,7 +220,7 @@ function CancelAppointmentContent({
           }
           onClick={() => {
             if (upcoming !== undefined) {
-              void confirm(upcoming.creditRefundedIfCancelledNow)
+              void confirm(upcoming)
             }
           }}
         >
