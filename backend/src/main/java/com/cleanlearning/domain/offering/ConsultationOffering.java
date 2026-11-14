@@ -88,7 +88,7 @@ public record ConsultationOffering(
       String description,
       SessionDuration sessionDuration,
       CancellationDeadline cancellationDeadline,
-      List<ConsultationPackageEntry> packages,
+      List<IntendedConsultationPackage> packages,
       Set<UserId> eligibleExpertIds,
       List<Expert> experts) {
     return new ConsultationOffering(
@@ -104,14 +104,14 @@ public record ConsultationOffering(
   }
 
   /**
-   * The offering with new values; id and status stay. The packages are matched by id: an entry with
-   * an id keeps that package with its new values, an entry without one is a new package with a new
-   * id, and a package that no entry names is dropped. The eligible experts are replaced. The image
-   * stays.
+   * The offering with new values; id and status stay. The packages are matched by id: an intended
+   * package with an id keeps that package with its new values, one without an id is a new package
+   * with a new id, and a package that none names is dropped. The eligible experts are replaced. The
+   * image stays.
    *
    * @param experts the users who are experts: every eligible expert id must be one of them
-   * @throws IllegalArgumentException if an entry names an id that isn't one of this offering's
-   *     packages, or names a package twice, or an eligible expert id isn't an expert's
+   * @throws IllegalArgumentException if an intended package names an id that isn't one of this
+   *     offering's packages, or names a package twice, or an eligible expert id isn't an expert's
    * @throws BusinessRuleException if the offering is archived
    */
   public ConsultationOffering edit(
@@ -119,7 +119,7 @@ public record ConsultationOffering(
       String description,
       SessionDuration sessionDuration,
       CancellationDeadline cancellationDeadline,
-      List<ConsultationPackageEntry> packages,
+      List<IntendedConsultationPackage> packages,
       Set<UserId> eligibleExpertIds,
       List<Expert> experts) {
     requireNotArchived();
@@ -301,19 +301,21 @@ public record ConsultationOffering(
   }
 
   private static List<ConsultationPackage> matchPackages(
-      List<ConsultationPackage> current, List<ConsultationPackageEntry> entries) {
+      List<ConsultationPackage> current, List<IntendedConsultationPackage> intendedPackages) {
     Set<ConsultationPackageId> currentIds =
         current.stream().map(ConsultationPackage::id).collect(Collectors.toSet());
     Set<ConsultationPackageId> named = new HashSet<>();
     List<ConsultationPackage> matched = new ArrayList<>();
-    for (ConsultationPackageEntry entry : entries) {
-      if (entry.id().isEmpty()) {
+    for (IntendedConsultationPackage intended : intendedPackages) {
+      if (intended.id().isEmpty()) {
         matched.add(
             new ConsultationPackage(
-                new ConsultationPackageId(UUID.randomUUID()), entry.sessionCount(), entry.price()));
+                new ConsultationPackageId(UUID.randomUUID()),
+                intended.sessionCount(),
+                intended.price()));
         continue;
       }
-      ConsultationPackageId packageId = entry.id().get();
+      ConsultationPackageId packageId = intended.id().get();
       if (!currentIds.contains(packageId)) {
         throw new IllegalArgumentException(
             "Package " + packageId.value() + " is not a package of this offering.");
@@ -321,7 +323,7 @@ public record ConsultationOffering(
       if (!named.add(packageId)) {
         throw new IllegalArgumentException("Package " + packageId.value() + " is named twice.");
       }
-      matched.add(new ConsultationPackage(packageId, entry.sessionCount(), entry.price()));
+      matched.add(new ConsultationPackage(packageId, intended.sessionCount(), intended.price()));
     }
     return matched;
   }
