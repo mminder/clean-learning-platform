@@ -1,6 +1,6 @@
 package com.cleanlearning.application.offering.port;
 
-import com.cleanlearning.domain.offering.read.ShopOffering;
+import com.cleanlearning.domain.offering.ShopOffering;
 import java.util.List;
 
 public interface LoadShopOfferingsPort {

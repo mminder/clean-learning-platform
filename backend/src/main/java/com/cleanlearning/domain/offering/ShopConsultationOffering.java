@@ -1,8 +1,6 @@
-package com.cleanlearning.domain.offering.read;
+package com.cleanlearning.domain.offering;
 
 import com.cleanlearning.domain.image.value.ImageId;
-import com.cleanlearning.domain.offering.ConsultationPackage;
-import com.cleanlearning.domain.offering.EligibleExpert;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import com.cleanlearning.domain.offering.value.OfferingId;
 import com.cleanlearning.domain.offering.value.OfferingName;

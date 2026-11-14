@@ -1,6 +1,6 @@
 package com.cleanlearning.application.offering.port;
 
-import com.cleanlearning.domain.offering.read.ConsultationOfferingSummary;
+import com.cleanlearning.domain.offering.ConsultationOfferingSummary;
 import java.util.List;
 
 public interface LoadConsultationOfferingSummariesPort {

@@ -1,6 +1,5 @@
-package com.cleanlearning.domain.consultation.read;
+package com.cleanlearning.domain.consultation;
 
-import com.cleanlearning.domain.consultation.Appointment;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import java.time.Instant;
 import java.util.Objects;
@@ -33,7 +32,7 @@ public record CustomerUpcomingAppointment(
   public static CustomerUpcomingAppointment of(
       Appointment appointment, CancellationDeadline deadline, Instant asOf) {
     return new CustomerUpcomingAppointment(
-        CustomerAppointment.of(appointment, asOf),
+        appointment.at(asOf),
         appointment.isCancellableAt(asOf),
         appointment.freeCancellationUntil(deadline),
         appointment.isCreditRefundedIfCancelledAt(deadline, asOf));

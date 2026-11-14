@@ -1,6 +1,6 @@
 package com.cleanlearning.api.consultation.response;
 
-import com.cleanlearning.domain.consultation.read.CustomerConsultationCase;
+import com.cleanlearning.domain.consultation.CustomerConsultationCase;
 import com.cleanlearning.domain.image.value.ImageId;
 import java.time.Instant;
 import java.util.List;

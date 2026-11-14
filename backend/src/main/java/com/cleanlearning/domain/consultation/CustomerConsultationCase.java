@@ -1,8 +1,5 @@
-package com.cleanlearning.domain.consultation.read;
+package com.cleanlearning.domain.consultation;
 
-import com.cleanlearning.domain.consultation.Appointment;
-import com.cleanlearning.domain.consultation.AssignedExpert;
-import com.cleanlearning.domain.consultation.RefundEligibility;
 import com.cleanlearning.domain.consultation.value.CancellationOutcome;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.consultation.value.PurchaseTerms;
@@ -115,6 +112,6 @@ public record CustomerConsultationCase(
 
   /** The appointments that have ended, newest first, all {@code CONSUMED}. */
   public List<CustomerAppointment> pastAppointments() {
-    return CustomerAppointment.past(appointments, asOf);
+    return Appointment.past(appointments, asOf);
   }
 }

@@ -61,6 +61,58 @@ class AppointmentTest {
   }
 
   @Test
+  void asTheCustomerSeesItCarriesTheStatusAtThatTime() {
+    assertThat(TEN_TO_ELEVEN.at(START.minusSeconds(1)))
+        .isEqualTo(
+            new CustomerAppointment(TEN_TO_ELEVEN.id(), START, END, AppointmentStatus.BOOKED));
+    assertThat(TEN_TO_ELEVEN.at(START))
+        .isEqualTo(
+            new CustomerAppointment(TEN_TO_ELEVEN.id(), START, END, AppointmentStatus.CONSUMED));
+  }
+
+  @Test
+  void theUpcomingOnesAreTheOnesNotEndedSoonestFirstARunningOneConsumed() {
+    Appointment past = appointment("2026-11-16T09:00:00Z", "2026-11-16T10:00:00Z");
+    Appointment running = appointment("2026-11-17T09:00:00Z", "2026-11-17T10:00:00Z");
+    Appointment later = appointment("2026-11-20T09:00:00Z", "2026-11-20T10:00:00Z");
+    Appointment soon = appointment("2026-11-18T09:00:00Z", "2026-11-18T10:00:00Z");
+    Instant asOf = Instant.parse("2026-11-17T09:30:00Z");
+
+    assertThat(Appointment.upcoming(List.of(later, past, soon, running), asOf))
+        .containsExactly(running.at(asOf), soon.at(asOf), later.at(asOf));
+    assertThat(Appointment.upcoming(List.of(later, past, soon, running), asOf))
+        .extracting(CustomerAppointment::status)
+        .containsExactly(
+            AppointmentStatus.CONSUMED, AppointmentStatus.BOOKED, AppointmentStatus.BOOKED);
+  }
+
+  @Test
+  void thePastOnesAreTheOnesEndedNewestFirstAllConsumed() {
+    Appointment first = appointment("2026-11-16T09:00:00Z", "2026-11-16T10:00:00Z");
+    Appointment second = appointment("2026-11-17T09:00:00Z", "2026-11-17T10:00:00Z");
+    Appointment upcoming = appointment("2026-11-20T09:00:00Z", "2026-11-20T10:00:00Z");
+    Instant asOf = Instant.parse("2026-11-17T10:00:00Z");
+
+    assertThat(Appointment.past(List.of(first, upcoming, second), asOf))
+        .containsExactly(second.at(asOf), first.at(asOf));
+    assertThat(Appointment.past(List.of(first, upcoming, second), asOf))
+        .extracting(CustomerAppointment::status)
+        .containsOnly(AppointmentStatus.CONSUMED);
+  }
+
+  @Test
+  void anAppointmentIsUpcomingOrPastNeverBoth() {
+    Appointment appointment = TEN_TO_ELEVEN;
+    for (Instant asOf : List.of(START.minusSeconds(1), START, END.minusSeconds(1), END)) {
+      assertThat(
+              Appointment.upcoming(List.of(appointment), asOf).size()
+                  + Appointment.past(List.of(appointment), asOf).size())
+          .as("at " + asOf)
+          .isOne();
+    }
+  }
+
+  @Test
   void theOpenCreditsAreTheSessionsLessTheBookedAppointmentsConsumedOrNot() {
     assertThat(Appointment.openCredits(new SessionCount(3), 0, 0)).isEqualTo(3);
     assertThat(Appointment.openCredits(new SessionCount(3), 2, 0)).isEqualTo(1);
@@ -188,18 +240,6 @@ class AppointmentTest {
             Appointment.sortedUpcoming(
                 List.of(later, past, soon), Instant.parse("2026-11-17T09:30:00Z")))
         .containsExactly(soon, later);
-  }
-
-  @Test
-  void theSortedPastOnesAreTheOnesEndedNewestFirst() {
-    Appointment first = appointment("2026-11-16T09:00:00Z", "2026-11-16T10:00:00Z");
-    Appointment second = appointment("2026-11-17T09:00:00Z", "2026-11-17T10:00:00Z");
-    Appointment upcoming = appointment("2026-11-20T09:00:00Z", "2026-11-20T10:00:00Z");
-
-    assertThat(
-            Appointment.sortedPast(
-                List.of(first, upcoming, second), Instant.parse("2026-11-17T10:00:00Z")))
-        .containsExactly(second, first);
   }
 
   @Test

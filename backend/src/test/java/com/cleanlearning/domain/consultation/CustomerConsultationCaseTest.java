@@ -1,9 +1,7 @@
-package com.cleanlearning.domain.consultation.read;
+package com.cleanlearning.domain.consultation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.cleanlearning.domain.consultation.Appointment;
-import com.cleanlearning.domain.consultation.AssignedExpert;
 import com.cleanlearning.domain.consultation.value.AppointmentId;
 import com.cleanlearning.domain.consultation.value.AppointmentStatus;
 import com.cleanlearning.domain.consultation.value.CancellationOutcome;
@@ -251,20 +249,15 @@ class CustomerConsultationCaseTest {
                 .upcomingAppointments())
         .containsExactly(
             new CustomerUpcomingAppointment(
-                CustomerAppointment.of(TUESDAY, Instant.parse("2026-11-15T11:00:00Z")),
-                true,
-                freeUntil,
-                true));
+                TUESDAY.at(Instant.parse("2026-11-15T11:00:00Z")), true, freeUntil, true));
     // at the deadline: late
     assertThat(withAppointments(List.of(TUESDAY), freeUntil).upcomingAppointments())
         .containsExactly(
-            new CustomerUpcomingAppointment(
-                CustomerAppointment.of(TUESDAY, freeUntil), true, freeUntil, false));
+            new CustomerUpcomingAppointment(TUESDAY.at(freeUntil), true, freeUntil, false));
     // running: consumed, and it can't be cancelled
     assertThat(withAppointments(List.of(TUESDAY), TUESDAY.start()).upcomingAppointments())
         .containsExactly(
-            new CustomerUpcomingAppointment(
-                CustomerAppointment.of(TUESDAY, TUESDAY.start()), false, freeUntil, false));
+            new CustomerUpcomingAppointment(TUESDAY.at(TUESDAY.start()), false, freeUntil, false));
   }
 
   @Test

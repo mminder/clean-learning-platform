@@ -1,6 +1,5 @@
-package com.cleanlearning.domain.consultation.read;
+package com.cleanlearning.domain.consultation;
 
-import com.cleanlearning.domain.consultation.Appointment;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.consultation.value.PurchaseGroup;
 import com.cleanlearning.domain.image.value.ImageId;
@@ -84,7 +83,7 @@ public record CustomerConsultationCaseSummary(
    * 21); empty without one.
    */
   public Optional<CustomerAppointment> nextAppointment() {
-    return CustomerAppointment.upcoming(appointments, asOf).stream().findFirst();
+    return Appointment.upcoming(appointments, asOf).stream().findFirst();
   }
 
   /**
@@ -131,7 +130,7 @@ public record CustomerConsultationCaseSummary(
   }
 
   private Instant completedOrderKey() {
-    return CustomerAppointment.past(appointments, asOf).stream()
+    return Appointment.past(appointments, asOf).stream()
         .findFirst()
         .map(CustomerAppointment::start)
         .orElse(purchasedAt);

@@ -8,8 +8,8 @@ import com.cleanlearning.application.consultation.port.SaveBookingPort;
 import com.cleanlearning.application.user.port.LockExpertPort;
 import com.cleanlearning.domain.consultation.Booking;
 import com.cleanlearning.domain.consultation.CaseForBooking;
+import com.cleanlearning.domain.consultation.CustomerAppointment;
 import com.cleanlearning.domain.consultation.SlotFinder;
-import com.cleanlearning.domain.consultation.read.CustomerAppointment;
 import com.cleanlearning.domain.consultation.value.BusyTime;
 import com.cleanlearning.domain.shared.BusinessRuleException;
 import com.cleanlearning.domain.shared.BusinessTimeZone;
@@ -113,6 +113,6 @@ public class BookConsultationAppointmentUseCase {
     // 6. Write.
     saveBooking.save(booking);
     // 7. Answer.
-    return CustomerAppointment.of(booking.appointment(), now);
+    return booking.appointment().at(now);
   }
 }

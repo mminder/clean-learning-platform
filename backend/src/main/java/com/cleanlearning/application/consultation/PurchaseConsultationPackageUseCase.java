@@ -5,7 +5,7 @@ import com.cleanlearning.application.consultation.port.LockConsultationOfferingF
 import com.cleanlearning.application.consultation.port.SaveConsultationCasePort;
 import com.cleanlearning.domain.consultation.ConsultationCase;
 import com.cleanlearning.domain.consultation.ConsultationOfferingForPurchase;
-import com.cleanlearning.domain.consultation.read.CustomerConsultationCase;
+import com.cleanlearning.domain.consultation.CustomerConsultationCase;
 import com.cleanlearning.domain.shared.BusinessRuleException;
 import com.cleanlearning.domain.shared.NotFoundException;
 import com.cleanlearning.domain.user.CurrentUser;

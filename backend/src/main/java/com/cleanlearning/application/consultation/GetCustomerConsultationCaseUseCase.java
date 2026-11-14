@@ -1,7 +1,7 @@
 package com.cleanlearning.application.consultation;
 
 import com.cleanlearning.application.consultation.port.LoadCustomerConsultationCasePort;
-import com.cleanlearning.domain.consultation.read.CustomerConsultationCase;
+import com.cleanlearning.domain.consultation.CustomerConsultationCase;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.shared.NotFoundException;
 import com.cleanlearning.domain.user.CurrentUser;

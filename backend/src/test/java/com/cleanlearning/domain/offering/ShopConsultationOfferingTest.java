@@ -1,4 +1,4 @@
-package com.cleanlearning.domain.offering.read;
+package com.cleanlearning.domain.offering;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -6,8 +6,6 @@ import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.cleanlearning.domain.image.value.ImageId;
-import com.cleanlearning.domain.offering.ConsultationPackage;
-import com.cleanlearning.domain.offering.EligibleExpert;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import com.cleanlearning.domain.offering.value.ConsultationPackageId;
 import com.cleanlearning.domain.offering.value.OfferingId;

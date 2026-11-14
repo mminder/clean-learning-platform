@@ -1,6 +1,6 @@
 package com.cleanlearning.api.offering.response;
 
-import com.cleanlearning.domain.offering.read.ConsultationOfferingSummary;
+import com.cleanlearning.domain.offering.ConsultationOfferingSummary;
 import com.cleanlearning.domain.offering.value.OfferingStatus;
 import java.util.UUID;
 

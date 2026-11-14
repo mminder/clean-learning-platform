@@ -1,7 +1,7 @@
 package com.cleanlearning.application.consultation;
 
 import com.cleanlearning.application.consultation.port.LoadCustomerConsultationCasesPort;
-import com.cleanlearning.domain.consultation.read.CustomerConsultationCaseSummary;
+import com.cleanlearning.domain.consultation.CustomerConsultationCaseSummary;
 import com.cleanlearning.domain.user.CurrentUser;
 import java.time.Clock;
 import java.util.List;
