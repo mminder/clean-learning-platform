@@ -47,7 +47,7 @@ class ConsultationOfferingTest {
         EXPERTS);
   }
 
-  private static ConsultationOffering agileCoachingWith(IntendedConsultationPackage... packages) {
+  private static ConsultationOffering agileCoachingWith(ConsultationPackageEntry... packages) {
     return ConsultationOffering.create(
         AGILE_COACHING,
         "Coaching for agile teams.",
@@ -59,7 +59,7 @@ class ConsultationOfferingTest {
   }
 
   private static ConsultationOffering edit(
-      ConsultationOffering offering, IntendedConsultationPackage... packages) {
+      ConsultationOffering offering, ConsultationPackageEntry... packages) {
     return offering.edit(
         AGILE_COACHING,
         "Coaching for agile teams.",
@@ -70,13 +70,13 @@ class ConsultationOfferingTest {
         EXPERTS);
   }
 
-  private static IntendedConsultationPackage added(int sessionCount, String price) {
-    return IntendedConsultationPackage.added(new SessionCount(sessionCount), Money.chf(price));
+  private static ConsultationPackageEntry added(int sessionCount, String price) {
+    return ConsultationPackageEntry.added(new SessionCount(sessionCount), Money.chf(price));
   }
 
-  private static IntendedConsultationPackage kept(
+  private static ConsultationPackageEntry kept(
       ConsultationPackage consultationPackage, int sessionCount, String price) {
-    return IntendedConsultationPackage.kept(
+    return ConsultationPackageEntry.kept(
         consultationPackage.id(), new SessionCount(sessionCount), Money.chf(price));
   }
 
@@ -220,8 +220,8 @@ class ConsultationOfferingTest {
 
   @Test
   void aNewOfferingHasNoPackageWithAnId() {
-    IntendedConsultationPackage withId =
-        IntendedConsultationPackage.kept(
+    ConsultationPackageEntry withId =
+        ConsultationPackageEntry.kept(
             new ConsultationPackageId(UUID.randomUUID()), new SessionCount(1), Money.chf("160"));
 
     assertThatIllegalArgumentException().isThrownBy(() -> agileCoachingWith(withId));

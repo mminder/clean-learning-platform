@@ -1,6 +1,6 @@
 package com.cleanlearning.application.offering;
 
-import com.cleanlearning.domain.offering.IntendedConsultationPackage;
+import com.cleanlearning.domain.offering.ConsultationPackageEntry;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import com.cleanlearning.domain.offering.value.OfferingName;
 import com.cleanlearning.domain.offering.value.SessionDuration;
@@ -10,16 +10,16 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * What the admin saves in the offering's form (UC-16 steps 3–4), for creating and for editing it.
- * An intended package either names the package it keeps or is a new package. The eligible expert
- * ids are a set: an id named twice counts once.
+ * What the admin saves in the offering's form (UC-16 steps 3–4), for creating and for editing it. A
+ * package entry either names the package it keeps or is a new package. The eligible expert ids are
+ * a set: an id named twice counts once.
  */
 public record ConsultationOfferingCommand(
     OfferingName name,
     String description,
     SessionDuration sessionDuration,
     CancellationDeadline cancellationDeadline,
-    List<IntendedConsultationPackage> packages,
+    List<ConsultationPackageEntry> packages,
     Set<UserId> eligibleExpertIds) {
 
   public ConsultationOfferingCommand {

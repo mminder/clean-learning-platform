@@ -17,7 +17,7 @@ import com.cleanlearning.application.offering.RemoveConsultationOfferingImageUse
 import com.cleanlearning.application.offering.UnpublishConsultationOfferingUseCase;
 import com.cleanlearning.application.offering.UploadConsultationOfferingImageUseCase;
 import com.cleanlearning.domain.offering.ConsultationOffering;
-import com.cleanlearning.domain.offering.IntendedConsultationPackage;
+import com.cleanlearning.domain.offering.ConsultationPackageEntry;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import com.cleanlearning.domain.offering.value.ConsultationPackageId;
 import com.cleanlearning.domain.offering.value.OfferingId;
@@ -228,16 +228,16 @@ class ConsultationOfferingController {
         request.description(),
         new SessionDuration(request.sessionDurationMinutes()),
         new CancellationDeadline(request.cancellationDeadlineHours()),
-        request.packages().stream().map(ConsultationOfferingController::toIntendedPackage).toList(),
+        request.packages().stream().map(ConsultationOfferingController::toEntry).toList(),
         request.eligibleExpertIds().stream().map(UserId::new).collect(Collectors.toSet()));
   }
 
-  private static IntendedConsultationPackage toIntendedPackage(ConsultationPackageRequest request) {
+  private static ConsultationPackageEntry toEntry(ConsultationPackageRequest request) {
     SessionCount sessionCount = new SessionCount(request.sessionCount());
     Money price = Money.chf(request.price());
     return request.id() == null
-        ? IntendedConsultationPackage.added(sessionCount, price)
-        : IntendedConsultationPackage.kept(
+        ? ConsultationPackageEntry.added(sessionCount, price)
+        : ConsultationPackageEntry.kept(
             new ConsultationPackageId(request.id()), sessionCount, price);
   }
 }
