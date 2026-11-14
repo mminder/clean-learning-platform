@@ -1,6 +1,6 @@
 package com.cleanlearning.api.consultation.response;
 
-import com.cleanlearning.domain.consultation.CustomerUpcomingAppointment;
+import com.cleanlearning.domain.consultation.read.CustomerUpcomingAppointment;
 import com.cleanlearning.domain.consultation.value.AppointmentStatus;
 import java.time.Instant;
 import java.util.UUID;

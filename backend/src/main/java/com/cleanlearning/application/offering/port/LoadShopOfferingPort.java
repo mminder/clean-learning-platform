@@ -1,6 +1,6 @@
 package com.cleanlearning.application.offering.port;
 
-import com.cleanlearning.domain.offering.ShopConsultationOffering;
+import com.cleanlearning.domain.offering.read.ShopConsultationOffering;
 import com.cleanlearning.domain.offering.value.OfferingId;
 import java.util.Optional;
 

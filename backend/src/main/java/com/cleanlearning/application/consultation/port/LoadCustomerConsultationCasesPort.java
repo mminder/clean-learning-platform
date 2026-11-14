@@ -1,6 +1,6 @@
 package com.cleanlearning.application.consultation.port;
 
-import com.cleanlearning.domain.consultation.CustomerConsultationCaseSummary;
+import com.cleanlearning.domain.consultation.read.CustomerConsultationCaseSummary;
 import com.cleanlearning.domain.user.value.UserId;
 import java.time.Instant;
 import java.util.List;

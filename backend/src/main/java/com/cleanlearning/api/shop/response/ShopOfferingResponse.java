@@ -2,7 +2,7 @@ package com.cleanlearning.api.shop.response;
 
 import com.cleanlearning.api.response.MoneyResponse;
 import com.cleanlearning.domain.image.value.ImageId;
-import com.cleanlearning.domain.offering.ShopOffering;
+import com.cleanlearning.domain.offering.read.ShopOffering;
 import com.cleanlearning.domain.offering.value.OfferingType;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;

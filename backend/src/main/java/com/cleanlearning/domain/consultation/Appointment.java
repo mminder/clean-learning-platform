@@ -26,7 +26,7 @@ public record Appointment(
 
   /**
    * Soonest first; two appointments of a case never start at once, and the id, as text, makes the
-   * order total anyway, as in {@link CustomerConsultationCaseSummary#MY_PURCHASES_ORDER}.
+   * order total anyway, as the order of "My purchases" does.
    */
   private static final Comparator<Appointment> BY_START =
       Comparator.comparing(Appointment::start)
@@ -43,21 +43,7 @@ public record Appointment(
     }
   }
 
-  /**
-   * The upcoming appointments at {@code asOf}, the ones that haven't ended, soonest first, each
-   * with its status: a running one is {@code CONSUMED}.
-   */
-  public static List<CustomerAppointment> upcoming(List<Appointment> appointments, Instant asOf) {
-    return sortedUpcoming(appointments, asOf).stream()
-        .map(appointment -> appointment.at(asOf))
-        .toList();
-  }
-
-  /**
-   * The upcoming appointments at {@code asOf}, as {@link #upcoming} selects and sorts them, but as
-   * appointments: for a view that needs their rules, too, as the case detail's cancellation preview
-   * does.
-   */
+  /** The upcoming appointments at {@code asOf}, the ones that haven't ended, soonest first. */
   public static List<Appointment> sortedUpcoming(List<Appointment> appointments, Instant asOf) {
     return appointments.stream()
         .filter(appointment -> appointment.isUpcomingAt(asOf))
@@ -65,15 +51,11 @@ public record Appointment(
         .toList();
   }
 
-  /**
-   * The past appointments at {@code asOf}, the ones that have ended, newest first, all {@code
-   * CONSUMED}.
-   */
-  public static List<CustomerAppointment> past(List<Appointment> appointments, Instant asOf) {
+  /** The past appointments at {@code asOf}, the ones that have ended, newest first. */
+  public static List<Appointment> sortedPast(List<Appointment> appointments, Instant asOf) {
     return appointments.stream()
         .filter(appointment -> !appointment.isUpcomingAt(asOf))
         .sorted(BY_START.reversed())
-        .map(appointment -> appointment.at(asOf))
         .toList();
   }
 
@@ -142,10 +124,5 @@ public record Appointment(
    */
   public boolean isCreditRefundedIfCancelledAt(CancellationDeadline deadline, Instant asOf) {
     return asOf.isBefore(freeCancellationUntil(deadline));
-  }
-
-  /** The appointment as its customer sees it at {@code asOf}. */
-  public CustomerAppointment at(Instant asOf) {
-    return new CustomerAppointment(id, start, end, statusAt(asOf));
   }
 }

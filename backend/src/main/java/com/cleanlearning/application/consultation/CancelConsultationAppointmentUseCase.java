@@ -5,7 +5,7 @@ import com.cleanlearning.application.consultation.port.LockCaseForCancellationPo
 import com.cleanlearning.application.consultation.port.SaveAppointmentCancellationPort;
 import com.cleanlearning.domain.consultation.AppointmentCancellation;
 import com.cleanlearning.domain.consultation.CaseForCancellation;
-import com.cleanlearning.domain.consultation.CustomerConsultationCase;
+import com.cleanlearning.domain.consultation.read.CustomerConsultationCase;
 import com.cleanlearning.domain.shared.BusinessRuleException;
 import com.cleanlearning.domain.shared.NotFoundException;
 import com.cleanlearning.domain.user.CurrentUser;

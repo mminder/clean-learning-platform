@@ -2,7 +2,7 @@ package com.cleanlearning.api.shop.response;
 
 import com.cleanlearning.api.response.ConsultationPackageResponse;
 import com.cleanlearning.api.response.EligibleExpertResponse;
-import com.cleanlearning.domain.offering.ShopConsultationOffering;
+import com.cleanlearning.domain.offering.read.ShopConsultationOffering;
 import java.util.List;
 
 /**

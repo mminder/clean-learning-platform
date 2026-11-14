@@ -5,6 +5,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
 
+import com.cleanlearning.domain.shared.BusinessRuleException;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.domain.JavaModifier;
@@ -40,6 +41,7 @@ class LayerRulesTest {
   private static final String PORTS = "com.cleanlearning.application.*.port";
   private static final String DOMAIN = "com.cleanlearning.domain..";
   private static final String DOMAIN_VALUES = "com.cleanlearning.domain..value";
+  private static final String DOMAIN_READ_MODELS = "com.cleanlearning.domain.*.read";
   private static final String ADAPTERS_DATABASE = "com.cleanlearning.adapters.database..";
   private static final String ADAPTER_ENTITIES = "com.cleanlearning.adapters.database.*.entity";
   private static final String ADAPTER_ROWS = "com.cleanlearning.adapters.database.*.row";
@@ -91,6 +93,28 @@ class LayerRulesTest {
           .should()
           .onlyDependOnClassesThat()
           .resideInAnyPackage("java..", DOMAIN_VALUES);
+
+  /** Read models use the models, never the other way round: a model that needs one is one. */
+  @ArchTest
+  static final ArchRule modelsDoNotDependOnReadModels =
+      noClasses()
+          .that()
+          .resideInAPackage(DOMAIN)
+          .and()
+          .resideOutsideOfPackage(DOMAIN_READ_MODELS)
+          .should()
+          .dependOnClassesThat()
+          .resideInAPackage(DOMAIN_READ_MODELS);
+
+  /** A read model shows what the models decide; it says no to nothing. */
+  @ArchTest
+  static final ArchRule readModelsThrowNoBusinessRuleException =
+      noClasses()
+          .that()
+          .resideInAPackage(DOMAIN_READ_MODELS)
+          .should()
+          .dependOnClassesThat()
+          .areAssignableTo(BusinessRuleException.class);
 
   @ArchTest
   static final ArchRule applicationIsFreeOfJpa =
