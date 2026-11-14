@@ -375,6 +375,271 @@ class ExpertConsultationCaseControllerTest {
         .containsExactly(caseId);
   }
 
+  private MvcTestResult get(Object caseId, UUID expert) {
+    return mockMvc
+        .get()
+        .uri(PATH + "/{id}", caseId)
+        .with(LoggedIn.as(expert, Role.EXPERT))
+        .exchange();
+  }
+
+  private void cancelled(String caseId, String appointmentId, boolean creditRefunded) {
+    assertThat(
+            mockMvc
+                .post()
+                .uri(
+                    CUSTOMER_CASES + "/{id}/appointments/{appointmentId}/cancel",
+                    caseId,
+                    appointmentId)
+                .with(LoggedIn.as(SeedData.CUSTOMER_1, Role.CUSTOMER))
+                .with(Csrf.token())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{ \"creditRefunded\": %s }".formatted(creditRefunded)))
+        .hasStatusOk();
+  }
+
+  private void caseCancelled(String caseId, boolean refundEligible) {
+    assertThat(
+            mockMvc
+                .post()
+                .uri(CUSTOMER_CASES + "/{id}/cancel", caseId)
+                .with(LoggedIn.as(SeedData.CUSTOMER_1, Role.CUSTOMER))
+                .with(Csrf.token())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{ \"refundEligible\": %s }".formatted(refundEligible)))
+        .hasStatusOk();
+  }
+
+  /**
+   * UC-11 step 4, spec 06's scenario "The detail": a consumed appointment, one cancelled late and
+   * the upcoming one on 17 Nov 2026. The terms have no price paid (decision 4), and the cancelled
+   * appointment is listed with its credit forfeited (decision 14).
+   */
+  @Test
+  void showsTheCaseToItsAssignedExpert() throws Exception {
+    available(SeedData.EXPERT_2, "09:00", "12:00", "2026-11-11", "2026-11-12", "2026-11-17");
+    String caseId = boughtCareerCoaching(SeedData.CUSTOMER_1);
+    // Wed 11 and Thu 12 Nov 2026, 10:00 in Zurich
+    String consumed =
+        booked(caseId, SeedData.EXPERT_2, "2026-11-11T09:00:00Z", SeedData.CUSTOMER_1);
+    String late = booked(caseId, SeedData.EXPERT_2, "2026-11-12T09:00:00Z", SeedData.CUSTOMER_1);
+    String upcoming = booked(caseId, SeedData.EXPERT_2, TEN, SeedData.CUSTOMER_1);
+    // Thu 12 Nov 2026, 09:00 in Zurich: the first has ended, the second is inside its deadline
+    clock.set(Instant.parse("2026-11-12T08:00:00Z"));
+    cancelled(caseId, late, false);
+
+    MvcTestResult shown = get(caseId, SeedData.EXPERT_2);
+
+    assertThat(shown).hasStatusOk();
+    assertThat(shown)
+        .bodyJson()
+        .isStrictlyEqualTo(
+            """
+            {
+              "id": "%s",
+              "customerName": "Customer 1",
+              "customerEmail": "customer1@example.com",
+              "offeringName": "Career Coaching",
+              "sessionCount": 3,
+              "sessionDurationMinutes": 60,
+              "cancellationDeadlineHours": 24,
+              "purchasedAt": "2026-11-09T14:00:00Z",
+              "openCredits": 0,
+              "totalCredits": 3,
+              "cancelledAt": null,
+              "upcomingAppointments": [
+                { "id": "%s", "start": "2026-11-17T09:00:00Z", "end": "2026-11-17T10:00:00Z", "status": "BOOKED" }
+              ],
+              "pastAppointments": [
+                { "id": "%s", "start": "2026-11-11T09:00:00Z", "end": "2026-11-11T10:00:00Z", "status": "CONSUMED" }
+              ],
+              "cancelledAppointments": [
+                { "id": "%s", "start": "2026-11-12T09:00:00Z", "end": "2026-11-12T10:00:00Z", "creditRefunded": false }
+              ]
+            }
+            """
+                .formatted(caseId, upcoming, consumed, late));
+    // Spec 06, decision 4: neither the price paid nor a refund outcome is the expert's
+    assertThat(shown.getResponse().getContentAsString())
+        .doesNotContain("pricePaid")
+        .doesNotContain("refundEligible");
+  }
+
+  /**
+   * Spec 06, decisions 2 and 14: a running appointment is among the upcoming ones as consumed, and
+   * an appointment cancelled in time and one cancelled late are listed newest start first.
+   */
+  @Test
+  void listsARunningAppointmentAsUpcomingAndTheCancelledOnesNewestFirst() throws Exception {
+    available(
+        SeedData.EXPERT_2,
+        "09:00",
+        "12:00",
+        "2026-11-11",
+        "2026-11-12",
+        "2026-11-13",
+        "2026-11-17");
+    String caseId = boughtCareerCoaching(SeedData.CUSTOMER_1);
+    // Thu 12 and Fri 13 Nov 2026, 10:00 in Zurich
+    String late = booked(caseId, SeedData.EXPERT_2, "2026-11-12T09:00:00Z", SeedData.CUSTOMER_1);
+    String inTime = booked(caseId, SeedData.EXPERT_2, "2026-11-13T09:00:00Z", SeedData.CUSTOMER_1);
+    String upcoming = booked(caseId, SeedData.EXPERT_2, TEN, SeedData.CUSTOMER_1);
+    cancelled(caseId, inTime, true);
+    // Wed 11 Nov 2026, 10:00 in Zurich, with the credit the cancellation returned
+    String running = booked(caseId, SeedData.EXPERT_2, "2026-11-11T09:00:00Z", SeedData.CUSTOMER_1);
+    // Wed 11 Nov 2026, 10:30 in Zurich: the first runs, and the one on the 12th is inside its
+    // deadline
+    clock.set(Instant.parse("2026-11-11T09:30:00Z"));
+    cancelled(caseId, late, false);
+
+    assertThat(get(caseId, SeedData.EXPERT_2))
+        .hasStatusOk()
+        .bodyJson()
+        .isLenientlyEqualTo(
+            """
+            {
+              "openCredits": 0,
+              "totalCredits": 3,
+              "upcomingAppointments": [
+                { "id": "%s", "start": "2026-11-11T09:00:00Z", "end": "2026-11-11T10:00:00Z", "status": "CONSUMED" },
+                { "id": "%s", "start": "2026-11-17T09:00:00Z", "end": "2026-11-17T10:00:00Z", "status": "BOOKED" }
+              ],
+              "pastAppointments": [],
+              "cancelledAppointments": [
+                { "id": "%s", "start": "2026-11-13T09:00:00Z", "end": "2026-11-13T10:00:00Z", "creditRefunded": true },
+                { "id": "%s", "start": "2026-11-12T09:00:00Z", "end": "2026-11-12T10:00:00Z", "creditRefunded": false }
+              ]
+            }
+            """
+                .formatted(running, upcoming, inTime, late));
+    // A lenient JSON comparison ignores the order of an array's elements
+    assertThat(get(caseId, SeedData.EXPERT_2))
+        .bodyJson()
+        .extractingPath("$.upcomingAppointments[*].id")
+        .asList()
+        .containsExactly(running, upcoming);
+    assertThat(get(caseId, SeedData.EXPERT_2))
+        .bodyJson()
+        .extractingPath("$.cancelledAppointments[*].id")
+        .asList()
+        .containsExactly(inTime, late);
+  }
+
+  /**
+   * Spec 06's scenario "A cancelled case": when it was cancelled, without the refund outcome
+   * (decision 4), and the appointments cancelled with it among the cancelled ones (decision 14).
+   */
+  @Test
+  void showsACancelledCaseWithTheAppointmentsCancelledWithIt() throws Exception {
+    available(SeedData.EXPERT_2, "09:00", "12:00", "2026-11-11", "2026-11-17");
+    String caseId = boughtCareerCoaching(SeedData.CUSTOMER_1);
+    String insideDeadline =
+        booked(caseId, SeedData.EXPERT_2, "2026-11-11T09:00:00Z", SeedData.CUSTOMER_1);
+    String beforeDeadline = booked(caseId, SeedData.EXPERT_2, TEN, SeedData.CUSTOMER_1);
+    // Tue 10 Nov 2026, 12:00 in Zurich: the appointment on the 11th is inside its deadline
+    clock.set(Instant.parse("2026-11-10T11:00:00Z"));
+    caseCancelled(caseId, false);
+
+    MvcTestResult shown = get(caseId, SeedData.EXPERT_2);
+
+    assertThat(shown)
+        .hasStatusOk()
+        .bodyJson()
+        .isLenientlyEqualTo(
+            """
+            {
+              "id": "%s",
+              "openCredits": 2,
+              "totalCredits": 3,
+              "cancelledAt": "2026-11-10T11:00:00Z",
+              "upcomingAppointments": [],
+              "pastAppointments": [],
+              "cancelledAppointments": [
+                { "id": "%s", "start": "2026-11-17T09:00:00Z", "end": "2026-11-17T10:00:00Z", "creditRefunded": true },
+                { "id": "%s", "start": "2026-11-11T09:00:00Z", "end": "2026-11-11T10:00:00Z", "creditRefunded": false }
+              ]
+            }
+            """
+                .formatted(caseId, beforeDeadline, insideDeadline));
+    assertThat(shown)
+        .bodyJson()
+        .extractingPath("$.cancelledAppointments[*].id")
+        .asList()
+        .containsExactly(beforeDeadline, insideDeadline);
+    assertThat(shown.getResponse().getContentAsString())
+        .doesNotContain("pricePaid")
+        .doesNotContain("refundEligible");
+  }
+
+  /**
+   * Spec 06's scenario "Another expert's case", with both seeded experts (security.md): exactly
+   * like an unknown id, so nobody can probe which ids exist. A case's customer who is an expert
+   * doesn't see it through the expert's route either, and a case without an expert is no expert's.
+   */
+  @Test
+  void anotherExpertsCaseIsNotFound() throws Exception {
+    available(SeedData.EXPERT_1, "09:00", "12:00", "2026-11-17");
+    available(SeedData.EXPERT_2, "09:00", "12:00", "2026-11-17");
+    String ofCustomer1 = boughtCareerCoaching(SeedData.CUSTOMER_1);
+    booked(ofCustomer1, SeedData.EXPERT_2, TEN, SeedData.CUSTOMER_1);
+    String ofCustomer2 = boughtCareerCoaching(SeedData.CUSTOMER_2);
+    booked(ofCustomer2, SeedData.EXPERT_1, TEN, SeedData.CUSTOMER_2);
+    String ofExpert1 = boughtCareerCoaching(SeedData.EXPERT_1);
+    booked(ofExpert1, SeedData.EXPERT_2, ELEVEN, SeedData.EXPERT_1);
+    String withoutExpert = boughtCareerCoaching(SeedData.CUSTOMER_2);
+
+    assertThat(get(ofCustomer1, SeedData.EXPERT_1))
+        .hasStatus(HttpStatus.NOT_FOUND)
+        .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .bodyJson()
+        .isStrictlyEqualTo(
+            """
+            {
+              "title": "Not Found",
+              "status": 404,
+              "detail": "Case %s not found.",
+              "instance": "/api/expert/consultation-cases/%s"
+            }
+            """
+                .formatted(ofCustomer1, ofCustomer1));
+    assertThat(get(ofCustomer2, SeedData.EXPERT_2)).hasStatus(HttpStatus.NOT_FOUND);
+    assertThat(get(ofExpert1, SeedData.EXPERT_1)).hasStatus(HttpStatus.NOT_FOUND);
+    assertThat(get(withoutExpert, SeedData.EXPERT_1)).hasStatus(HttpStatus.NOT_FOUND);
+    assertThat(get(withoutExpert, SeedData.EXPERT_2)).hasStatus(HttpStatus.NOT_FOUND);
+
+    assertThat(get(ofCustomer1, SeedData.EXPERT_2))
+        .hasStatusOk()
+        .bodyJson()
+        .extractingPath("$.customerName")
+        .isEqualTo("Customer 1");
+    assertThat(get(ofCustomer2, SeedData.EXPERT_1))
+        .hasStatusOk()
+        .bodyJson()
+        .extractingPath("$.customerName")
+        .isEqualTo("Customer 2");
+    assertThat(get(ofExpert1, SeedData.EXPERT_2))
+        .hasStatusOk()
+        .bodyJson()
+        .extractingPath("$.customerName")
+        .isEqualTo("Expert 1");
+  }
+
+  @Test
+  void answersUnknownAndMalformedIdsWithNotFoundAndBadRequest() {
+    assertThat(get("00000000-0000-0000-0000-000000000000", SeedData.EXPERT_2))
+        .hasStatus(HttpStatus.NOT_FOUND)
+        .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .bodyJson()
+        .extractingPath("$.detail")
+        .isEqualTo("Case 00000000-0000-0000-0000-000000000000 not found.");
+    assertThat(get("not-a-uuid", SeedData.EXPERT_2))
+        .hasStatus(HttpStatus.BAD_REQUEST)
+        .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .bodyJson()
+        .extractingPath("$.status")
+        .isEqualTo(400);
+  }
+
   private MvcTestResult asAdmin(MockMvcTester.MockMvcRequestBuilder request) {
     return request.with(LoggedIn.as(SeedData.ADMIN_1, Role.ADMIN)).with(Csrf.token()).exchange();
   }

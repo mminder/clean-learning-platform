@@ -1171,6 +1171,53 @@
         "tags" : [ "expert-consultation-case-controller" ]
       }
     },
+    "/api/expert/consultation-cases/{id}" : {
+      "get" : {
+        "operationId" : "getExpertConsultationCase",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ExpertConsultationCaseResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "expert-consultation-case-controller" ]
+      }
+    },
     "/api/images/{id}" : {
       "get" : {
         "operationId" : "getImage",
@@ -1932,6 +1979,92 @@
           }
         },
         "required" : [ "end", "id", "start", "status" ]
+      },
+      "ExpertCancelledAppointmentResponse" : {
+        "type" : "object",
+        "properties" : {
+          "creditRefunded" : {
+            "type" : "boolean"
+          },
+          "end" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "start" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "creditRefunded", "end", "id", "start" ]
+      },
+      "ExpertConsultationCaseResponse" : {
+        "type" : "object",
+        "properties" : {
+          "cancellationDeadlineHours" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "cancelledAppointments" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ExpertCancelledAppointmentResponse"
+            }
+          },
+          "cancelledAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "customerEmail" : {
+            "type" : "string"
+          },
+          "customerName" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "offeringName" : {
+            "type" : "string"
+          },
+          "openCredits" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pastAppointments" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ExpertAppointmentResponse"
+            }
+          },
+          "purchasedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "sessionCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "sessionDurationMinutes" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalCredits" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "upcomingAppointments" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ExpertAppointmentResponse"
+            }
+          }
+        },
+        "required" : [ "cancellationDeadlineHours", "cancelledAppointments", "customerEmail", "customerName", "id", "offeringName", "openCredits", "pastAppointments", "purchasedAt", "sessionCount", "sessionDurationMinutes", "totalCredits", "upcomingAppointments" ]
       },
       "ExpertConsultationCaseSummaryResponse" : {
         "type" : "object",

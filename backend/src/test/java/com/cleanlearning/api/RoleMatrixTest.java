@@ -200,6 +200,10 @@ class RoleMatrixTest {
               """,
               Access.EXPERT),
           Route.of(GET, "/api/expert/consultation-cases", Access.EXPERT),
+          Route.of(
+              GET,
+              "/api/expert/consultation-cases/" + UNKNOWN_ID,
+              Access.EXPERT), // unknown id: 404
           Route.of(GET, "/api/images/" + UNKNOWN_ID, Access.PUBLIC), // unknown id: 404
           Route.of(
               HEAD, "/api/images/" + UNKNOWN_ID, Access.PUBLIC), // the GET route answers HEAD, too

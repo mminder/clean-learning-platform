@@ -260,6 +260,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/expert/consultation-cases/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getExpertConsultationCase"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/images/{id}": {
         parameters: {
             query?: never;
@@ -561,6 +577,39 @@ export interface components {
             start: string;
             /** @enum {string} */
             status: "BOOKED" | "CONSUMED";
+        };
+        ExpertCancelledAppointmentResponse: {
+            creditRefunded: boolean;
+            /** Format: date-time */
+            end: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            start: string;
+        };
+        ExpertConsultationCaseResponse: {
+            /** Format: int32 */
+            cancellationDeadlineHours: number;
+            cancelledAppointments: components["schemas"]["ExpertCancelledAppointmentResponse"][];
+            /** Format: date-time */
+            cancelledAt?: string | null;
+            customerEmail: string;
+            customerName: string;
+            /** Format: uuid */
+            id: string;
+            offeringName: string;
+            /** Format: int32 */
+            openCredits: number;
+            pastAppointments: components["schemas"]["ExpertAppointmentResponse"][];
+            /** Format: date-time */
+            purchasedAt: string;
+            /** Format: int32 */
+            sessionCount: number;
+            /** Format: int32 */
+            sessionDurationMinutes: number;
+            /** Format: int32 */
+            totalCredits: number;
+            upcomingAppointments: components["schemas"]["ExpertAppointmentResponse"][];
         };
         ExpertConsultationCaseSummaryResponse: {
             /** Format: date-time */
@@ -1665,6 +1714,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExpertConsultationCaseSummaryResponse"][];
+                };
+            };
+        };
+    };
+    getExpertConsultationCase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpertConsultationCaseResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };

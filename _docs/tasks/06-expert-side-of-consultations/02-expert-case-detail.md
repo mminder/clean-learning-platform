@@ -5,7 +5,7 @@
 | Increment | [06 The expert's side of consultations](../../specs/06-expert-side-of-consultations.md) |
 | Type | AFK |
 | Blocked by | [01](01-my-cases.md) |
-| Status | Todo |
+| Status | Done |
 
 ## Goal
 
@@ -26,14 +26,14 @@ Work in this order, test first:
 
 ## Acceptance criteria
 
-- [ ] The detail shows the customer's name and email, the offering, "3 sessions", the session duration, the cancellation deadline, the purchase time and the credits (REST and Playwright).
-- [ ] The response has no price paid and no refund outcome: the body of an active and of a cancelled case contains neither `pricePaid` nor `refundEligible` (REST).
-- [ ] An upcoming appointment is listed soonest first, and a running one as `CONSUMED` among the upcoming ones, with "Now"; a past one is "Consumed"; a cancelled one says "Cancelled, credit refunded" or "Cancelled, credit forfeited", newest first (REST, domain and Playwright).
-- [ ] A cancelled case says "Cancelled on <date, time> (Zurich time)" in place of the credits, without a refund outcome, and lists the appointments cancelled with it among the cancelled ones (REST and Playwright).
-- [ ] Expert 1 on Customer 1's case, which has Expert 2, gets 404, like an unknown id; the page says "Case not found" (REST and Playwright).
-- [ ] The customer's detail of the same case still shows no cancelled appointment (the existing tests pass unchanged).
-- [ ] `/expert/cases/:id` shows "Page not found" to a user without `EXPERT`; the role matrix has the route.
-- [ ] `openapi.json` and `schema.d.ts` have the route; every check passes.
+- [x] The detail shows the customer's name and email, the offering, "3 sessions", the session duration, the cancellation deadline, the purchase time and the credits (REST and Playwright).
+- [x] The response has no price paid and no refund outcome: the body of an active and of a cancelled case contains neither `pricePaid` nor `refundEligible` (REST).
+- [x] An upcoming appointment is listed soonest first, and a running one as `CONSUMED` among the upcoming ones, with "Now"; a past one is "Consumed"; a cancelled one says "Cancelled, credit refunded" or "Cancelled, credit forfeited", newest first (REST, domain and Playwright).
+- [x] A cancelled case says "Cancelled on <date, time> (Zurich time)" in place of the credits, without a refund outcome, and lists the appointments cancelled with it among the cancelled ones (REST and Playwright).
+- [x] Expert 1 on Customer 1's case, which has Expert 2, gets 404, like an unknown id; the page says "Case not found" (REST and Playwright).
+- [x] The customer's detail of the same case still shows no cancelled appointment (the existing tests pass unchanged).
+- [x] `/expert/cases/:id` shows "Page not found" to a user without `EXPERT`; the role matrix has the route.
+- [x] `openapi.json` and `schema.d.ts` have the route; every check passes.
 
 ## Tests
 
@@ -49,3 +49,8 @@ Work in this order, test first:
 - The admin's case detail: UC-18.
 
 ## Notes
+
+- The check by hand ran a Playwright script (Playwright from the npx cache, not a project dependency) against the Vite dev server and the backend with the `poc` profile. The dev database already had Customer 1's case with Expert 1, so the check used Customer 2 with Expert 2: a test offering with a 72-hour deadline (an appointment cancelled late, one cancelled in time, an upcoming one) and a Career Coaching case cancelled with an appointment in it, all through the API; one appointment was moved to now ("Now") and one into the past ("Consumed") with SQL. Expert 1 on Expert 2's case, Expert 2 on Expert 1's existing case and a malformed id read "Case not found"; Customer 2 on `/expert/cases/:id` reads "Page not found". The added rows were deleted afterwards.
+- The ownership test also covers an expert who is a case's customer (Expert 1 bought, Expert 2 is assigned: 404 for Expert 1 on the expert's route) and a case without an expert (404 for both). Removing the expert from the query's `where` makes it fail.
+- The cancelled appointments sort by start descending, then by id as text ascending, as the plan words it; `CaseCredits.pastAppointments` breaks its ties by id descending.
+- `ExpertConsultationCasePage` has its own small `Term`, `Appointments` and `AppointmentItem`, copies of `ConsultationCasePage`'s, rather than sharing them: sharing would have meant changing the customer's page in this task. They could move into one file when 03 or 07 touches both pages.

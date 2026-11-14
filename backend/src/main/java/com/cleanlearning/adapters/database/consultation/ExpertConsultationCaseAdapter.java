@@ -1,12 +1,17 @@
 package com.cleanlearning.adapters.database.consultation;
 
 import com.cleanlearning.adapters.database.consultation.entity.AppointmentEntity;
+import com.cleanlearning.adapters.database.consultation.row.ExpertConsultationCaseRow;
 import com.cleanlearning.adapters.database.consultation.row.ExpertConsultationCaseSummaryRow;
+import com.cleanlearning.application.consultation.port.LoadExpertConsultationCasePort;
 import com.cleanlearning.application.consultation.port.LoadExpertConsultationCasesPort;
 import com.cleanlearning.domain.consultation.CaseInList;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
+import com.cleanlearning.domain.consultation.view.ExpertConsultationCase;
 import com.cleanlearning.domain.consultation.view.ExpertConsultationCaseSummary;
+import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import com.cleanlearning.domain.offering.value.OfferingName;
+import com.cleanlearning.domain.offering.value.SessionDuration;
 import com.cleanlearning.domain.user.value.UserId;
 import java.time.Instant;
 import java.util.List;
@@ -18,12 +23,21 @@ import org.springframework.stereotype.Component;
 
 /** The cases as their assigned expert sees them: every query is scoped to the expert in SQL. */
 @Component
-class ExpertConsultationCaseAdapter implements LoadExpertConsultationCasesPort {
+class ExpertConsultationCaseAdapter
+    implements LoadExpertConsultationCasePort, LoadExpertConsultationCasesPort {
 
   private final ConsultationCaseRepository repository;
 
   ExpertConsultationCaseAdapter(ConsultationCaseRepository repository) {
     this.repository = repository;
+  }
+
+  @Override
+  public Optional<ExpertConsultationCase> load(
+      ConsultationCaseId id, UserId expertId, Instant asOf) {
+    return repository
+        .findExpertCase(id.value(), expertId.value())
+        .map(row -> toExpertConsultationCase(row, repository.findAppointments(row.id()), asOf));
   }
 
   @Override
@@ -36,6 +50,21 @@ class ExpertConsultationCaseAdapter implements LoadExpertConsultationCasesPort {
             toExpertConsultationCaseSummary(
                 row, appointmentsByCase.getOrDefault(row.id(), List.of()), asOf))
         .toList();
+  }
+
+  private static ExpertConsultationCase toExpertConsultationCase(
+      ExpertConsultationCaseRow row, List<AppointmentEntity> appointments, Instant asOf) {
+    return new ExpertConsultationCase(
+        new ConsultationCaseId(row.id()),
+        row.customerName(),
+        row.customerEmail(),
+        new OfferingName(row.offeringName()),
+        new SessionDuration(row.sessionDurationMinutes()),
+        new CancellationDeadline(row.cancellationDeadlineHours()),
+        row.purchasedAt(),
+        ConsultationCaseMapper.toCaseCredits(row.sessionCount(), appointments),
+        Optional.ofNullable(row.cancelledAt()),
+        asOf);
   }
 
   private static ExpertConsultationCaseSummary toExpertConsultationCaseSummary(

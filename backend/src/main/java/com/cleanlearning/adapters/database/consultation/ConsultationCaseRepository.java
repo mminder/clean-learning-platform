@@ -4,6 +4,7 @@ import com.cleanlearning.adapters.database.consultation.entity.AppointmentEntity
 import com.cleanlearning.adapters.database.consultation.entity.ConsultationCaseEntity;
 import com.cleanlearning.adapters.database.consultation.row.CustomerConsultationCaseRow;
 import com.cleanlearning.adapters.database.consultation.row.CustomerConsultationCaseSummaryRow;
+import com.cleanlearning.adapters.database.consultation.row.ExpertConsultationCaseRow;
 import com.cleanlearning.adapters.database.consultation.row.ExpertConsultationCaseSummaryRow;
 import com.cleanlearning.adapters.database.offering.entity.ConsultationPackageEntity;
 import com.cleanlearning.adapters.database.offering.row.EligibleExpertRow;
@@ -61,6 +62,23 @@ interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, 
       where c.assignedExpertId = :expertId
       """)
   List<ExpertConsultationCaseSummaryRow> findExpertCases(UUID expertId);
+
+  /**
+   * In every status of the offering and of the case. Scoped to the assigned expert in SQL, so
+   * another expert's case and a case without an expert aren't found. No price paid and no refund
+   * outcome (D-18).
+   */
+  @Query(
+      """
+      select new com.cleanlearning.adapters.database.consultation.row.ExpertConsultationCaseRow(
+          c.id, u.name, u.email, o.name, c.sessionCount, c.sessionDurationMinutes,
+          c.cancellationDeadlineHours, c.purchasedAt, c.cancelledAt)
+      from ConsultationCaseEntity c
+      join OfferingEntity o on o.id = c.consultationOfferingId
+      join UserEntity u on u.id = c.customerId
+      where c.id = :id and c.assignedExpertId = :expertId
+      """)
+  Optional<ExpertConsultationCaseRow> findExpertCase(UUID id, UUID expertId);
 
   @Query(
       "select p from ConsultationPackageEntity p where p.consultationOfferingId = :consultationOfferingId")
