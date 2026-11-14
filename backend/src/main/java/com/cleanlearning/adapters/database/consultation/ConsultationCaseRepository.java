@@ -4,6 +4,7 @@ import com.cleanlearning.adapters.database.consultation.entity.AppointmentEntity
 import com.cleanlearning.adapters.database.consultation.entity.ConsultationCaseEntity;
 import com.cleanlearning.adapters.database.consultation.row.CustomerConsultationCaseRow;
 import com.cleanlearning.adapters.database.consultation.row.CustomerConsultationCaseSummaryRow;
+import com.cleanlearning.adapters.database.consultation.row.ExpertConsultationCaseSummaryRow;
 import com.cleanlearning.adapters.database.offering.entity.ConsultationPackageEntity;
 import com.cleanlearning.adapters.database.offering.row.EligibleExpertRow;
 import jakarta.persistence.LockModeType;
@@ -46,6 +47,21 @@ interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, 
       """)
   List<CustomerConsultationCaseSummaryRow> findCustomerCases(UUID customerId);
 
+  /**
+   * In no particular order: the use case sorts them (D-17). Scoped to the assigned expert in SQL,
+   * so a case without an expert is in no expert's list.
+   */
+  @Query(
+      """
+      select new com.cleanlearning.adapters.database.consultation.row.ExpertConsultationCaseSummaryRow(
+          c.id, u.name, o.name, c.sessionCount, c.purchasedAt, c.cancelledAt)
+      from ConsultationCaseEntity c
+      join OfferingEntity o on o.id = c.consultationOfferingId
+      join UserEntity u on u.id = c.customerId
+      where c.assignedExpertId = :expertId
+      """)
+  List<ExpertConsultationCaseSummaryRow> findExpertCases(UUID expertId);
+
   @Query(
       "select p from ConsultationPackageEntity p where p.consultationOfferingId = :consultationOfferingId")
   List<ConsultationPackageEntity> findPackageEntities(UUID consultationOfferingId);
@@ -71,6 +87,15 @@ interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, 
       where c.customerId = :customerId
       """)
   List<AppointmentEntity> findAppointmentsOfCustomer(UUID customerId);
+
+  /** Every appointment, booked and cancelled, of the cases whose assigned expert this is. */
+  @Query(
+      """
+      select a from AppointmentEntity a
+      join ConsultationCaseEntity c on c.id = a.consultationCaseId
+      where c.assignedExpertId = :expertId
+      """)
+  List<AppointmentEntity> findAppointmentsOfExpertCases(UUID expertId);
 
   @Query(
       """

@@ -244,6 +244,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/expert/consultation-cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listExpertConsultationCases"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/images/{id}": {
         parameters: {
             query?: never;
@@ -535,6 +551,33 @@ export interface components {
             displayName: string;
             /** Format: uuid */
             id: string;
+        };
+        ExpertAppointmentResponse: {
+            /** Format: date-time */
+            end: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            start: string;
+            /** @enum {string} */
+            status: "BOOKED" | "CONSUMED";
+        };
+        ExpertConsultationCaseSummaryResponse: {
+            /** Format: date-time */
+            cancelledAt?: string | null;
+            customerName: string;
+            /** @enum {string} */
+            group: "UPCOMING" | "NEEDS_BOOKING" | "PAST";
+            /** Format: uuid */
+            id: string;
+            nextAppointment?: components["schemas"]["ExpertAppointmentResponse"] | null;
+            offeringName: string;
+            /** Format: int32 */
+            openCredits: number;
+            /** Format: date-time */
+            purchasedAt: string;
+            /** Format: int32 */
+            totalCredits: number;
         };
         ExpertResponse: {
             displayName: string;
@@ -1602,6 +1645,26 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    listExpertConsultationCases: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpertConsultationCaseSummaryResponse"][];
                 };
             };
         };

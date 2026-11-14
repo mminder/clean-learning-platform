@@ -199,6 +199,7 @@ class RoleMatrixTest {
               {"dates": ["2000-01-03"], "timeRanges": []}\
               """,
               Access.EXPERT),
+          Route.of(GET, "/api/expert/consultation-cases", Access.EXPERT),
           Route.of(GET, "/api/images/" + UNKNOWN_ID, Access.PUBLIC), // unknown id: 404
           Route.of(
               HEAD, "/api/images/" + UNKNOWN_ID, Access.PUBLIC), // the GET route answers HEAD, too

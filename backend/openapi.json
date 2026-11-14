@@ -1150,6 +1150,27 @@
         "tags" : [ "availability-controller" ]
       }
     },
+    "/api/expert/consultation-cases" : {
+      "get" : {
+        "operationId" : "listExpertConsultationCases",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ExpertConsultationCaseSummaryResponse"
+                  }
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "expert-consultation-case-controller" ]
+      }
+    },
     "/api/images/{id}" : {
       "get" : {
         "operationId" : "getImage",
@@ -1889,6 +1910,71 @@
           }
         },
         "required" : [ "bio", "displayName", "id" ]
+      },
+      "ExpertAppointmentResponse" : {
+        "type" : "object",
+        "properties" : {
+          "end" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "start" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "BOOKED", "CONSUMED" ]
+          }
+        },
+        "required" : [ "end", "id", "start", "status" ]
+      },
+      "ExpertConsultationCaseSummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "cancelledAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "customerName" : {
+            "type" : "string"
+          },
+          "group" : {
+            "type" : "string",
+            "enum" : [ "UPCOMING", "NEEDS_BOOKING", "PAST" ]
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "nextAppointment" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ExpertAppointmentResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "offeringName" : {
+            "type" : "string"
+          },
+          "openCredits" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "purchasedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "totalCredits" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "customerName", "group", "id", "offeringName", "openCredits", "purchasedAt", "totalCredits" ]
       },
       "ExpertResponse" : {
         "type" : "object",

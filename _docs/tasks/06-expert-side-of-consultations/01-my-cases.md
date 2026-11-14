@@ -5,7 +5,7 @@
 | Increment | [06 The expert's side of consultations](../../specs/06-expert-side-of-consultations.md) |
 | Type | AFK |
 | Blocked by | – |
-| Status | Todo |
+| Status | Done |
 
 ## Goal
 
@@ -32,16 +32,16 @@ Work in this order, test first:
 
 ## Acceptance criteria
 
-- [ ] Expert 1 and Expert 2 land on **My cases** after login; Admin 1 still lands on **Consultations** and Customer 1 on **My purchases**; a login started from **Buy** still returns there (Vitest and Playwright).
-- [ ] The header shows **My cases** before **Availability** for a user with `EXPERT`, and not for one without.
-- [ ] Expert 2's list has Customer 1's case and not Customer 2's case with Expert 1; a case without an expert is in neither expert's list (REST).
-- [ ] A case with an upcoming appointment is `UPCOMING`, also while the appointment runs; an active case with open credits and nothing upcoming is `NEEDS_BOOKING`; a completed and a cancelled case are `PAST`; the answer is in the page's order (REST).
-- [ ] A card shows the customer's name, the offering's name, the next appointment in Zurich time and "2 of 3 credits open"; a cancelled case's card says "Cancelled" instead (Playwright).
-- [ ] An expert without cases reads "No cases yet. A case appears here once a customer books you."
-- [ ] A case stays on its expert's list after an admin removed the expert from the offering's eligible experts (REST, on a test offering, not the seeded one).
-- [ ] Expert 1, who bought and booked themself, has the case on **My cases**, with "Expert 1" as the customer, and on **My purchases** (REST).
-- [ ] `/expert/cases` shows "Page not found" to a user without `EXPERT`; the route answers 401 without a login and 403 without the role (role matrix).
-- [ ] `openapi.json` and `schema.d.ts` have the route; every check passes.
+- [x] Expert 1 and Expert 2 land on **My cases** after login; Admin 1 still lands on **Consultations** and Customer 1 on **My purchases**; a login started from **Buy** still returns there (Vitest and Playwright).
+- [x] The header shows **My cases** before **Availability** for a user with `EXPERT`, and not for one without.
+- [x] Expert 2's list has Customer 1's case and not Customer 2's case with Expert 1; a case without an expert is in neither expert's list (REST).
+- [x] A case with an upcoming appointment is `UPCOMING`, also while the appointment runs; an active case with open credits and nothing upcoming is `NEEDS_BOOKING`; a completed and a cancelled case are `PAST`; the answer is in the page's order (REST).
+- [x] A card shows the customer's name, the offering's name, the next appointment in Zurich time and "2 of 3 credits open"; a cancelled case's card says "Cancelled" instead (Playwright).
+- [x] An expert without cases reads "No cases yet. A case appears here once a customer books you."
+- [x] A case stays on its expert's list after an admin removed the expert from the offering's eligible experts (REST, on a test offering, not the seeded one).
+- [x] Expert 1, who bought and booked themself, has the case on **My cases**, with "Expert 1" as the customer, and on **My purchases** (REST).
+- [x] `/expert/cases` shows "Page not found" to a user without `EXPERT`; the route answers 401 without a login and 403 without the role (role matrix).
+- [x] `openapi.json` and `schema.d.ts` have the route; every check passes.
 
 ## Tests
 
@@ -57,3 +57,6 @@ Work in this order, test first:
 - **My trainings** (UC-12) and the admin's **Cases** (UC-18): later increments.
 
 ## Notes
+
+- The check by hand ran a Playwright script (Playwright from the npx cache, not a project dependency) against the Vite dev server and the backend with the `poc` profile. The cases in each group were bought and booked through the API as Customer 2 with Expert 2, then their appointments moved into the past or to now with SQL in the dev database, and deleted afterwards. The empty text was checked with the list's answer replaced by `[]` in the browser, since Expert 2 had cases by then.
+- `CaseGroups` types the group as `CustomerConsultationCaseSummary['group']`: both responses have the same `PurchaseGroup` enum.

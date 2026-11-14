@@ -2,20 +2,23 @@ import { describe, expect, it } from 'vitest'
 import { isLocalPath, landingPath, pathAfterLogin } from './landing'
 
 describe('landingPath', () => {
-  it('is My purchases for a user with CUSTOMER, until the expert has a landing page', () => {
-    expect(landingPath(['CUSTOMER'])).toBe('/my')
-    expect(landingPath(['CUSTOMER', 'EXPERT'])).toBe('/my')
+  it('is My cases for a user with EXPERT, before ADMIN and CUSTOMER', () => {
+    expect(landingPath(['EXPERT'])).toBe('/expert/cases')
+    expect(landingPath(['EXPERT', 'ADMIN'])).toBe('/expert/cases')
+    expect(landingPath(['CUSTOMER', 'EXPERT'])).toBe('/expert/cases')
   })
 
-  it('is the shop for a user with neither ADMIN nor CUSTOMER', () => {
-    expect(landingPath(['EXPERT'])).toBe('/')
-    expect(landingPath([])).toBe('/')
-  })
-
-  it('is the consultation offerings for a user with ADMIN, before CUSTOMER', () => {
+  it('is the consultation offerings for a user with ADMIN and without EXPERT, before CUSTOMER', () => {
     expect(landingPath(['ADMIN'])).toBe('/admin/consultations')
-    expect(landingPath(['EXPERT', 'ADMIN'])).toBe('/admin/consultations')
     expect(landingPath(['CUSTOMER', 'ADMIN'])).toBe('/admin/consultations')
+  })
+
+  it('is My purchases for a user with only CUSTOMER', () => {
+    expect(landingPath(['CUSTOMER'])).toBe('/my')
+  })
+
+  it('is the shop for a user without any of the roles', () => {
+    expect(landingPath([])).toBe('/')
   })
 })
 
@@ -49,6 +52,7 @@ describe('pathAfterLogin', () => {
 
   it('opens the landing page without a redirect or with another site', () => {
     expect(pathAfterLogin(null, ['ADMIN'])).toBe('/admin/consultations')
+    expect(pathAfterLogin(null, ['EXPERT', 'ADMIN'])).toBe('/expert/cases')
     expect(pathAfterLogin('//example.com', ['CUSTOMER'])).toBe('/my')
   })
 })

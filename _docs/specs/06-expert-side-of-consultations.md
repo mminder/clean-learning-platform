@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | Ready |
+| Status | In progress |
 | Use cases | [UC-11](../use-cases/uc-11-view-my-consultation-cases.md), all steps; [UC-15](../use-cases/uc-15-take-consultation-notes.md), all steps; [UC-14](../use-cases/uc-14-manage-expert-profile.md), all steps; [UC-10](../use-cases/uc-10-join-call.md), for consultation appointments; [UC-05](../use-cases/uc-05-view-my-purchases.md), the expert's photo, **Join** and the public notes on the case detail; [UC-06](../use-cases/uc-06-book-consultation-appointment.md) and [UC-02](../use-cases/uc-02-browse-shop.md), the expert's photo in the expert picker and on the offering detail; [UC-01](../use-cases/uc-01-login.md), the expert's landing page |
 | Tasks | [tasks/06-expert-side-of-consultations](../tasks/06-expert-side-of-consultations/README.md) |
 
