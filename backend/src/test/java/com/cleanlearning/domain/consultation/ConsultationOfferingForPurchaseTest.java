@@ -3,7 +3,7 @@ package com.cleanlearning.domain.consultation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
-import com.cleanlearning.domain.consultation.change.NewConsultationCase;
+import com.cleanlearning.domain.consultation.outcome.NewConsultationCase;
 import com.cleanlearning.domain.consultation.value.PurchaseTerms;
 import com.cleanlearning.domain.offering.ConsultationPackage;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;

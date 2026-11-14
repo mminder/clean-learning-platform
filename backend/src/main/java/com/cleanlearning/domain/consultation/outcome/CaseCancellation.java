@@ -1,4 +1,4 @@
-package com.cleanlearning.domain.consultation.change;
+package com.cleanlearning.domain.consultation.outcome;
 
 import com.cleanlearning.domain.consultation.value.CancellationOutcome;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;

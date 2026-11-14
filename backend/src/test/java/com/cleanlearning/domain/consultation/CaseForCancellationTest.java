@@ -5,8 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
-import com.cleanlearning.domain.consultation.change.AppointmentCancellation;
-import com.cleanlearning.domain.consultation.change.CaseCancellation;
+import com.cleanlearning.domain.consultation.outcome.AppointmentCancellation;
+import com.cleanlearning.domain.consultation.outcome.CaseCancellation;
 import com.cleanlearning.domain.consultation.value.AppointmentId;
 import com.cleanlearning.domain.consultation.value.CancellationOutcome;
 import com.cleanlearning.domain.consultation.value.CaseStatus;

@@ -8,7 +8,7 @@ import com.cleanlearning.application.consultation.port.SaveBookingPort;
 import com.cleanlearning.application.user.port.LockExpertPort;
 import com.cleanlearning.domain.consultation.CaseForBooking;
 import com.cleanlearning.domain.consultation.SlotFinder;
-import com.cleanlearning.domain.consultation.change.Booking;
+import com.cleanlearning.domain.consultation.outcome.Booking;
 import com.cleanlearning.domain.consultation.value.BusyTime;
 import com.cleanlearning.domain.consultation.view.CustomerAppointment;
 import com.cleanlearning.domain.shared.BusinessRuleException;

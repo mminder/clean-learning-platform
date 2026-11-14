@@ -1,6 +1,6 @@
 package com.cleanlearning.application.consultation.port;
 
-import com.cleanlearning.domain.consultation.change.Booking;
+import com.cleanlearning.domain.consultation.outcome.Booking;
 
 public interface SaveBookingPort {
 

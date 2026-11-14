@@ -1,6 +1,6 @@
 package com.cleanlearning.application.consultation.port;
 
-import com.cleanlearning.domain.consultation.change.NewConsultationCase;
+import com.cleanlearning.domain.consultation.outcome.NewConsultationCase;
 
 public interface SaveConsultationCasePort {
 

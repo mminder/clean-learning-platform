@@ -1,6 +1,6 @@
 package com.cleanlearning.domain.consultation;
 
-import com.cleanlearning.domain.consultation.change.Booking;
+import com.cleanlearning.domain.consultation.outcome.Booking;
 import com.cleanlearning.domain.consultation.value.AppointmentId;
 import com.cleanlearning.domain.consultation.value.BookableSlot;
 import com.cleanlearning.domain.consultation.value.CaseStatus;

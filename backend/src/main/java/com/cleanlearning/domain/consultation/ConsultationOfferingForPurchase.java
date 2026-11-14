@@ -1,6 +1,6 @@
 package com.cleanlearning.domain.consultation;
 
-import com.cleanlearning.domain.consultation.change.NewConsultationCase;
+import com.cleanlearning.domain.consultation.outcome.NewConsultationCase;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.consultation.value.PurchaseTerms;
 import com.cleanlearning.domain.offering.ConsultationPackage;

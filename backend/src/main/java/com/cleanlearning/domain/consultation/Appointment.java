@@ -1,6 +1,6 @@
 package com.cleanlearning.domain.consultation;
 
-import com.cleanlearning.domain.consultation.change.AppointmentCancellation;
+import com.cleanlearning.domain.consultation.outcome.AppointmentCancellation;
 import com.cleanlearning.domain.consultation.value.AppointmentId;
 import com.cleanlearning.domain.consultation.value.AppointmentStatus;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;

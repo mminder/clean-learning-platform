@@ -6,7 +6,7 @@ import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 import com.cleanlearning.domain.availability.Availability;
 import com.cleanlearning.domain.availability.value.TimeRange;
-import com.cleanlearning.domain.consultation.change.Booking;
+import com.cleanlearning.domain.consultation.outcome.Booking;
 import com.cleanlearning.domain.consultation.value.BookableSlot;
 import com.cleanlearning.domain.consultation.value.BusyTime;
 import com.cleanlearning.domain.consultation.value.CaseStatus;
