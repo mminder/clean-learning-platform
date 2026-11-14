@@ -32,9 +32,9 @@ com.cleanlearning
 │  ├─ availability
 │  ├─ user
 │  └─ image
-├─ domain                     models (change/, view/, value/ below), no framework imports
+├─ domain                     models (outcome/, view/, value/ below), no framework imports
 │  ├─ shared                  NotFoundException, BusinessTimeZone; value: Money, ...
-│  ├─ consultation            e.g. SlotFinder, CaseCredits; change: Booking; view: CustomerAppointment
+│  ├─ consultation            e.g. SlotFinder, CaseCredits; outcome: Booking; view: CustomerAppointment
 │  ├─ training
 │  ├─ offering
 │  ├─ availability
