@@ -7,10 +7,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 /**
- * The authentication a login keeps in the session: the {@link CurrentUser} as the principal, which
- * controllers take with {@code @AuthenticationPrincipal}, and its roles as the authorities {@code
- * ROLE_CUSTOMER}, {@code ROLE_EXPERT} and {@code ROLE_ADMIN}, which {@code SecurityConfig} and the
- * controllers' {@code @PreAuthorize} check.
+ * The roles are the authorities {@code ROLE_CUSTOMER}, {@code ROLE_EXPERT} and {@code ROLE_ADMIN},
+ * which {@code SecurityConfig} and {@code @PreAuthorize} check.
  */
 public final class CurrentUserAuthentication {
 

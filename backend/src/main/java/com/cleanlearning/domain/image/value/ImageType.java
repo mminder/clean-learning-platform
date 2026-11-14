@@ -1,10 +1,10 @@
 package com.cleanlearning.domain.image.value;
 
+import com.cleanlearning.domain.shared.InvalidValueException;
 import java.util.Arrays;
 
 /**
- * The types an image may have (D-21), each with its content type. The type is detected from the
- * file's first bytes, its signature, never from its name or the content type the browser declared.
+ * Detected from the file's signature, never from its name or the content type the browser declared.
  */
 public enum ImageType {
   JPEG("image/jpeg"),
@@ -32,10 +32,6 @@ public enum ImageType {
     return contentType;
   }
 
-  /**
-   * @throws IllegalArgumentException if the bytes don't start with the signature of a JPEG, PNG or
-   *     WebP file
-   */
   public static ImageType detect(byte[] bytes) {
     if (startsWith(bytes, 0, JPEG_SIGNATURE)) {
       return JPEG;
@@ -46,12 +42,9 @@ public enum ImageType {
     if (startsWith(bytes, 0, RIFF) && startsWith(bytes, 8, WEBP_FORM)) {
       return WEBP;
     }
-    throw new IllegalArgumentException(NOT_AN_IMAGE);
+    throw new InvalidValueException(NOT_AN_IMAGE);
   }
 
-  /**
-   * @throws IllegalArgumentException if no type has this content type
-   */
   public static ImageType ofContentType(String contentType) {
     return Arrays.stream(values())
         .filter(type -> type.contentType.equals(contentType))

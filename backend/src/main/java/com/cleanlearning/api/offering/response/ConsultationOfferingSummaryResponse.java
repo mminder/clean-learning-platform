@@ -4,7 +4,6 @@ import com.cleanlearning.domain.offering.value.OfferingStatus;
 import com.cleanlearning.domain.offering.view.ConsultationOfferingSummary;
 import java.util.UUID;
 
-/** A row of the admin's list of consultation offerings. */
 public record ConsultationOfferingSummaryResponse(
     UUID id, String name, OfferingStatus status, int packageCount, int eligibleExpertCount) {
 

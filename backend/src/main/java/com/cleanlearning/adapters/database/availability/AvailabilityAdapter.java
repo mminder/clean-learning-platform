@@ -13,7 +13,6 @@ import java.util.TreeSet;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
 
-/** An expert's availability (UC-13): their dates and their daily time ranges. */
 @Component
 class AvailabilityAdapter implements LoadAvailabilityPort, ReplaceAvailabilityPort {
 
@@ -36,11 +35,10 @@ class AvailabilityAdapter implements LoadAvailabilityPort, ReplaceAvailabilityPo
   }
 
   /**
-   * Deletes with bulk {@code delete} statements, then persists the new rows. Unlike the offering's
-   * packages, the rows aren't written as a difference: the availability is replaced as a whole on
-   * every save, and nothing refers to its rows. And Hibernate flushes inserts before deletes, so
-   * removing entities and persisting rows with the same keys in one flush would fail with a
-   * duplicate key; a bulk delete runs at once.
+   * Bulk deletes, then persists the new rows: Hibernate flushes inserts before deletes, so removing
+   * entities and persisting rows with the same keys in one flush would fail with a duplicate key; a
+   * bulk delete runs at once. The availability is replaced as a whole, so there is no difference to
+   * write.
    */
   @Override
   public void replaceFrom(UserId expertId, LocalDate from, Availability availability) {

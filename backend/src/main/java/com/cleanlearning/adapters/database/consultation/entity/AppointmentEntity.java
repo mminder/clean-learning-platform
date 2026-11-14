@@ -9,11 +9,6 @@ import java.time.Instant;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
-/**
- * Its expert is its case's assigned expert. The status is a {@link StoredAppointmentStatus}; a
- * booking writes {@code BOOKED}, and a cancellation changes it to {@code CANCELLED} with {@code
- * creditRefunded}.
- */
 @Entity
 @Table(name = "appointment")
 public class AppointmentEntity {
@@ -29,12 +24,10 @@ public class AppointmentEntity {
   @Enumerated(EnumType.STRING)
   private StoredAppointmentStatus status;
 
-  // Whether the cancellation refunded the credit; null while BOOKED (UC-07).
+  // Null while BOOKED.
   private @Nullable Boolean creditRefunded;
 
-  protected AppointmentEntity() {
-    // for JPA
-  }
+  protected AppointmentEntity() {}
 
   public AppointmentEntity(
       UUID id,

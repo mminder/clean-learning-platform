@@ -10,10 +10,7 @@ import org.springframework.data.repository.Repository;
 
 interface UserRepository extends Repository<UserEntity, UUID> {
 
-  /**
-   * Every user with their roles in one query, sorted by name, so the rows of one user are next to
-   * each other.
-   */
+  /** Sorted by name, so the rows of one user are next to each other. */
   @Query(
       """
       select new com.cleanlearning.adapters.database.user.row.UserRoleRow(u.id, u.name, u.email, r.role)
@@ -23,7 +20,6 @@ interface UserRepository extends Repository<UserEntity, UUID> {
       """)
   List<UserRoleRow> findAllWithRoles();
 
-  /** The user with their roles in one query: a row per role. */
   @Query(
       """
       select new com.cleanlearning.adapters.database.user.row.UserRoleRow(u.id, u.name, u.email, r.role)
@@ -33,10 +29,6 @@ interface UserRepository extends Repository<UserEntity, UUID> {
       """)
   List<UserRoleRow> findWithRoles(UUID id);
 
-  /**
-   * The users with {@code EXPERT} that have an expert profile, in one query, sorted by display name
-   * (the column is ICU-collated, so alphabetically), then id.
-   */
   @Query(
       """
       select new com.cleanlearning.adapters.database.user.row.ExpertRow(p.userId, p.displayName)

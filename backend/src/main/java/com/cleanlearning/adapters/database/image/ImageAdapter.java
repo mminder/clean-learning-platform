@@ -9,10 +9,7 @@ import jakarta.persistence.EntityManager;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
 
-/**
- * The images in the {@code image} table (D-21). The application sets the id, so a new image is
- * persisted, not merged.
- */
+/** The application sets the id, so a new image is persisted, not merged. */
 @Component
 class ImageAdapter implements ImageStorePort {
 
@@ -35,9 +32,9 @@ class ImageAdapter implements ImageStorePort {
   }
 
   /**
-   * Removes the managed entity, which the transaction deletes when it commits, after the inserts
-   * and updates and after the deletes removed before it. So an offering that pointed at the image
-   * points elsewhere by then, or is deleted first.
+   * The transaction deletes the entity when it commits, after the inserts and updates and after
+   * earlier deletes, so an offering that pointed at the image points elsewhere by then, or is
+   * deleted first.
    */
   @Override
   public void delete(ImageId id) {

@@ -11,10 +11,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * The logged-in user (UC-01). Without a login, {@code @PreAuthorize} stops the call and security
- * answers 401.
- */
 @RestController
 @PreAuthorize("isAuthenticated()")
 class MeController {
@@ -25,7 +21,6 @@ class MeController {
     this.getCurrentUser = getCurrentUser;
   }
 
-  /** 404 if the session's user no longer exists. */
   @GetMapping("/api/me")
   @ResponseStatus(HttpStatus.OK)
   @ProblemResponses.Status404

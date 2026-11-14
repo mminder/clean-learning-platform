@@ -11,7 +11,6 @@ import java.util.TreeSet;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** UC-13 steps 4–5: the expert saves their availability. It's always the current user's own. */
 @Service
 public class SaveAvailabilityUseCase {
 
@@ -30,10 +29,7 @@ public class SaveAvailabilityUseCase {
 
   /**
    * Locks the expert first (D-27), so two saves, or a save and a booking, of one expert run one
-   * after the other. Replaces the dates from today (Zurich) on and the time ranges; earlier dates
-   * stay. Answers the saved availability.
-   *
-   * @throws IllegalArgumentException if time ranges overlap or touch, or a date is before today
+   * after the other. Dates before today stay.
    */
   @Transactional
   public Availability invoke(CurrentUser user, SaveAvailabilityCommand command) {

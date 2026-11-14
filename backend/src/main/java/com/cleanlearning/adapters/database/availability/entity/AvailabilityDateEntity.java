@@ -16,9 +16,7 @@ public class AvailabilityDateEntity {
 
   @Id private LocalDate availableOn;
 
-  protected AvailabilityDateEntity() {
-    // for JPA
-  }
+  protected AvailabilityDateEntity() {}
 
   public AvailabilityDateEntity(UUID expertId, LocalDate availableOn) {
     this.expertId = expertId;

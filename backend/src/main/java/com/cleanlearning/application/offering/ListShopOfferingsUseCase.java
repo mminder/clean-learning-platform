@@ -6,7 +6,6 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** UC-02 steps 1–2: the published offerings for the shop, sorted by name. */
 @Service
 public class ListShopOfferingsUseCase {
 

@@ -9,11 +9,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * UC-13's rules for the time ranges of an {@link AvailabilityRequest}, with a violation per invalid
- * range, so the page shows each message next to its field: at {@code timeRanges[i].end} for a range
- * whose end isn't after its start, and at {@code timeRanges[i].start} for the later-starting of two
- * ranges that overlap or touch (spec 04, decision 9). The domain's {@code TimeRange} and {@code
- * Availability} hold the same rules.
+ * One violation per invalid range, so the page shows each message next to its field: at {@code
+ * timeRanges[i].end} for a range that doesn't end after its start, at {@code timeRanges[i].start}
+ * for the later-starting of two that overlap or touch.
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)

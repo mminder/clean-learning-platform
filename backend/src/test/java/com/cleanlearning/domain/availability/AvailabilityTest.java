@@ -1,10 +1,11 @@
 package com.cleanlearning.domain.availability;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import com.cleanlearning.domain.availability.value.TimeRange;
+import com.cleanlearning.domain.shared.InvalidValueException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -76,20 +77,20 @@ class AvailabilityTest {
 
   @Test
   void rejectsOverlappingRanges() {
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(
             () -> new Availability(dates("2026-11-17"), List.of(MORNING, range("11:00", "14:00"))))
         .withMessage("Time ranges must not overlap or touch: 09:00–12:00 and 11:00–14:00.");
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(
             () -> new Availability(dates("2026-11-17"), List.of(MORNING, range("10:00", "11:00"))));
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(() -> new Availability(dates("2026-11-17"), List.of(MORNING, MORNING)));
   }
 
   @Test
   void rejectsTouchingRanges() {
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(
             () -> new Availability(dates("2026-11-17"), List.of(MORNING, range("12:00", "15:00"))))
         .withMessage("Time ranges must not overlap or touch: 09:00–12:00 and 12:00–15:00.");
@@ -97,7 +98,7 @@ class AvailabilityTest {
 
   @Test
   void findsAnOverlapWhateverTheOrder() {
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(() ->
             new Availability(
                 dates("2026-11-17"), List.of(range("16:00", "18:00"), MORNING, AFTERNOON)))
@@ -125,7 +126,7 @@ class AvailabilityTest {
     Availability availability =
         new Availability(dates("2026-11-07", "2026-11-08", "2026-11-17"), List.of());
 
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(() -> availability.requireNoDateBefore(TODAY))
         .withMessage("A date before today can't be changed: 2026-11-07.");
   }

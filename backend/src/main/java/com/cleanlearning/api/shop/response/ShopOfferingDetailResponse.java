@@ -6,10 +6,6 @@ import com.cleanlearning.domain.offering.view.ShopConsultationOffering;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
-/**
- * An offering's detail page in the shop. Trainings will add a {@code training} part next to {@code
- * consultation}. The image id is {@code null} without an image, and the page shows a placeholder.
- */
 public record ShopOfferingDetailResponse(
     UUID id,
     OfferingType type,

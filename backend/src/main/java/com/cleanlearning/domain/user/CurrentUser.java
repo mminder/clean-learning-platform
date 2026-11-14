@@ -5,10 +5,7 @@ import com.cleanlearning.domain.user.value.UserId;
 import java.util.Objects;
 import java.util.Set;
 
-/**
- * The logged-in user, as controllers pass it into use cases. The roles are the ones the user had at
- * login; they stay for the session.
- */
+/** The roles are the ones the user had at login. */
 public record CurrentUser(UserId id, Set<Role> roles) {
 
   public CurrentUser {

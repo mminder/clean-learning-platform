@@ -12,12 +12,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * A consultation offering as its detail page in the shop shows it (UC-02 step 4): the packages,
- * fewest sessions first, and the eligible experts, by display name. The shop shows only an offering
- * with at least one package; it may have no eligible experts. Without an image, the page shows a
- * placeholder.
- */
 public record ShopConsultationOffering(
     OfferingId id,
     OfferingName name,

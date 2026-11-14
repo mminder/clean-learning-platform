@@ -28,9 +28,7 @@ public class OfferingEntity {
 
   private @Nullable UUID imageId;
 
-  protected OfferingEntity() {
-    // for JPA
-  }
+  protected OfferingEntity() {}
 
   public OfferingEntity(
       UUID id, OfferingType type, String name, String description, OfferingStatus status) {
@@ -69,7 +67,6 @@ public class OfferingEntity {
     this.status = status;
   }
 
-  /** The offering's image, or {@code null} without one. */
   public @Nullable UUID getImageId() {
     return imageId;
   }

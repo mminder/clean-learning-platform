@@ -37,10 +37,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 /**
- * The admin's side of the offerings (UC-16). The shop's side is {@code ShopOfferingAdapter}. It
- * reads the case table for the purchase guard (D-23).
- *
- * <p>Writes go through the {@link EntityManager}: the application sets the ids, so a new row is
+ * Writes go through the {@link EntityManager}: the application sets the ids, so a new row is
  * persisted, not merged (Spring Data's {@code save()} would select it first), and a changed row is
  * written by changing its managed entity.
  */
@@ -74,10 +71,7 @@ class ConsultationOfferingAdapter
         .flatMap(this::withConsultationOffering);
   }
 
-  /**
-   * {@code PESSIMISTIC_WRITE} on the {@code offering} row, which Hibernate sends to Postgres as
-   * {@code select … for no key update}; then its {@code consultation_offering} row.
-   */
+  /** Hibernate sends it to Postgres as {@code select … for no key update}. */
   @Override
   public Optional<ConsultationOffering> lock(OfferingId id) {
     return Optional.ofNullable(
@@ -85,7 +79,6 @@ class ConsultationOfferingAdapter
         .flatMap(this::withConsultationOffering);
   }
 
-  /** An {@code exists} over {@code consultation_case}: a purchase is a case. */
   @Override
   public boolean hasPurchases(OfferingId id) {
     return repository.existsCase(id.value());
@@ -94,8 +87,7 @@ class ConsultationOfferingAdapter
   @Override
   public void create(ConsultationOffering offering) {
     UUID id = offering.id().value();
-    // offering first: consultation_offering references it.
-    // A new offering has no image yet: it gets one after its first save.
+    // The offering first: consultation_offering references it.
     entityManager.persist(
         new OfferingEntity(
             id,
@@ -114,7 +106,6 @@ class ConsultationOfferingAdapter
         .forEach(expertId -> entityManager.persist(new EligibleExpertEntity(id, expertId.value())));
   }
 
-  /** Changes the managed entities, which the transaction writes when it commits. */
   @Override
   public void update(ConsultationOffering offering) {
     UUID id = offering.id().value();
@@ -133,10 +124,8 @@ class ConsultationOfferingAdapter
   }
 
   /**
-   * Removes the managed entities in the order the foreign keys need: the eligible experts, the
-   * packages, the {@code consultation_offering} row and then the {@code offering} row. The
-   * transaction deletes them in this order when it commits. The use case deletes the offering's
-   * image after them.
+   * In the order the foreign keys need; the transaction deletes them in this order when it commits.
+   * The use case deletes the image after them.
    */
   @Override
   public void delete(OfferingId id) {
@@ -147,11 +136,7 @@ class ConsultationOfferingAdapter
     entityManager.remove(existing(OfferingEntity.class, offeringId));
   }
 
-  /**
-   * Writes only the difference to the loaded packages: deletes the dropped ones, updates the kept
-   * ones (the transaction writes a row only if a value changed) and inserts the new ones. A kept
-   * package is never deleted and inserted again.
-   */
+  /** Writes only the difference, so a kept package is never deleted and inserted again. */
   private void writePackages(UUID offeringId, List<ConsultationPackage> packages) {
     Map<UUID, ConsultationPackageEntity> loaded =
         repository.findPackageEntities(offeringId).stream()
@@ -169,9 +154,8 @@ class ConsultationOfferingAdapter
   }
 
   /**
-   * Writes only the difference to the loaded eligible experts, like the packages: deletes the
-   * dropped rows and inserts the new ones. A row is never deleted and inserted again in one
-   * transaction, which would insert first.
+   * Only the difference, like the packages: a row deleted and inserted again in one transaction
+   * would be inserted first.
    */
   private void writeEligibleExperts(UUID offeringId, Set<UserId> eligibleExpertIds) {
     Set<UUID> wanted = eligibleExpertIds.stream().map(UserId::value).collect(Collectors.toSet());
@@ -197,9 +181,6 @@ class ConsultationOfferingAdapter
         consultationPackage.price().amount());
   }
 
-  /**
-   * A training offering (UC-17) has no {@code consultation_offering} row, so it isn't found here.
-   */
   private Optional<ConsultationOffering> withConsultationOffering(OfferingEntity offering) {
     return Optional.ofNullable(
             entityManager.find(ConsultationOfferingEntity.class, offering.getId()))

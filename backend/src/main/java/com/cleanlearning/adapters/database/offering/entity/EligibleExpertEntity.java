@@ -13,15 +13,9 @@ public class EligibleExpertEntity {
 
   @Id private UUID consultationOfferingId;
 
-  /**
-   * Foreign key to {@link com.cleanlearning.adapters.database.user.entity.ExpertProfileEntity},
-   * whose id is also the {@link com.cleanlearning.adapters.database.user.entity.UserEntity}'s id.
-   */
   @Id private UUID expertId;
 
-  protected EligibleExpertEntity() {
-    // for JPA
-  }
+  protected EligibleExpertEntity() {}
 
   public EligibleExpertEntity(UUID consultationOfferingId, UUID expertId) {
     this.consultationOfferingId = consultationOfferingId;

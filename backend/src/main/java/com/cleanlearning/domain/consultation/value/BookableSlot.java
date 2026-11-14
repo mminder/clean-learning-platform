@@ -5,13 +5,8 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * A time a customer can book on their case (UC-06 steps 3–4): the session from start to end, and
- * until when it can be cancelled for free, which the confirmation states (UC-06 step 5). It shows
- * nothing of the expert's other appointments.
- *
- * @param freeCancellationUntil empty when that time has already passed, as it has with a
- *     cancellation deadline longer than the minimum notice: the slot can't be cancelled for free
- *     (D-11)
+ * {@code freeCancellationUntil} is empty when that time has already passed, as with a cancellation
+ * deadline longer than the minimum notice (D-11).
  */
 public record BookableSlot(Instant start, Instant end, Optional<Instant> freeCancellationUntil) {
 

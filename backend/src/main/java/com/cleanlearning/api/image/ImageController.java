@@ -19,9 +19,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Images for everyone (D-21): an offering's image, later an expert's photo. An image never changes,
- * a replaced one gets a new id, so browsers may cache it for a year without asking again. The
- * header is set here, so Spring Security's {@code no-cache} headers stay off this response.
+ * An image never changes, so browsers may cache it for a year. The header is set here, so Spring
+ * Security's {@code no-cache} headers stay off this response.
  */
 @RestController
 @RequestMapping("/api/images")

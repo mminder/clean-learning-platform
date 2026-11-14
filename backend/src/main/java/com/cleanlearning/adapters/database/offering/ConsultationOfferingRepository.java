@@ -12,9 +12,8 @@ import org.springframework.data.repository.Repository;
 interface ConsultationOfferingRepository extends Repository<OfferingEntity, UUID> {
 
   /**
-   * Every consultation offering in every status, in one query. The counts are subqueries: joining
-   * packages and experts would multiply the rows of one by the other. The name's column is
-   * ICU-collated, so the database sorts alphabetically.
+   * The counts are subqueries: joining packages and experts would multiply the rows of one by the
+   * other.
    */
   @Query(
       """
@@ -28,12 +27,10 @@ interface ConsultationOfferingRepository extends Repository<OfferingEntity, UUID
       """)
   List<ConsultationOfferingSummaryRow> findSummaries();
 
-  /** The offering's packages as managed entities, for the adapter to read and to write. */
   @Query(
       "select p from ConsultationPackageEntity p where p.consultationOfferingId = :consultationOfferingId")
   List<ConsultationPackageEntity> findPackageEntities(UUID consultationOfferingId);
 
-  /** Whether the offering has a case (D-23: the offering adapter may read the case table). */
   @Query(
       """
       select exists (
@@ -41,7 +38,6 @@ interface ConsultationOfferingRepository extends Repository<OfferingEntity, UUID
       """)
   boolean existsCase(UUID consultationOfferingId);
 
-  /** The offering's eligible experts as managed entities, for the adapter to read and to write. */
   @Query(
       "select e from EligibleExpertEntity e where e.consultationOfferingId = :consultationOfferingId")
   List<EligibleExpertEntity> findEligibleExpertEntities(UUID consultationOfferingId);

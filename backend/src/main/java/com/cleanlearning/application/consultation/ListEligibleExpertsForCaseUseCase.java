@@ -10,11 +10,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * UC-06 step 2: on the first booking, the customer picks their expert from the case's offering's
- * current eligible experts. They come from the case, not from the shop: an archived offering's case
- * still books (spec 04, decision 16).
- */
+/** From the case, not from the shop: an archived offering's case still books. */
 @Service
 public class ListEligibleExpertsForCaseUseCase {
 
@@ -24,12 +20,6 @@ public class ListEligibleExpertsForCaseUseCase {
     this.loadCase = loadCase;
   }
 
-  /**
-   * The eligible experts of the case's offering, by display name; empty if it has none (spec 04,
-   * decision 2).
-   *
-   * @throws NotFoundException if there's no case with this id, or it's another customer's
-   */
   @Transactional(readOnly = true)
   public List<ExpertProfile> invoke(CurrentUser user, ConsultationCaseId id) {
     CaseForBooking consultationCase =

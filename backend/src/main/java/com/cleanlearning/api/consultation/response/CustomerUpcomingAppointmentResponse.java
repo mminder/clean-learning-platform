@@ -5,13 +5,6 @@ import com.cleanlearning.domain.consultation.view.CustomerUpcomingAppointment;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * An upcoming appointment on the case detail (UC-05, UC-07): {@link CustomerAppointmentResponse}'s
- * fields, and its cancellation preview at the time of the answer, which the cancel dialog reads
- * (spec 05, decision 12), all computed by the server. {@code canCancel}: it hasn't started. {@code
- * freeCancellationUntil}: start − the case's cancellation deadline, an instant, for the late
- * warning. {@code creditRefundedIfCancelledNow}: now is before it.
- */
 public record CustomerUpcomingAppointmentResponse(
     UUID id,
     Instant start,

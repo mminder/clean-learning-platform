@@ -6,9 +6,5 @@ import java.time.LocalDate;
 
 public interface LoadAvailabilityPort {
 
-  /**
-   * The expert's availability: their dates from {@code from} on, and all their time ranges. Without
-   * a saved availability, both are empty.
-   */
   Availability load(UserId expertId, LocalDate from);
 }

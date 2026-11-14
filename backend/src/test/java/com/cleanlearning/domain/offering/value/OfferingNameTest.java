@@ -1,9 +1,10 @@
 package com.cleanlearning.domain.offering.value;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
+import com.cleanlearning.domain.shared.InvalidValueException;
 import org.junit.jupiter.api.Test;
 
 class OfferingNameTest {
@@ -15,14 +16,16 @@ class OfferingNameTest {
 
   @Test
   void rejectsEmptyAndBlankNames() {
-    assertThatIllegalArgumentException().isThrownBy(() -> new OfferingName(""));
-    assertThatIllegalArgumentException().isThrownBy(() -> new OfferingName(" \t\n"));
+    assertThatExceptionOfType(InvalidValueException.class).isThrownBy(() -> new OfferingName(""));
+    assertThatExceptionOfType(InvalidValueException.class)
+        .isThrownBy(() -> new OfferingName(" \t\n"));
   }
 
   @Test
   void rejectsNamesOfNoBreakSpaces() {
     // String.isBlank() accepts these, the database's check constraint doesn't.
-    assertThatIllegalArgumentException().isThrownBy(() -> new OfferingName("   \u0085"));
+    assertThatExceptionOfType(InvalidValueException.class)
+        .isThrownBy(() -> new OfferingName("   \u0085"));
   }
 
   @Test

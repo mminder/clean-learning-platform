@@ -12,19 +12,13 @@ public class ConsultationPackageEntity {
 
   @Id private UUID id;
 
-  /**
-   * Foreign key to {@link ConsultationOfferingEntity}, whose id is also the {@link
-   * OfferingEntity}'s id.
-   */
   private UUID consultationOfferingId;
 
   private int sessionCount;
 
   private BigDecimal price;
 
-  protected ConsultationPackageEntity() {
-    // for JPA
-  }
+  protected ConsultationPackageEntity() {}
 
   public ConsultationPackageEntity(
       UUID id, UUID consultationOfferingId, int sessionCount, BigDecimal price) {

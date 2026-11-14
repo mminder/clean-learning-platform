@@ -10,11 +10,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * An offering as a card in the shop (UC-02). The price is what the card shows: for a consultation
- * offering, the price of its cheapest package, shown as "from". Without an image, the card shows a
- * placeholder.
- */
+/** The price is the cheapest package's, shown as "from". */
 public record ShopOffering(
     OfferingId id,
     OfferingType type,

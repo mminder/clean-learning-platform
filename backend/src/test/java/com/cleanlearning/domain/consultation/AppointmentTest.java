@@ -11,7 +11,6 @@ import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import com.cleanlearning.domain.shared.BusinessTimeZone;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -122,30 +121,6 @@ class AppointmentTest {
     assertThat(TEN_TO_ELEVEN.isCancellableAt(START)).isFalse();
     assertThat(TEN_TO_ELEVEN.isCancellableAt(Instant.parse("2026-11-17T09:30:00Z"))).isFalse();
     assertThat(TEN_TO_ELEVEN.isCancellableAt(END)).isFalse();
-  }
-
-  @Test
-  void theSortedUpcomingOnesAreTheAppointmentsThemselves() {
-    Appointment past = appointment("2026-11-16T09:00:00Z", "2026-11-16T10:00:00Z");
-    Appointment later = appointment("2026-11-20T09:00:00Z", "2026-11-20T10:00:00Z");
-    Appointment soon = appointment("2026-11-18T09:00:00Z", "2026-11-18T10:00:00Z");
-
-    assertThat(
-            Appointment.sortedUpcoming(
-                List.of(later, past, soon), Instant.parse("2026-11-17T09:30:00Z")))
-        .containsExactly(soon, later);
-  }
-
-  @Test
-  void theSortedPastOnesAreTheAppointmentsThemselvesNewestFirst() {
-    Appointment first = appointment("2026-11-16T09:00:00Z", "2026-11-16T10:00:00Z");
-    Appointment second = appointment("2026-11-17T09:00:00Z", "2026-11-17T10:00:00Z");
-    Appointment upcoming = appointment("2026-11-20T09:00:00Z", "2026-11-20T10:00:00Z");
-
-    assertThat(
-            Appointment.sortedPast(
-                List.of(first, upcoming, second), Instant.parse("2026-11-17T10:00:00Z")))
-        .containsExactly(second, first);
   }
 
   @Test

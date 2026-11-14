@@ -20,10 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * The expert's own availability (UC-13). Security lets only users with {@code EXPERT} in; the route
- * has no id, as the availability is always the current user's.
- */
+/** The route has no id: the availability is always the current user's. */
 @RestController
 @RequestMapping(AvailabilityController.PATH)
 @PreAuthorize("hasRole('EXPERT')")
@@ -47,7 +44,6 @@ class AvailabilityController {
     return AvailabilityResponse.from(getAvailability.invoke(currentUser));
   }
 
-  /** Replaces the dates from today on and the time ranges, and answers the saved availability. */
   @PutMapping
   @ResponseStatus(HttpStatus.OK)
   @ProblemResponses.Status400
@@ -58,10 +54,6 @@ class AvailabilityController {
     return AvailabilityResponse.from(saveAvailability.invoke(currentUser, toCommand(request)));
   }
 
-  /**
-   * A value object that rejects a value Bean Validation let through throws, and the API answers
-   * 400.
-   */
   private static SaveAvailabilityCommand toCommand(AvailabilityRequest request) {
     return new SaveAvailabilityCommand(
         new HashSet<>(request.dates()),

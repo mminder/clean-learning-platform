@@ -4,7 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration;
 
-// No default user with a generated password: users and login come from our own database (UC-01).
+// Users and login come from our own database, not a generated default user.
 @SpringBootApplication(exclude = UserDetailsServiceAutoConfiguration.class)
 public class CleanLearningApplication {
 

@@ -6,10 +6,6 @@ import com.cleanlearning.domain.offering.value.SessionCount;
 import com.cleanlearning.domain.shared.value.Money;
 import java.util.Objects;
 
-/**
- * What the customer confirmed in the buy dialog (UC-03 steps 3–5): the offering, the package, and
- * the price and session count the confirmation stated.
- */
 public record PurchaseConsultationPackageCommand(
     OfferingId offeringId,
     ConsultationPackageId packageId,

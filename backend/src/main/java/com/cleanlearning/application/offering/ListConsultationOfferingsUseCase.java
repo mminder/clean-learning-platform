@@ -6,7 +6,6 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** UC-16 step 1: every consultation offering in every status, sorted by name. */
 @Service
 public class ListConsultationOfferingsUseCase {
 

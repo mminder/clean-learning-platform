@@ -4,6 +4,7 @@ import static com.tngtech.archunit.core.domain.JavaClass.Predicates.simpleNameEn
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
+import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaMethod;
@@ -75,6 +76,14 @@ class LayerRulesTest {
           .mayOnlyBeAccessedByLayers("config");
 
   @ArchTest
+  static final ArchRule domainFeaturesAreFreeOfCycles =
+      slices().matching("com.cleanlearning.domain.(*)..").should().beFreeOfCycles();
+
+  @ArchTest
+  static final ArchRule applicationFeaturesAreFreeOfCycles =
+      slices().matching("com.cleanlearning.application.(*)..").should().beFreeOfCycles();
+
+  @ArchTest
   static final ArchRule domainDependsOnlyOnJavaAndDomain =
       classes()
           .that()
@@ -83,7 +92,10 @@ class LayerRulesTest {
           .onlyDependOnClassesThat()
           .resideInAnyPackage("java..", DOMAIN);
 
-  /** Models use value objects, never the other way round: a class that needs a model is a model. */
+  /**
+   * Models use value objects, never the other way round: a class that needs a model is a model. A
+   * value object may throw the shared exceptions, such as {@code InvalidValueException}.
+   */
   @ArchTest
   static final ArchRule valueObjectsDependOnlyOnJavaAndValueObjects =
       classes()
@@ -91,7 +103,7 @@ class LayerRulesTest {
           .resideInAPackage(DOMAIN_VALUES)
           .should()
           .onlyDependOnClassesThat()
-          .resideInAnyPackage("java..", DOMAIN_VALUES);
+          .resideInAnyPackage("java..", DOMAIN_VALUES, "com.cleanlearning.domain.shared");
 
   /**
    * Views depend on rules, never the other way round: what an actor sees is built from the rules.

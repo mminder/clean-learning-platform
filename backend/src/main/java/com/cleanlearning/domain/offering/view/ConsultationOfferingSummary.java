@@ -5,7 +5,6 @@ import com.cleanlearning.domain.offering.value.OfferingName;
 import com.cleanlearning.domain.offering.value.OfferingStatus;
 import java.util.Objects;
 
-/** A consultation offering as a row in the admin's list (UC-16 step 1). */
 public record ConsultationOfferingSummary(
     OfferingId id,
     OfferingName name,

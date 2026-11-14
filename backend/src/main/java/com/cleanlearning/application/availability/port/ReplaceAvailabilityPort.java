@@ -6,9 +6,5 @@ import java.time.LocalDate;
 
 public interface ReplaceAvailabilityPort {
 
-  /**
-   * Replaces the expert's dates from {@code from} on, and all their time ranges, with the
-   * availability's. Their dates before {@code from} stay as they are.
-   */
   void replaceFrom(UserId expertId, LocalDate from, Availability availability);
 }

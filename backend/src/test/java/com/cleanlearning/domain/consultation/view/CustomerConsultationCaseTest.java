@@ -1,8 +1,11 @@
 package com.cleanlearning.domain.consultation.view;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 import com.cleanlearning.domain.consultation.Appointment;
+import com.cleanlearning.domain.consultation.CancelledAppointment;
+import com.cleanlearning.domain.consultation.CaseCredits;
 import com.cleanlearning.domain.consultation.value.AppointmentId;
 import com.cleanlearning.domain.consultation.value.AppointmentStatus;
 import com.cleanlearning.domain.consultation.value.CancellationOutcome;
@@ -21,6 +24,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -92,10 +96,25 @@ class CustomerConsultationCaseTest {
             new CancellationDeadline(24)),
         Instant.parse("2026-11-09T14:03:12.345Z"),
         expert,
-        appointments,
-        forfeitedCredits,
+        credits(sessionCount, appointments, forfeitedCredits),
         cancellation,
         asOf);
+  }
+
+  /** The credits of a case with these booked appointments and this many cancelled late. */
+  private static CaseCredits credits(
+      int sessionCount, List<Appointment> appointments, int forfeitedCredits) {
+    return new CaseCredits(
+        new SessionCount(sessionCount),
+        appointments,
+        Stream.generate(() ->
+                new CancelledAppointment(
+                    new AppointmentId(UUID.randomUUID()),
+                    Instant.parse("2026-11-12T09:00:00Z"),
+                    Instant.parse("2026-11-12T10:00:00Z"),
+                    false))
+            .limit(forfeitedCredits)
+            .toList());
   }
 
   /** Cancelled on Sun 15 Nov 2026, 12:00 in Zurich, with these appointments left booked. */
@@ -116,14 +135,14 @@ class CustomerConsultationCaseTest {
 
   @Test
   void totalCreditsAreTheSessionCount() {
-    assertThat(withSessions(3).totalCredits()).isEqualTo(3);
-    assertThat(withSessions(1).totalCredits()).isEqualTo(1);
+    assertThat(withSessions(3).credits().totalCredits()).isEqualTo(3);
+    assertThat(withSessions(1).credits().totalCredits()).isEqualTo(1);
   }
 
   @Test
   void withoutAppointmentsEveryCreditIsOpenAndTheCustomerCanBook() {
-    assertThat(withSessions(3).openCredits()).isEqualTo(3);
-    assertThat(withSessions(5).openCredits()).isEqualTo(5);
+    assertThat(withSessions(3).credits().openCredits()).isEqualTo(3);
+    assertThat(withSessions(5).credits().openCredits()).isEqualTo(5);
     assertThat(withSessions(3).canBook()).isTrue();
     assertThat(withSessions(3).expert()).isEmpty();
   }
@@ -134,7 +153,7 @@ class CustomerConsultationCaseTest {
     CustomerConsultationCase consultationCase =
         withAppointments(List.of(MONDAY, TUESDAY), Instant.parse("2026-11-17T09:30:00Z"));
 
-    assertThat(consultationCase.openCredits()).isEqualTo(1);
+    assertThat(consultationCase.credits().openCredits()).isEqualTo(1);
     assertThat(consultationCase.canBook()).isTrue();
   }
 
@@ -143,7 +162,7 @@ class CustomerConsultationCaseTest {
     CustomerConsultationCase consultationCase =
         withAppointments(List.of(MONDAY, TUESDAY, WEDNESDAY), NOW);
 
-    assertThat(consultationCase.openCredits()).isZero();
+    assertThat(consultationCase.credits().openCredits()).isZero();
     assertThat(consultationCase.canBook()).isFalse();
   }
 
@@ -174,7 +193,7 @@ class CustomerConsultationCaseTest {
               new CustomerAppointment(
                   TUESDAY.id(), TUESDAY.start(), TUESDAY.end(), AppointmentStatus.CONSUMED));
       assertThat(consultationCase.pastAppointments()).isEmpty();
-      assertThat(consultationCase.openCredits()).isEqualTo(2);
+      assertThat(consultationCase.credits().openCredits()).isEqualTo(2);
     }
   }
 
@@ -187,7 +206,7 @@ class CustomerConsultationCaseTest {
         .containsExactly(
             new CustomerAppointment(
                 TUESDAY.id(), TUESDAY.start(), TUESDAY.end(), AppointmentStatus.CONSUMED));
-    assertThat(consultationCase.openCredits()).isEqualTo(2);
+    assertThat(consultationCase.credits().openCredits()).isEqualTo(2);
   }
 
   @Test
@@ -220,7 +239,7 @@ class CustomerConsultationCaseTest {
         withSessions(
             3, Optional.of(EXPERT_2), List.of(MONDAY), 1, Instant.parse("2026-11-17T12:00:00Z"));
 
-    assertThat(consultationCase.openCredits()).isOne();
+    assertThat(consultationCase.credits().openCredits()).isOne();
     assertThat(consultationCase.canBook()).isTrue();
     assertThat(consultationCase.pastAppointments())
         .extracting(CustomerAppointment::id)
@@ -232,7 +251,7 @@ class CustomerConsultationCaseTest {
     CustomerConsultationCase consultationCase =
         withSessions(1, Optional.of(EXPERT_2), List.of(), 1, NOW);
 
-    assertThat(consultationCase.openCredits()).isZero();
+    assertThat(consultationCase.credits().openCredits()).isZero();
     assertThat(consultationCase.canBook()).isFalse();
     assertThat(consultationCase.upcomingAppointments()).isEmpty();
     assertThat(consultationCase.pastAppointments()).isEmpty();
@@ -281,8 +300,7 @@ class CustomerConsultationCaseTest {
                 new CancellationDeadline(72)),
             Instant.parse("2026-11-09T14:03:12.345Z"),
             Optional.of(EXPERT_2),
-            List.of(TUESDAY),
-            0,
+            credits(3, List.of(TUESDAY), 0),
             Optional.empty(),
             Instant.parse("2026-11-15T11:00:00Z"));
 
@@ -294,6 +312,26 @@ class CustomerConsultationCaseTest {
               .isEqualTo(Instant.parse("2026-11-14T09:00:00Z"));
           assertThat(upcoming.creditRefundedIfCancelledNow()).isFalse();
         });
+  }
+
+  @Test
+  void theCreditsCountFromThePurchaseTermsSessionCount() {
+    assertThatIllegalArgumentException()
+        .isThrownBy(() ->
+            new CustomerConsultationCase(
+                CASE,
+                new OfferingName("Career Coaching"),
+                Optional.empty(),
+                new PurchaseTerms(
+                    Money.chf("450.00"),
+                    new SessionCount(3),
+                    new SessionDuration(60),
+                    new CancellationDeadline(24)),
+                Instant.parse("2026-11-09T14:03:12.345Z"),
+                Optional.empty(),
+                credits(2, List.of(), 0),
+                Optional.empty(),
+                NOW));
   }
 
   @Test
@@ -369,7 +407,7 @@ class CustomerConsultationCaseTest {
 
     assertThat(consultationCase.cancellation())
         .contains(new CancellationOutcome(Instant.parse("2026-11-15T11:00:00Z"), false));
-    assertThat(consultationCase.openCredits()).isEqualTo(2);
+    assertThat(consultationCase.credits().openCredits()).isEqualTo(2);
     assertThat(consultationCase.canBook()).isFalse();
     assertThat(consultationCase.canCancel()).isFalse();
     assertThat(consultationCase.refundIfCancelledNow()).isEmpty();

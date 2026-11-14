@@ -9,11 +9,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.resource.PathResourceResolver;
 
 /**
- * Serves the SPA from {@code static/} (copied in by {@code ./mvnw -Pfrontend package}). A {@code
- * GET} for a client route such as {@code /offerings/<id>} gets {@code index.html}, so the route
- * survives a reload. Existing files are served as they are, a path whose last segment has a file
- * extension (a missing asset) is a 404, and so is anything under {@code /api} or {@code /v3}, which
- * keeps the API's own answer.
+ * A {@code GET} for a client route such as {@code /offerings/<id>} gets {@code index.html}, so the
+ * route survives a reload. A path whose last segment has a file extension (a missing asset) is a
+ * 404, and so is anything under {@code /api} or {@code /v3}.
  */
 @Configuration(proxyBeanMethods = false)
 class SpaConfig implements WebMvcConfigurer {

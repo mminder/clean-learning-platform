@@ -6,7 +6,6 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** UC-01 PoC step 2: the seeded users to pick from, with their roles, sorted by name. */
 @Service
 public class ListPocUsersUseCase {
 

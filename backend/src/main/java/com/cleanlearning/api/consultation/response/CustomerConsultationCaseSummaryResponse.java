@@ -1,5 +1,6 @@
 package com.cleanlearning.api.consultation.response;
 
+import com.cleanlearning.domain.consultation.CaseInList;
 import com.cleanlearning.domain.consultation.value.PurchaseGroup;
 import com.cleanlearning.domain.consultation.view.CustomerConsultationCaseSummary;
 import com.cleanlearning.domain.image.value.ImageId;
@@ -8,15 +9,7 @@ import java.time.Instant;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
-/**
- * A case on "My purchases" (UC-05). The offering's name and image are live; the image id is {@code
- * null} without an image, and {@code GET /api/images/{id}} serves it. {@code purchasedAt} is an
- * instant. {@code expertDisplayName} is {@code null} until the first booking; {@code
- * nextAppointment} is the soonest appointment that hasn't ended, {@code CONSUMED} while it runs,
- * and {@code null} without one. The server computes {@code group}, and the answer comes in the
- * order of "My purchases" (spec 04, decision 18). {@code cancelledAt} is an instant, {@code null}
- * for an active case; a cancelled case is {@code PAST} (spec 05, decision 6).
- */
+/** The server computes {@code group}, and the answer comes in the order of "My purchases". */
 public record CustomerConsultationCaseSummaryResponse(
     UUID id,
     String offeringName,
@@ -31,16 +24,17 @@ public record CustomerConsultationCaseSummaryResponse(
 
   public static CustomerConsultationCaseSummaryResponse from(
       CustomerConsultationCaseSummary consultationCase) {
+    CaseInList inList = consultationCase.inList();
     return new CustomerConsultationCaseSummaryResponse(
-        consultationCase.id().value(),
+        inList.id().value(),
         consultationCase.offeringName().value(),
         consultationCase.offeringImageId().map(ImageId::value).orElse(null),
-        consultationCase.purchasedAt(),
-        consultationCase.openCredits(),
-        consultationCase.totalCredits(),
+        inList.purchasedAt(),
+        inList.credits().openCredits(),
+        inList.credits().totalCredits(),
         consultationCase.expertDisplayName().map(DisplayName::value).orElse(null),
         consultationCase.nextAppointment().map(CustomerAppointmentResponse::from).orElse(null),
         consultationCase.group(),
-        consultationCase.cancelledAt().orElse(null));
+        inList.cancelledAt().orElse(null));
   }
 }

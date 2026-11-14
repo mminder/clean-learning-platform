@@ -3,10 +3,7 @@ package com.cleanlearning.domain.consultation.value;
 import java.time.Instant;
 import java.util.Objects;
 
-/**
- * A time when an expert or a customer is busy, such as a booked appointment: the half-open interval
- * from start to end, so another session may start where it ends (D-10, no buffer).
- */
+/** Half-open, so another session may start where it ends. */
 public record BusyTime(Instant start, Instant end) {
 
   public BusyTime {

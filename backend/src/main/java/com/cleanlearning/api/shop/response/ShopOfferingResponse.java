@@ -7,10 +7,7 @@ import com.cleanlearning.domain.offering.view.ShopOffering;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
-/**
- * An offering card in the shop. For a consultation offering, the price is its cheapest package
- * ("from"). The image id is {@code null} without an image, and the card shows a placeholder.
- */
+/** The price is the cheapest package's ("from"). */
 public record ShopOfferingResponse(
     UUID id,
     OfferingType type,

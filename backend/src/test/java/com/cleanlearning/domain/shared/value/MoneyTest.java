@@ -1,9 +1,10 @@
 package com.cleanlearning.domain.shared.value;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
+import com.cleanlearning.domain.shared.InvalidValueException;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 
@@ -23,9 +24,16 @@ class MoneyTest {
 
   @Test
   void rejectsMoreThanTwoDecimals() {
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(() -> Money.chf("450.005"))
         .withMessageContaining("450.005");
+  }
+
+  @Test
+  void rejectsWhatIsNotANumber() {
+    assertThatExceptionOfType(InvalidValueException.class)
+        .isThrownBy(() -> Money.chf("abc"))
+        .withMessageContaining("abc");
   }
 
   @Test
@@ -35,7 +43,7 @@ class MoneyTest {
 
   @Test
   void rejectsNegativeAmounts() {
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(() -> Money.chf("-0.01"))
         .withMessageContaining("-0.01");
   }

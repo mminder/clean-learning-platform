@@ -6,6 +6,5 @@ import java.util.Optional;
 
 public interface LoadConsultationOfferingPort {
 
-  /** The consultation offering in any status, or empty if there's none with this id. */
   Optional<ConsultationOffering> load(OfferingId id);
 }

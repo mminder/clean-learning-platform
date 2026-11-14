@@ -9,18 +9,13 @@ import java.util.UUID;
 @Table(name = "consultation_offering")
 public class ConsultationOfferingEntity {
 
-  /**
-   * Primary key and foreign key to {@link OfferingEntity}'s id: one row per consultation offering.
-   */
   @Id private UUID offeringId;
 
   private int sessionDurationMinutes;
 
   private int cancellationDeadlineHours;
 
-  protected ConsultationOfferingEntity() {
-    // for JPA
-  }
+  protected ConsultationOfferingEntity() {}
 
   public ConsultationOfferingEntity(
       UUID offeringId, int sessionDurationMinutes, int cancellationDeadlineHours) {

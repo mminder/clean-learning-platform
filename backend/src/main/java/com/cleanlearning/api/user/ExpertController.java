@@ -7,10 +7,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * The experts an admin can choose from for a consultation offering (UC-16). Security allows admins
- * only.
- */
 @RestController
 @PreAuthorize("hasRole('ADMIN')")
 class ExpertController {

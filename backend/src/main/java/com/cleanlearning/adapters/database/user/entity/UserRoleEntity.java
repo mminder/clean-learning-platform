@@ -20,9 +20,7 @@ public class UserRoleEntity {
   @Enumerated(EnumType.STRING)
   private Role role;
 
-  protected UserRoleEntity() {
-    // for JPA
-  }
+  protected UserRoleEntity() {}
 
   record Key(UUID userId, Role role) {}
 }

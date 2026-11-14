@@ -13,10 +13,7 @@ import org.springframework.data.repository.Repository;
 
 interface OfferingRepository extends Repository<OfferingEntity, UUID> {
 
-  /**
-   * Every package price of every published offering in one query, sorted by offering name, so the
-   * rows of one offering are next to each other.
-   */
+  /** Sorted by offering name, so the rows of one offering are next to each other. */
   @Query(
       """
       select new com.cleanlearning.adapters.database.offering.row.ShopOfferingPriceRow(
@@ -48,10 +45,6 @@ interface OfferingRepository extends Repository<OfferingEntity, UUID> {
       """)
   List<ConsultationPackageRow> findPackages(UUID consultationOfferingId);
 
-  /**
-   * The eligible experts with their profiles, sorted by display name (D-23: the offering adapter
-   * may read the user tables).
-   */
   @Query(
       """
       select new com.cleanlearning.adapters.database.offering.row.EligibleExpertRow(

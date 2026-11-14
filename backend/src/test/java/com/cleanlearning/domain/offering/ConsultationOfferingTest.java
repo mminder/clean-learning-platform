@@ -1,7 +1,7 @@
 package com.cleanlearning.domain.offering;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 import com.cleanlearning.domain.image.value.ImageId;
@@ -12,6 +12,7 @@ import com.cleanlearning.domain.offering.value.OfferingName;
 import com.cleanlearning.domain.offering.value.OfferingStatus;
 import com.cleanlearning.domain.offering.value.SessionCount;
 import com.cleanlearning.domain.offering.value.SessionDuration;
+import com.cleanlearning.domain.shared.InvalidValueException;
 import com.cleanlearning.domain.shared.value.Money;
 import com.cleanlearning.domain.user.Expert;
 import com.cleanlearning.domain.user.value.DisplayName;
@@ -224,7 +225,8 @@ class ConsultationOfferingTest {
         IntendedConsultationPackage.kept(
             new ConsultationPackageId(UUID.randomUUID()), new SessionCount(1), Money.chf("160"));
 
-    assertThatIllegalArgumentException().isThrownBy(() -> agileCoachingWith(withId));
+    assertThatExceptionOfType(InvalidValueException.class)
+        .isThrownBy(() -> agileCoachingWith(withId));
   }
 
   @Test
@@ -299,7 +301,7 @@ class ConsultationOfferingTest {
     ConsultationOffering offering = agileCoachingWith(added(1, "160"));
     ConsultationOffering other = agileCoachingWith(added(1, "160"));
 
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(() -> edit(offering, kept(other.packages().getFirst(), 1, "160")))
         .withMessageContaining(other.packages().getFirst().id().value().toString());
   }
@@ -309,7 +311,7 @@ class ConsultationOfferingTest {
     ConsultationOffering offering = agileCoachingWith(added(1, "160"));
     ConsultationPackage only = offering.packages().getFirst();
 
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(() -> edit(offering, kept(only, 1, "160"), kept(only, 2, "300")));
   }
 
@@ -386,7 +388,7 @@ class ConsultationOfferingTest {
   void anIdThatIsNoExpertIsRejectedOnCreateAndOnEdit() {
     UserId customer = new UserId(UUID.fromString("00000000-0000-0000-0000-000000000101"));
 
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(() ->
             ConsultationOffering.create(
                 AGILE_COACHING,
@@ -397,7 +399,7 @@ class ConsultationOfferingTest {
                 Set.of(EXPERT_1.id(), customer),
                 EXPERTS))
         .withMessageContaining(customer.value().toString());
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(() ->
             agileCoaching()
                 .edit(
@@ -445,7 +447,7 @@ class ConsultationOfferingTest {
 
   @Test
   void noExpertsAtAllMeansNoIdIsAnExpert() {
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(() ->
             ConsultationOffering.create(
                 AGILE_COACHING,

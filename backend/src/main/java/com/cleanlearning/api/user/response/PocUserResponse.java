@@ -5,10 +5,6 @@ import com.cleanlearning.domain.user.value.Role;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * A user on the PoC login page, with their roles in the order {@code CUSTOMER}, {@code EXPERT},
- * {@code ADMIN}.
- */
 public record PocUserResponse(UUID id, String name, List<Role> roles) {
 
   public static PocUserResponse from(User user) {

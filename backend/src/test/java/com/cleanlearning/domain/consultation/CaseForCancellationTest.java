@@ -70,11 +70,21 @@ class CaseForCancellationTest {
   /** Sun 15 Nov 2026, 12:00: "now" in spec 05. */
   private static final Instant SUNDAY_NOON = zurich("2026-11-15T12:00");
 
-  private static final AppointmentCancellation CANCELLED_IN_TIME =
-      new AppointmentCancellation(new AppointmentId(UUID.randomUUID()), true);
+  /** Thu 12 Nov 2026, 10:00–11:00, cancelled in time. */
+  private static final CancelledAppointment CANCELLED_IN_TIME =
+      new CancelledAppointment(
+          new AppointmentId(UUID.randomUUID()),
+          zurich("2026-11-12T10:00"),
+          zurich("2026-11-12T11:00"),
+          true);
 
-  private static final AppointmentCancellation CANCELLED_LATE =
-      new AppointmentCancellation(new AppointmentId(UUID.randomUUID()), false);
+  /** Fri 13 Nov 2026, 10:00–11:00, cancelled late. */
+  private static final CancelledAppointment CANCELLED_LATE =
+      new CancelledAppointment(
+          new AppointmentId(UUID.randomUUID()),
+          zurich("2026-11-13T10:00"),
+          zurich("2026-11-13T11:00"),
+          false);
 
   private static final String APPOINTMENT_CANCELLED = "This appointment was already cancelled.";
   private static final String APPOINTMENT_STARTED = "This appointment can no longer be cancelled.";
@@ -90,17 +100,21 @@ class CaseForCancellationTest {
   }
 
   private static CaseForCancellation withTuesday() {
-    return new CaseForCancellation(
-        CASE,
-        CaseStatus.ACTIVE,
-        THREE_SESSIONS,
-        List.of(TUESDAY),
-        List.of(CANCELLED_IN_TIME, CANCELLED_LATE));
+    return active(THREE_SESSIONS, List.of(TUESDAY), List.of(CANCELLED_IN_TIME, CANCELLED_LATE));
   }
 
   private static CaseForCancellation active(
-      PurchaseTerms terms, List<Appointment> booked, List<AppointmentCancellation> cancelled) {
-    return new CaseForCancellation(CASE, CaseStatus.ACTIVE, terms, booked, cancelled);
+      PurchaseTerms terms, List<Appointment> booked, List<CancelledAppointment> cancelled) {
+    return consultationCase(CaseStatus.ACTIVE, terms, booked, cancelled);
+  }
+
+  private static CaseForCancellation consultationCase(
+      CaseStatus status,
+      PurchaseTerms terms,
+      List<Appointment> booked,
+      List<CancelledAppointment> cancelled) {
+    return new CaseForCancellation(
+        CASE, status, terms, new CaseCredits(terms.sessionCount(), booked, cancelled));
   }
 
   private static CaseCancellation cancellation(
@@ -147,18 +161,14 @@ class CaseForCancellationTest {
 
   @Test
   void anAppointmentCancelledBeforeIsAlreadyCancelledWhateverTheTime() {
-    for (AppointmentCancellation cancelled : List.of(CANCELLED_IN_TIME, CANCELLED_LATE)) {
+    for (CancelledAppointment cancelled : List.of(CANCELLED_IN_TIME, CANCELLED_LATE)) {
       assertRefused(
-          () ->
-              withTuesday()
-                  .cancelAppointment(cancelled.appointmentId(), true, zurich("2026-11-15T12:00")),
+          () -> withTuesday().cancelAppointment(cancelled.id(), true, zurich("2026-11-15T12:00")),
           CaseForCancellation.APPOINTMENT_CANCELLED,
           APPOINTMENT_CANCELLED);
       // before the started and the deadline checks
       assertRefused(
-          () ->
-              withTuesday()
-                  .cancelAppointment(cancelled.appointmentId(), true, zurich("2026-11-18T12:00")),
+          () -> withTuesday().cancelAppointment(cancelled.id(), true, zurich("2026-11-18T12:00")),
           CaseForCancellation.APPOINTMENT_CANCELLED,
           APPOINTMENT_CANCELLED);
     }
@@ -214,35 +224,14 @@ class CaseForCancellationTest {
   }
 
   @Test
-  void theForfeitedCreditsAreTheAppointmentsCancelledLate() {
-    assertThat(withTuesday().forfeitedCredits()).isOne();
-    assertThat(
-            new CaseForCancellation(CASE, CaseStatus.ACTIVE, THREE_SESSIONS, List.of(), List.of())
-                .forfeitedCredits())
-        .isZero();
-    assertThat(
-            new CaseForCancellation(
-                    CASE,
-                    CaseStatus.ACTIVE,
-                    THREE_SESSIONS,
-                    List.of(),
-                    List.of(
-                        CANCELLED_LATE,
-                        new AppointmentCancellation(new AppointmentId(UUID.randomUUID()), false)))
-                .forfeitedCredits())
-        .isEqualTo(2);
-  }
-
-  @Test
-  void anAppointmentIsEitherBookedOrCancelledNeverBoth() {
+  void theCreditsCountFromThePurchaseTermsSessionCount() {
     assertThatIllegalArgumentException()
         .isThrownBy(() ->
             new CaseForCancellation(
                 CASE,
                 CaseStatus.ACTIVE,
                 THREE_SESSIONS,
-                List.of(TUESDAY),
-                List.of(new AppointmentCancellation(TUESDAY.id(), true))));
+                new CaseCredits(ONE_SESSION.sessionCount(), List.of(), List.of())));
   }
 
   @Test
@@ -335,20 +324,15 @@ class CaseForCancellationTest {
     for (boolean confirmed : List.of(true, false)) {
       assertRefused(
           () ->
-              new CaseForCancellation(
-                      CASE,
-                      CaseStatus.CANCELLED,
-                      THREE_SESSIONS,
-                      List.of(),
-                      List.of(CANCELLED_IN_TIME))
+              consultationCase(
+                      CaseStatus.CANCELLED, THREE_SESSIONS, List.of(), List.of(CANCELLED_IN_TIME))
                   .cancel(confirmed, SUNDAY_NOON),
           CaseForCancellation.CASE_CANCELLED,
           CASE_CANCELLED);
       // before the completed and the outcome checks
       assertRefused(
           () ->
-              new CaseForCancellation(
-                      CASE, CaseStatus.CANCELLED, ONE_SESSION, List.of(TUESDAY), List.of())
+              consultationCase(CaseStatus.CANCELLED, ONE_SESSION, List.of(TUESDAY), List.of())
                   .cancel(confirmed, zurich("2026-11-18T12:00")),
           CaseForCancellation.CASE_CANCELLED,
           CASE_CANCELLED);

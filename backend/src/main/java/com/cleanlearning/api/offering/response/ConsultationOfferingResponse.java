@@ -10,11 +10,6 @@ import java.util.List;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
-/**
- * A consultation offering as the admin edits it. The packages come fewest sessions first, then by
- * id; the eligible expert ids are sorted by id. The image id is {@code null} without an image;
- * {@code GET /api/images/{id}} serves it.
- */
 public record ConsultationOfferingResponse(
     UUID id,
     String name,

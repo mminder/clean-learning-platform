@@ -7,10 +7,6 @@ import com.cleanlearning.domain.user.value.UserId;
 import java.time.Instant;
 import java.util.Objects;
 
-/**
- * A new case, as a purchase creates it (UC-03 step 6): its customer, the offering, the purchase
- * terms and the purchase time. It has no assigned expert and no appointments yet.
- */
 public record NewConsultationCase(
     ConsultationCaseId id,
     UserId customerId,

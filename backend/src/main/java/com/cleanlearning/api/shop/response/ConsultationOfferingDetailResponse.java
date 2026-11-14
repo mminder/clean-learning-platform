@@ -5,10 +5,6 @@ import com.cleanlearning.api.response.EligibleExpertResponse;
 import com.cleanlearning.domain.offering.view.ShopConsultationOffering;
 import java.util.List;
 
-/**
- * The consultation part of an offering's detail: packages fewest sessions first, eligible experts
- * by display name.
- */
 public record ConsultationOfferingDetailResponse(
     int sessionDurationMinutes,
     int cancellationDeadlineHours,

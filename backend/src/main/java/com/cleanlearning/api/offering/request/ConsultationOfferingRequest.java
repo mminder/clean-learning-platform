@@ -9,10 +9,8 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * The body of {@code POST} and {@code PUT}: the offering's form (UC-16 steps 3–4). The annotations
- * repeat UC-16's rules, so a 400 names every invalid field; the value objects stay the authority.
- * The numbers are {@code Integer}, so a missing one is a 400, not a silent 0. {@code packages} and
- * {@code eligibleExpertIds} may be empty; an expert id named twice counts once.
+ * The annotations repeat UC-16's rules so a 400 names every invalid field; the value objects stay
+ * the authority. The numbers are {@code Integer}, so a missing one is a 400, not a silent 0.
  */
 public record ConsultationOfferingRequest(
     @NotBlank String name,

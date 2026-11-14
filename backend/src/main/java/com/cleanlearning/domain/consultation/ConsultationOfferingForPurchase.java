@@ -18,11 +18,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * A consultation offering as a purchase needs it (UC-03): its status, the terms it copies into a
- * case, and its packages. It holds UC-03's rules: only a published offering is bought, and only at
- * the price and session count the customer confirmed.
- */
 public record ConsultationOfferingForPurchase(
     OfferingId id,
     OfferingStatus status,
@@ -30,10 +25,8 @@ public record ConsultationOfferingForPurchase(
     CancellationDeadline cancellationDeadline,
     List<ConsultationPackage> packages) {
 
-  /** The offering was unpublished or archived while the customer chose. */
   public static final String OFFERING_NOT_AVAILABLE = "OFFERING_NOT_AVAILABLE";
 
-  /** The package was removed, or its price or session count changed, while the customer chose. */
   public static final String PACKAGE_CHANGED = "PACKAGE_CHANGED";
 
   public ConsultationOfferingForPurchase {
@@ -45,16 +38,8 @@ public record ConsultationOfferingForPurchase(
   }
 
   /**
-   * The customer buys the package (UC-03 steps 5–6): a new case with a new id, the package's price
-   * and session count, the offering's session duration and cancellation deadline, and {@code now}
-   * as the purchase time. The status is checked first. A published offering without packages isn't
-   * in the shop (UC-02), and buying from it is {@link #PACKAGE_CHANGED}.
-   *
-   * @param confirmedPrice the price the customer confirmed
-   * @param confirmedSessionCount the session count the customer confirmed
-   * @throws BusinessRuleException {@link #OFFERING_NOT_AVAILABLE} if the offering isn't published,
-   *     or {@link #PACKAGE_CHANGED} if the package isn't one of the offering's, or its price or
-   *     session count isn't the confirmed one
+   * A published offering without packages isn't in the shop, so buying from it is {@link
+   * #PACKAGE_CHANGED}.
    */
   public NewConsultationCase purchase(
       UserId customerId,

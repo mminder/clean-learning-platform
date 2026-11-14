@@ -5,11 +5,9 @@ import io.swagger.v3.oas.models.media.Schema;
 import org.springdoc.core.customizers.OpenApiCustomizer;
 
 /**
- * Marks every property of a response schema (a {@code *Response} record) as required, unless it's
- * nullable. A response always contains all its fields, so the generated TypeScript types say {@code
- * name: string}, not {@code name?: string}. A response field that may be null is annotated with
- * JSpecify's {@code @Nullable}, which springdoc turns into a nullable property. Request schemas
- * keep what Bean Validation says.
+ * A response always contains all its fields, so the generated TypeScript types say {@code name:
+ * string}, not {@code name?: string}. A field that may be null is annotated with JSpecify's
+ * {@code @Nullable}. Request schemas keep what Bean Validation says.
  */
 class RequiredResponseFieldsCustomizer implements OpenApiCustomizer {
 

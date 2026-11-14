@@ -11,10 +11,6 @@ import java.time.Instant;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
-/**
- * The purchase writes {@code ACTIVE}. Its first booking sets the assigned expert, and its
- * cancellation the status, {@code cancelled_at} and {@code refund_eligible}.
- */
 @Entity
 @Table(name = "consultation_case")
 public class ConsultationCaseEntity {
@@ -23,11 +19,6 @@ public class ConsultationCaseEntity {
 
   private UUID customerId;
 
-  /**
-   * Foreign key to {@link
-   * com.cleanlearning.adapters.database.offering.entity.ConsultationOfferingEntity}, whose id is
-   * also the {@link com.cleanlearning.adapters.database.offering.entity.OfferingEntity}'s id.
-   */
   private UUID consultationOfferingId;
 
   private BigDecimal pricePaid;
@@ -40,8 +31,6 @@ public class ConsultationCaseEntity {
 
   private Instant purchasedAt;
 
-  // The expert's user id, which is also the id of their expert profile; null until the first
-  // booking (UC-06).
   private @Nullable UUID assignedExpertId;
 
   @Enumerated(EnumType.STRING)
@@ -52,9 +41,7 @@ public class ConsultationCaseEntity {
 
   private @Nullable Boolean refundEligible;
 
-  protected ConsultationCaseEntity() {
-    // for JPA
-  }
+  protected ConsultationCaseEntity() {}
 
   public ConsultationCaseEntity(
       UUID id,

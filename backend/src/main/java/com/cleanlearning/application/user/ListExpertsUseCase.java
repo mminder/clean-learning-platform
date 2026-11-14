@@ -6,10 +6,6 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * UC-16 step 3: the experts an admin can make eligible for a consultation offering, sorted by
- * display name.
- */
 @Service
 public class ListExpertsUseCase {
 

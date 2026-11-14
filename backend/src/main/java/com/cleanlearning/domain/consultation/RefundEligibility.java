@@ -8,13 +8,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * Whether cancelling a case refunds its purchase price (UC-08, D-12, spec 05 decision 5): the one
- * rule the case detail's preview and the cancellation share. The reason is empty when the case is
- * refund-eligible, otherwise the first that applies, in the order of {@link NonRefundableReason}.
- * With {@code DEADLINE_PASSED} only, it names the soonest appointment whose free-cancellation time
- * has passed and that time.
- */
+/** The one rule the case detail's preview and the cancellation share. */
 public record RefundEligibility(
     Optional<NonRefundableReason> reason,
     Optional<Appointment> deadlinePassedAppointment,
@@ -33,28 +27,20 @@ public record RefundEligibility(
   }
 
   /**
-   * The rule at {@code asOf}, for the case's booked appointments (not the cancelled ones: a credit
-   * refunded by a cancellation in time doesn't count) and its forfeited credits. A running
-   * appointment is consumed. An appointment that hasn't started is late from its free-cancellation
-   * time on, that moment included: exactly when cancelling it would forfeit its credit, as {@link
-   * Appointment}'s cancellation rules decide (UC-07), so a case cancelled refund-eligible cancels
-   * no appointment late.
+   * An appointment that hasn't started is late from its free-cancellation time on, that moment
+   * included: exactly when cancelling it would forfeit its credit, so a refund-eligible case
+   * cancels no appointment late.
    */
   public static RefundEligibility at(
-      List<Appointment> bookedAppointments,
-      int forfeitedCredits,
-      CancellationDeadline deadline,
-      Instant asOf) {
-    Objects.requireNonNull(bookedAppointments, "bookedAppointments");
+      CaseCredits credits, CancellationDeadline deadline, Instant asOf) {
+    Objects.requireNonNull(credits, "credits");
     Objects.requireNonNull(deadline, "deadline");
     Objects.requireNonNull(asOf, "asOf");
-    if (forfeitedCredits < 0) {
-      throw new IllegalArgumentException("The forfeited credits can't be negative.");
-    }
+    List<Appointment> bookedAppointments = credits.bookedAppointments();
     if (bookedAppointments.stream().anyMatch(a -> !a.isCancellableAt(asOf))) {
       return withReason(NonRefundableReason.SESSION_TOOK_PLACE);
     }
-    if (forfeitedCredits > 0) {
+    if (credits.forfeitedCredits() > 0) {
       return withReason(NonRefundableReason.CREDIT_FORFEITED);
     }
     Optional<Appointment> soonestLate =

@@ -1,43 +1,87 @@
 package com.cleanlearning.domain.consultation;
 
+import com.cleanlearning.domain.consultation.value.AppointmentId;
+import com.cleanlearning.domain.consultation.value.PurchaseTerms;
 import com.cleanlearning.domain.offering.value.SessionCount;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
- * The case-level rules on a case's credits, which the booking, the cancellation and the views
- * share.
+ * The credit rules every model of a case shares, so booking, cancellation and the pages count the
+ * same way.
  */
-public final class CaseCredits {
+public record CaseCredits(
+    SessionCount sessionCount,
+    List<Appointment> bookedAppointments,
+    List<CancelledAppointment> cancelledAppointments) {
 
-  private CaseCredits() {}
+  /** Ties break by id as text, which is Postgres's order of a uuid. */
+  private static final Comparator<Appointment> BY_START =
+      Comparator.comparing(Appointment::start)
+          .thenComparing(appointment -> appointment.id().value().toString());
 
-  /**
-   * Computed, never stored (D-11): the open credits of a case with this session count, this many
-   * booked appointments, each of which uses a credit, consumed or not, and this many forfeited
-   * credits, of appointments cancelled late (UC-07): {@code total − BOOKED − forfeited} (glossary),
-   * until credit adjustments (UC-18) exist. An appointment cancelled in time is neither. The
-   * booking's check, the case detail and "My purchases" all count with this one rule, so what the
-   * pages show and what the booking allows can't drift apart.
-   */
-  public static int openCredits(
-      SessionCount sessionCount, int bookedAppointments, int forfeitedCredits) {
-    return sessionCount.value() - bookedAppointments - forfeitedCredits;
+  public CaseCredits {
+    Objects.requireNonNull(sessionCount, "sessionCount");
+    bookedAppointments = List.copyOf(bookedAppointments);
+    cancelledAppointments = List.copyOf(cancelledAppointments);
+    Set<AppointmentId> booked =
+        bookedAppointments.stream().map(Appointment::id).collect(Collectors.toSet());
+    if (cancelledAppointments.stream().anyMatch(cancelled -> booked.contains(cancelled.id()))) {
+      throw new IllegalArgumentException(
+          "An appointment is either booked or cancelled, never both.");
+    }
   }
 
-  /**
-   * Computed, never stored (D-11): whether an active case with this session count, these booked
-   * appointments and this many forfeited credits is {@code COMPLETED} at {@code asOf}: no open
-   * credit and no booked appointment that hasn't ended (glossary, spec 05 decision 13), so a case
-   * whose last session runs isn't completed yet. The case detail, "My purchases" and the case's
-   * cancellation all decide it with this one rule.
-   */
-  public static boolean isCompleted(
-      SessionCount sessionCount,
-      List<Appointment> bookedAppointments,
-      int forfeitedCredits,
-      Instant asOf) {
-    return openCredits(sessionCount, bookedAppointments.size(), forfeitedCredits) <= 0
-        && bookedAppointments.stream().noneMatch(appointment -> appointment.isUpcomingAt(asOf));
+  public void requireSessionCountOf(PurchaseTerms purchaseTerms) {
+    if (!sessionCount.equals(purchaseTerms.sessionCount())) {
+      throw new IllegalArgumentException(
+          "A case's credits count from its purchase terms' session count.");
+    }
+  }
+
+  public int totalCredits() {
+    return sessionCount.value();
+  }
+
+  public int forfeitedCredits() {
+    return Math.toIntExact(
+        cancelledAppointments.stream().filter(CancelledAppointment::isCreditForfeited).count());
+  }
+
+  /** Every booked appointment uses a credit, consumed or not, and so does every forfeited one. */
+  public int openCredits() {
+    return totalCredits() - bookedAppointments.size() - forfeitedCredits();
+  }
+
+  public boolean hasOpenCredit() {
+    return openCredits() > 0;
+  }
+
+  /** A case whose last session runs isn't completed yet. */
+  public boolean isCompletedAt(Instant asOf) {
+    return !hasOpenCredit() && nextAppointment(asOf).isEmpty();
+  }
+
+  public List<Appointment> upcomingAppointments(Instant asOf) {
+    return bookedAppointments.stream()
+        .filter(appointment -> appointment.isUpcomingAt(asOf))
+        .sorted(BY_START)
+        .toList();
+  }
+
+  public List<Appointment> pastAppointments(Instant asOf) {
+    return bookedAppointments.stream()
+        .filter(appointment -> !appointment.isUpcomingAt(asOf))
+        .sorted(BY_START.reversed())
+        .toList();
+  }
+
+  public Optional<Appointment> nextAppointment(Instant asOf) {
+    return upcomingAppointments(asOf).stream().findFirst();
   }
 }

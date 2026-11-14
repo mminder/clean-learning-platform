@@ -6,6 +6,5 @@ import java.util.Optional;
 
 public interface LoadUserPort {
 
-  /** The user with their roles. */
   Optional<User> load(UserId id);
 }

@@ -15,7 +15,5 @@ public class UserEntity {
 
   private String email;
 
-  protected UserEntity() {
-    // for JPA
-  }
+  protected UserEntity() {}
 }

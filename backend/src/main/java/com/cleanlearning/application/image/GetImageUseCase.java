@@ -7,10 +7,6 @@ import com.cleanlearning.domain.shared.NotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Serves an image to everyone (D-21): an offering's image in the shop and the admin's page, later
- * an expert's photo.
- */
 @Service
 public class GetImageUseCase {
 
@@ -20,9 +16,6 @@ public class GetImageUseCase {
     this.imageStore = imageStore;
   }
 
-  /**
-   * @throws NotFoundException if there's no image with this id, such as one that was replaced
-   */
   @Transactional(readOnly = true)
   public Image invoke(ImageId id) {
     return imageStore

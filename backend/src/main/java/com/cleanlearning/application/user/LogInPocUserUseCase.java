@@ -7,10 +7,6 @@ import com.cleanlearning.domain.user.value.UserId;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * UC-01 PoC steps 3–4: the picked user, with the roles they log in with. The controller starts the
- * session.
- */
 @Service
 public class LogInPocUserUseCase {
 
@@ -20,9 +16,6 @@ public class LogInPocUserUseCase {
     this.loadUser = loadUser;
   }
 
-  /**
-   * @throws NotFoundException if the user doesn't exist
-   */
   @Transactional(readOnly = true)
   public User invoke(UserId id) {
     return loadUser

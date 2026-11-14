@@ -1,9 +1,11 @@
 package com.cleanlearning.domain.image.value;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 import com.cleanlearning.TestImages;
+import com.cleanlearning.domain.shared.InvalidValueException;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
@@ -26,27 +28,30 @@ class ImageTypeTest {
   @Test
   void rejectsAnyOtherFile() {
     String message = "An image is a JPEG, PNG or WebP file.";
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(() -> ImageType.detect(TestImages.gif(100)))
         .withMessage(message);
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(() -> ImageType.detect("not a picture".getBytes(StandardCharsets.UTF_8)))
         .withMessage(message);
     // a RIFF file that isn't WebP, such as a WAV
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(
             () -> ImageType.detect("RIFF\0\0\0\0WAVEfmt ".getBytes(StandardCharsets.US_ASCII)))
         .withMessage(message);
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(() -> ImageType.detect(new byte[0]))
         .withMessage(message);
   }
 
   @Test
   void rejectsACutOffSignature() {
-    assertThatIllegalArgumentException().isThrownBy(() -> ImageType.detect(TestImages.jpeg(2)));
-    assertThatIllegalArgumentException().isThrownBy(() -> ImageType.detect(TestImages.png(7)));
-    assertThatIllegalArgumentException().isThrownBy(() -> ImageType.detect(TestImages.webp(11)));
+    assertThatExceptionOfType(InvalidValueException.class)
+        .isThrownBy(() -> ImageType.detect(TestImages.jpeg(2)));
+    assertThatExceptionOfType(InvalidValueException.class)
+        .isThrownBy(() -> ImageType.detect(TestImages.png(7)));
+    assertThatExceptionOfType(InvalidValueException.class)
+        .isThrownBy(() -> ImageType.detect(TestImages.webp(11)));
   }
 
   @Test

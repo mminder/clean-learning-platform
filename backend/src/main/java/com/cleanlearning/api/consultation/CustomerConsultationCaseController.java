@@ -52,11 +52,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * The customer's cases (UC-03, UC-05), their bookings (UC-06), their appointments' cancellations
- * (UC-07) and their cancellations (UC-08). Security lets only users with {@code CUSTOMER} in; each
- * use case is scoped to the current user, so another customer's case answers 404.
- */
 @RestController
 @RequestMapping(CustomerConsultationCaseController.PATH)
 @PreAuthorize("hasRole('CUSTOMER')")
@@ -99,7 +94,6 @@ class CustomerConsultationCaseController {
     this.cancelConsultationCase = cancelConsultationCase;
   }
 
-  /** UC-05's landing page: the current user's own cases, in the order of "My purchases". */
   @GetMapping
   @ResponseStatus(HttpStatus.OK)
   List<CustomerConsultationCaseSummaryResponse> listCustomerConsultationCases(
@@ -110,9 +104,8 @@ class CustomerConsultationCaseController {
   }
 
   /**
-   * UC-03: buys a package; the current user is the case's customer. {@code @ResponseStatus} tells
-   * springdoc the status that {@code ResponseEntity.created} sets, and {@code @ApiResponse} adds
-   * its {@code Location} header.
+   * {@code @ResponseStatus} tells springdoc the status that {@code ResponseEntity.created} sets,
+   * and {@code @ApiResponse} adds its {@code Location} header.
    */
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
@@ -146,7 +139,6 @@ class CustomerConsultationCaseController {
         getCustomerConsultationCase.invoke(currentUser, new ConsultationCaseId(id)));
   }
 
-  /** UC-06 step 2: the experts the first booking can pick, by display name. */
   @GetMapping("/{id}/eligible-experts")
   @ResponseStatus(HttpStatus.OK)
   @ProblemResponses.Status400
@@ -158,11 +150,6 @@ class CustomerConsultationCaseController {
         .toList();
   }
 
-  /**
-   * UC-06 steps 3–4: the times the case can book with the expert, soonest first. {@code expertId}
-   * is the expert the dialog shows; without it Spring answers 400. A cancelled case answers 409
-   * {@code CASE_CANCELLED}.
-   */
   @GetMapping("/{id}/bookable-slots")
   @ResponseStatus(HttpStatus.OK)
   @ProblemResponses.Status400
@@ -179,11 +166,7 @@ class CustomerConsultationCaseController {
         .toList();
   }
 
-  /**
-   * UC-06 steps 6–7: books a session on the case and answers the new appointment. No {@code
-   * Location}: an appointment has no route of its own; it's part of its case, which the page
-   * reloads (spec 04, decision 17).
-   */
+  /** No {@code Location}: an appointment has no route of its own; it's part of its case. */
   @PostMapping("/{id}/appointments")
   @ResponseStatus(HttpStatus.CREATED)
   @ProblemResponses.Status400
@@ -202,10 +185,8 @@ class CustomerConsultationCaseController {
   }
 
   /**
-   * UC-07 steps 3–5: cancels an appointment of the case with the outcome the dialog stated, and
-   * answers the case without it (spec 05, decision 12). The appointment is addressed under its
-   * case, so the case's scoped query decides ownership, and an appointment of another case answers
-   * 404.
+   * The appointment is addressed under its case, so the case's scoped query decides ownership, and
+   * an appointment of another case answers 404.
    */
   @PostMapping("/{id}/appointments/{appointmentId}/cancel")
   @ResponseStatus(HttpStatus.OK)
@@ -227,10 +208,6 @@ class CustomerConsultationCaseController {
                 request.creditRefunded())));
   }
 
-  /**
-   * UC-08 steps 3–5: cancels the case, and with it its appointments that haven't started, with the
-   * outcome the dialog stated, and answers the cancelled case (spec 05, decision 12).
-   */
   @PostMapping("/{id}/cancel")
   @ResponseStatus(HttpStatus.OK)
   @ProblemResponses.Status400
@@ -248,10 +225,6 @@ class CustomerConsultationCaseController {
                 new ConsultationCaseId(id), request.refundEligible())));
   }
 
-  /**
-   * A value object that rejects a value Bean Validation let through throws, and the API answers
-   * 400.
-   */
   private static PurchaseConsultationPackageCommand toCommand(
       PurchaseConsultationPackageRequest request) {
     return new PurchaseConsultationPackageCommand(

@@ -6,12 +6,6 @@ import java.time.Instant;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
-/**
- * A case with its offering's name and image, read live, its assigned expert's public profile
- * fields, and its status with its cancellation. The image id is {@code null} without an image; the
- * expert's fields are {@code null} until the first booking; {@code cancelledAt} and {@code
- * refundEligible} are {@code null} while the case is {@code ACTIVE}.
- */
 public record CustomerConsultationCaseRow(
     UUID id,
     String offeringName,

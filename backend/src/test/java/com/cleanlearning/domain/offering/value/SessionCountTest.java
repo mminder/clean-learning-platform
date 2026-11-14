@@ -1,8 +1,9 @@
 package com.cleanlearning.domain.offering.value;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
+import com.cleanlearning.domain.shared.InvalidValueException;
 import org.junit.jupiter.api.Test;
 
 class SessionCountTest {
@@ -15,10 +16,10 @@ class SessionCountTest {
 
   @Test
   void rejectsZeroAndNegativeCounts() {
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(() -> new SessionCount(0))
         .withMessageContaining("0");
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(() -> new SessionCount(-3))
         .withMessageContaining("-3");
   }

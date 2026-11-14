@@ -77,6 +77,7 @@ Customer buys a Run     ──► Enrollment (purchase terms)
 | Appointment | One booked session of a case with the assigned expert. Has a start and an end. |
 | Appointment status | `BOOKED` or `CANCELLED` (stored). `CONSUMED` is derived: `BOOKED` and the start has passed. |
 | Consumed | An appointment whose start time has passed. Attendance isn't tracked. |
+| Cancelled appointment | An appointment its customer cancelled, alone or with its case. It keeps its start and end and whether its credit was refunded. It's no busy time, and the customer's pages don't show it. Called `CancelledAppointment` in code; an `Appointment` is a booked one. |
 | Upcoming appointment | A `BOOKED` appointment that hasn't ended. One that has started is consumed, and still upcoming until its end, so the pages keep it, and its call link, within reach while the session runs. |
 | Forfeited credit | The credit of an appointment cancelled after its cancellation deadline (`creditRefunded = false`). |
 | Credit adjustment | A goodwill change by an admin: a delta (±), a mandatory reason, the admin, and a timestamp. |

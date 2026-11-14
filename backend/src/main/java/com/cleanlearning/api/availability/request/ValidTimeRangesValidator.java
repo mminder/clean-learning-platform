@@ -5,8 +5,8 @@ import jakarta.validation.ConstraintValidatorContext;
 import java.util.List;
 
 /**
- * Checks {@link ValidTimeRanges}. A range with a missing time is left to {@code @NotNull}, and a
- * range whose end isn't after its start takes part in no overlap.
+ * A range with a missing time is left to {@code @NotNull}, and a range whose end isn't after its
+ * start takes part in no overlap.
  */
 public class ValidTimeRangesValidator
     implements ConstraintValidator<ValidTimeRanges, AvailabilityRequest> {
@@ -38,10 +38,6 @@ public class ValidTimeRangesValidator
     return valid;
   }
 
-  /**
-   * Whether another range starts before range {@code i}, or at the same time and earlier in the
-   * list, and overlaps or touches it: then range {@code i} is the later-starting one of the two.
-   */
   private static boolean overlapsOrTouchesAnEarlierOne(List<TimeRangeRequest> ranges, int i) {
     TimeRangeRequest range = ranges.get(i);
     for (int j = 0; j < ranges.size(); j++) {
@@ -68,7 +64,6 @@ public class ValidTimeRangesValidator
     return range.start().isBefore(range.end());
   }
 
-  /** A violation at {@code timeRanges[index].property}, the path Spring reports as the field. */
   private static void addViolation(
       ConstraintValidatorContext context, int index, String property, String message) {
     context

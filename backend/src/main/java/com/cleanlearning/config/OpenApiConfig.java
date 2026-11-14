@@ -12,11 +12,7 @@ import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * The OpenAPI document at {@code /v3/api-docs}, which {@code backend/openapi.json} is generated
- * from (D-29). The rest of the setup (pretty-printed, sorted keys, JSON responses, nullable
- * properties) is in {@code application.yml}.
- */
+/** {@code backend/openapi.json} is generated from it (D-29). */
 @Configuration(proxyBeanMethods = false)
 public class OpenApiConfig {
 
@@ -25,7 +21,6 @@ public class OpenApiConfig {
     return new OpenAPI()
         .info(new Info().title("Clean Learning Platform API").version("v1"))
         // A fixed server, so the document doesn't depend on the host it was requested from.
-        // The SPA calls the API on its own origin.
         .servers(List.of(new Server().url("/")));
   }
 
@@ -41,8 +36,7 @@ public class OpenApiConfig {
 
   /**
    * {@code POST /api/logout} is Spring Security's logout filter, not a controller, so springdoc
-   * doesn't see it. The document lists it, so the SPA calls it through the generated client like
-   * every other route.
+   * doesn't see it. The document lists it so the SPA calls it through the generated client.
    */
   @Bean
   OpenApiCustomizer logoutRoute() {

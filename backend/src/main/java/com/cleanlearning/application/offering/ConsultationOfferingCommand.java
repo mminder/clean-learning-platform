@@ -9,11 +9,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-/**
- * What the admin saves in the offering's form (UC-16 steps 3–4), for creating and for editing it.
- * An intended package either names the package it keeps or is a new package. The eligible expert
- * ids are a set: an id named twice counts once.
- */
 public record ConsultationOfferingCommand(
     OfferingName name,
     String description,

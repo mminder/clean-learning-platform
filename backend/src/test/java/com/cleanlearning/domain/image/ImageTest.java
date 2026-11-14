@@ -1,11 +1,12 @@
 package com.cleanlearning.domain.image;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import com.cleanlearning.TestImages;
 import com.cleanlearning.domain.image.value.ImageId;
 import com.cleanlearning.domain.image.value.ImageType;
+import com.cleanlearning.domain.shared.InvalidValueException;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -29,21 +30,21 @@ class ImageTest {
 
   @Test
   void rejectsMoreThanTwoMegabytes() {
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(() -> Image.upload(TestImages.jpeg(Image.MAX_BYTES + 1)))
         .withMessage("An image is at most 2 MB.");
   }
 
   @Test
   void rejectsAnEmptyFile() {
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(() -> Image.upload(new byte[0]))
         .withMessage("An image is not empty.");
   }
 
   @Test
   void rejectsAFileOfAnotherType() {
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(() -> Image.upload(TestImages.gif(100)))
         .withMessage("An image is a JPEG, PNG or WebP file.");
   }
@@ -51,9 +52,9 @@ class ImageTest {
   @Test
   void aStoredImageKeepsTheSizeRules() {
     ImageId id = new ImageId(UUID.randomUUID());
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(() -> new Image(id, ImageType.PNG, new byte[0]));
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(() -> new Image(id, ImageType.PNG, TestImages.png(Image.MAX_BYTES + 1)));
   }
 

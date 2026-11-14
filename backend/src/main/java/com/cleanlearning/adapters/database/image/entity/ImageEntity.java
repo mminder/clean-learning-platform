@@ -5,7 +5,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.util.UUID;
 
-/** An image is never changed, only inserted and deleted. */
 @Entity
 @Table(name = "image")
 public class ImageEntity {
@@ -16,9 +15,7 @@ public class ImageEntity {
 
   private byte[] data;
 
-  protected ImageEntity() {
-    // for JPA
-  }
+  protected ImageEntity() {}
 
   public ImageEntity(UUID id, String contentType, byte[] data) {
     this.id = id;

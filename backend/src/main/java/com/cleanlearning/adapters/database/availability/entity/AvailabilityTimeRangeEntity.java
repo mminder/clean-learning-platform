@@ -19,9 +19,7 @@ public class AvailabilityTimeRangeEntity {
 
   private LocalTime endTime;
 
-  protected AvailabilityTimeRangeEntity() {
-    // for JPA
-  }
+  protected AvailabilityTimeRangeEntity() {}
 
   public AvailabilityTimeRangeEntity(UUID expertId, LocalTime startTime, LocalTime endTime) {
     this.expertId = expertId;

@@ -40,8 +40,6 @@ class ShopOfferingAdapter implements LoadShopOfferingsPort, LoadShopOfferingPort
 
   @Override
   public List<ShopOffering> loadPublished() {
-    // The rows come sorted by offering name; the map keeps that order and groups each offering's
-    // prices.
     Map<UUID, List<ShopOfferingPriceRow>> rowsByOffering = new LinkedHashMap<>();
     for (ShopOfferingPriceRow row : offeringRepository.findPublishedWithPackagePrices()) {
       rowsByOffering.computeIfAbsent(row.id(), id -> new ArrayList<>()).add(row);
@@ -51,15 +49,13 @@ class ShopOfferingAdapter implements LoadShopOfferingsPort, LoadShopOfferingPort
 
   @Override
   public Optional<ShopConsultationOffering> loadPublished(OfferingId id) {
-    // Three queries, whatever the number of packages and experts: one each for the offering, its
-    // packages and
-    // its experts. One joined query would repeat every package for every expert.
+    // Three queries, whatever the number of packages and experts: one joined query would repeat
+    // every package for every expert.
     return offeringRepository
         .findPublishedConsultationOffering(id.value())
         .flatMap(this::loadWithPackages);
   }
 
-  /** Like the list, the shop hides a published offering without packages (UC-02). */
   private Optional<ShopConsultationOffering> loadWithPackages(
       ShopConsultationOfferingRow offering) {
     List<ConsultationPackageRow> packages = offeringRepository.findPackages(offering.id());

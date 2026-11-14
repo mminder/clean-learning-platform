@@ -6,7 +6,6 @@ import com.cleanlearning.domain.offering.ConsultationOffering;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** UC-16 steps 2–4: the admin creates a consultation offering. It starts as a draft. */
 @Service
 public class CreateConsultationOfferingUseCase {
 
@@ -20,10 +19,6 @@ public class CreateConsultationOfferingUseCase {
     this.loadExperts = loadExperts;
   }
 
-  /**
-   * @throws IllegalArgumentException if a package names an id, or an eligible expert id isn't an
-   *     expert's
-   */
   @Transactional
   public ConsultationOffering invoke(ConsultationOfferingCommand command) {
     ConsultationOffering offering =

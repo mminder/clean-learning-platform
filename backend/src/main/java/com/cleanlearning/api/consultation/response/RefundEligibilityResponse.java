@@ -5,10 +5,8 @@ import com.cleanlearning.domain.consultation.value.NonRefundableReason;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Whether cancelling a case now would refund its purchase price (UC-08, D-12), computed by the
- * server: the cancel dialog's preview. {@code reason} is {@code null} when it's refund-eligible,
- * otherwise the first that applies, in UC-08's order; {@code appointment} comes only with {@code
- * DEADLINE_PASSED}, the soonest such appointment.
+ * {@code reason} is {@code null} when it's refund-eligible; {@code appointment} comes only with
+ * {@code DEADLINE_PASSED}.
  */
 public record RefundEligibilityResponse(
     boolean refundEligible,

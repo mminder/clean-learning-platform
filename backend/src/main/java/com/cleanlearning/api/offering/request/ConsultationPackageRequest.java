@@ -6,10 +6,8 @@ import jakarta.validation.constraints.Positive;
 import java.util.UUID;
 
 /**
- * A package in the offering's form (UC-16 step 3). With an {@code id} it keeps that package of the
- * offering; without one it's a new package. The price is a string: an amount in CHF, not negative,
- * with at most two decimals and at most 8 digits before the point (the column is {@code
- * numeric(10,2)}). One pattern checks all of it.
+ * The price is a string: not negative, with at most two decimals and 8 digits before the point (the
+ * column is {@code numeric(10,2)}). One pattern checks all of it.
  */
 public record ConsultationPackageRequest(
     UUID id,

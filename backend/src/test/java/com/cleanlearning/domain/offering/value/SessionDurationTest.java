@@ -1,8 +1,9 @@
 package com.cleanlearning.domain.offering.value;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
+import com.cleanlearning.domain.shared.InvalidValueException;
 import org.junit.jupiter.api.Test;
 
 class SessionDurationTest {
@@ -15,10 +16,10 @@ class SessionDurationTest {
 
   @Test
   void rejectsZeroAndNegativeMinutes() {
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(() -> new SessionDuration(0))
         .withMessageContaining("0");
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(() -> new SessionDuration(-30))
         .withMessageContaining("-30");
   }

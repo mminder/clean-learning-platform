@@ -1,6 +1,7 @@
 package com.cleanlearning.api;
 
 import com.cleanlearning.domain.shared.BusinessRuleException;
+import com.cleanlearning.domain.shared.InvalidValueException;
 import com.cleanlearning.domain.shared.NotFoundException;
 import java.util.Comparator;
 import java.util.List;
@@ -17,15 +18,9 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /**
- * Maps exceptions to {@code ProblemDetail} (RFC 9457) bodies, see the errors in
- * _docs/architecture/backend.md. Spring MVC's own exceptions are handled by {@link
- * ResponseEntityExceptionHandler}: an unknown route answers 404, and a malformed request, such as
- * an id that isn't a UUID, answers 400. A Bean Validation failure answers 400 with every invalid
- * field in {@code errors}. A business rule that says no answers 409 with its {@code code}. The
- * status of a returned {@code ProblemDetail} is the response's status.
- *
- * <p>{@code openapi.json} doesn't list these answers on every route: each controller method
- * declares the ones it can give, with {@link ProblemResponses}.
+ * Maps exceptions to {@code ProblemDetail} (RFC 9457) bodies. {@code openapi.json} doesn't list
+ * these answers on every route: each controller method declares its own, with {@link
+ * ProblemResponses}.
  */
 @RestControllerAdvice
 class ApiExceptionHandler extends ResponseEntityExceptionHandler {
@@ -36,17 +31,13 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   /**
-   * In this code base, {@link IllegalArgumentException} means an invalid value: a value object
-   * rejected a value that Bean Validation let through, such as a name of only no-break spaces.
+   * Other exceptions, an {@link IllegalArgumentException} included, are server bugs and answer 500.
    */
   @ExceptionHandler
-  ProblemDetail handleInvalidValue(IllegalArgumentException exception) {
+  ProblemDetail handleInvalidValue(InvalidValueException exception) {
     return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
   }
 
-  /**
-   * The message is written for the user, and the frontend shows it; {@code code} is stable (D-34).
-   */
   @ExceptionHandler
   ProblemDetail handleBusinessRule(BusinessRuleException exception) {
     ProblemDetail problem =
@@ -55,10 +46,6 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     return problem;
   }
 
-  /**
-   * Spring's 400 for an invalid request body, plus {@code errors}: each invalid field, sorted by
-   * its path.
-   */
   @Override
   protected ResponseEntity<Object> handleMethodArgumentNotValid(
       MethodArgumentNotValidException exception,
@@ -75,8 +62,7 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   /**
-   * An upload over the multipart limit of {@code application.yml}, 2 MB for an image (D-21),
-   * answers 400 like an image of another type, not Spring's 413. The servlet container stops
+   * Answers 400 like an image of another type, not Spring's 413. The servlet container stops
    * reading at the limit, so the use case never sees the file.
    */
   @Override
@@ -90,9 +76,5 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     return handleExceptionInternal(exception, problem, headers, HttpStatus.BAD_REQUEST, request);
   }
 
-  /**
-   * An entry of a 400's {@code errors}: the field's path as Spring reports it, like {@code
-   * packages[1].price}.
-   */
   record InvalidField(String field, String message) {}
 }

@@ -7,7 +7,6 @@ import com.cleanlearning.domain.shared.NotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** UC-16 step 2: the admin opens a consultation offering, in any status. */
 @Service
 public class GetConsultationOfferingUseCase {
 
@@ -17,9 +16,6 @@ public class GetConsultationOfferingUseCase {
     this.loadOffering = loadOffering;
   }
 
-  /**
-   * @throws NotFoundException if there's no consultation offering with this id
-   */
   @Transactional(readOnly = true)
   public ConsultationOffering invoke(OfferingId id) {
     return loadOffering

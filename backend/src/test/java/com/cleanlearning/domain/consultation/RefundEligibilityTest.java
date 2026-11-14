@@ -7,12 +7,14 @@ import com.cleanlearning.domain.consultation.value.AppointmentId;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.consultation.value.NonRefundableReason;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
+import com.cleanlearning.domain.offering.value.SessionCount;
 import com.cleanlearning.domain.shared.BusinessTimeZone;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -44,12 +46,19 @@ class RefundEligibilityTest {
   }
 
   private static RefundEligibility rule(List<Appointment> booked, int forfeited) {
-    return RefundEligibility.at(booked, forfeited, DAY, NOW);
+    return RefundEligibility.at(credits(booked, forfeited), DAY, NOW);
   }
 
-  @Test
-  void rejectsANegativeNumberOfForfeitedCredits() {
-    assertThatIllegalArgumentException().isThrownBy(() -> rule(List.of(), -1));
+  /** The credits of a case with these booked appointments and this many cancelled late. */
+  private static CaseCredits credits(List<Appointment> booked, int forfeited) {
+    return new CaseCredits(
+        new SessionCount(booked.size() + forfeited + 1),
+        booked,
+        Stream.generate(() ->
+                new CancelledAppointment(
+                    new AppointmentId(UUID.randomUUID()), NOW, NOW.plusSeconds(3600), false))
+            .limit(forfeited)
+            .toList());
   }
 
   @Test
@@ -144,10 +153,10 @@ class RefundEligibilityTest {
     CancellationDeadline none = new CancellationDeadline(0);
 
     assertThat(
-            RefundEligibility.at(List.of(appointment(NOW.plusSeconds(1))), 0, none, NOW)
+            RefundEligibility.at(credits(List.of(appointment(NOW.plusSeconds(1))), 0), none, NOW)
                 .isRefundEligible())
         .isTrue();
-    assertThat(RefundEligibility.at(List.of(appointment(NOW)), 0, none, NOW).reason())
+    assertThat(RefundEligibility.at(credits(List.of(appointment(NOW)), 0), none, NOW).reason())
         .contains(NonRefundableReason.SESSION_TOOK_PLACE);
   }
 
@@ -174,7 +183,7 @@ class RefundEligibilityTest {
     Appointment late = appointment("2026-11-19T10:00");
     Appointment free = appointment("2026-11-26T10:00");
 
-    RefundEligibility result = RefundEligibility.at(List.of(free, late), 0, week, NOW);
+    RefundEligibility result = RefundEligibility.at(credits(List.of(free, late), 0), week, NOW);
 
     assertThat(result.deadlinePassedAppointment()).contains(late);
     assertThat(result.freeCancellationUntil()).contains(zurich("2026-11-12T10:00"));
@@ -219,10 +228,12 @@ class RefundEligibilityTest {
     List<Appointment> booked = List.of(appointment("2027-03-28T10:00"));
 
     assertThat(
-            RefundEligibility.at(booked, 0, DAY, zurich("2027-03-27T09:00").minusSeconds(1))
+            RefundEligibility.at(
+                    credits(booked, 0), DAY, zurich("2027-03-27T09:00").minusSeconds(1))
                 .isRefundEligible())
         .isTrue();
-    RefundEligibility late = RefundEligibility.at(booked, 0, DAY, zurich("2027-03-27T09:30"));
+    RefundEligibility late =
+        RefundEligibility.at(credits(booked, 0), DAY, zurich("2027-03-27T09:30"));
     assertThat(late.reason()).contains(NonRefundableReason.DEADLINE_PASSED);
     assertThat(late.freeCancellationUntil()).contains(zurich("2027-03-27T09:00"));
   }

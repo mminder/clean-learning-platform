@@ -28,10 +28,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * UC-01's PoC login: pick a seeded user. It exists only in the {@code poc} profile (D-25), so
- * elsewhere its routes answer 404.
- */
+/** Exists only in the {@code poc} profile (D-25), so elsewhere its routes answer 404. */
 @RestController
 @RequestMapping("/api/poc")
 @Profile("poc")
@@ -66,8 +63,8 @@ class PocLoginController {
   }
 
   /**
-   * Starts the session like Spring Security's own logins do: a new session id and a new CSRF token
-   * (see {@code SecurityConfig}), then the authentication in the session.
+   * Starts the session like Spring Security's own logins: a new session id and a new CSRF token
+   * (see {@code SecurityConfig}).
    */
   @PostMapping("/login")
   @ResponseStatus(HttpStatus.OK)

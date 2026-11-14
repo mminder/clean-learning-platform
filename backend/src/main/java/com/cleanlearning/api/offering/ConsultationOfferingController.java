@@ -52,7 +52,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-/** The admin's consultation offerings (UC-16). */
 @RestController
 @RequestMapping(ConsultationOfferingController.PATH)
 @PreAuthorize("hasRole('ADMIN')")
@@ -110,10 +109,6 @@ class ConsultationOfferingController {
         .toList();
   }
 
-  /**
-   * {@code @ResponseStatus} tells springdoc the status that {@code ResponseEntity.created} sets,
-   * and {@code @ApiResponse} adds its {@code Location} header to the contract.
-   */
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   @ApiResponse(
@@ -191,11 +186,7 @@ class ConsultationOfferingController {
     deleteConsultationOffering.invoke(new OfferingId(id));
   }
 
-  /**
-   * The image, uploaded or replaced at once, apart from the form's save. The type comes from the
-   * file's first bytes, not from its name or declared content type. A file over 2 MB stops at the
-   * multipart limit ({@code application.yml}) and answers 400, like a file of another type.
-   */
+  /** A file over 2 MB stops at the multipart limit and answers 400, like a file of another type. */
   @PutMapping(path = "/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @ResponseStatus(HttpStatus.OK)
   @ProblemResponses.Status400
@@ -218,10 +209,6 @@ class ConsultationOfferingController {
         removeConsultationOfferingImage.invoke(new OfferingId(id)));
   }
 
-  /**
-   * A value object that rejects a value Bean Validation let through throws, and the API answers
-   * 400.
-   */
   private static ConsultationOfferingCommand toCommand(ConsultationOfferingRequest request) {
     return new ConsultationOfferingCommand(
         new OfferingName(request.name()),

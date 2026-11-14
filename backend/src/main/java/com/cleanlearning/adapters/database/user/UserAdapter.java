@@ -36,7 +36,6 @@ class UserAdapter implements LoadUsersPort, LoadUserPort, LoadExpertsPort, LockE
 
   @Override
   public List<User> loadAll() {
-    // The rows come sorted by name; the map keeps that order and groups each user's roles.
     Map<UUID, List<UserRoleRow>> rowsByUser = new LinkedHashMap<>();
     for (UserRoleRow row : userRepository.findAllWithRoles()) {
       rowsByUser.computeIfAbsent(row.id(), id -> new ArrayList<>()).add(row);
@@ -57,10 +56,6 @@ class UserAdapter implements LoadUsersPort, LoadUserPort, LoadExpertsPort, LockE
         .toList();
   }
 
-  /**
-   * {@code PESSIMISTIC_WRITE} on the {@code app_user} row, as {@code
-   * ConsultationOfferingAdapter.lock} takes the offering's ({@code select … for no key update}).
-   */
   @Override
   public void lock(UserId expertId) {
     if (entityManager.find(UserEntity.class, expertId.value(), LockModeType.PESSIMISTIC_WRITE)

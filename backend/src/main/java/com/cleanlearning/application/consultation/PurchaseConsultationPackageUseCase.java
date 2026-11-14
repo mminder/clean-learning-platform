@@ -6,7 +6,6 @@ import com.cleanlearning.application.consultation.port.SaveConsultationCasePort;
 import com.cleanlearning.domain.consultation.ConsultationOfferingForPurchase;
 import com.cleanlearning.domain.consultation.outcome.NewConsultationCase;
 import com.cleanlearning.domain.consultation.view.CustomerConsultationCase;
-import com.cleanlearning.domain.shared.BusinessRuleException;
 import com.cleanlearning.domain.shared.NotFoundException;
 import com.cleanlearning.domain.user.CurrentUser;
 import java.time.Clock;
@@ -14,7 +13,6 @@ import java.time.Instant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** UC-03 steps 5–6: the customer buys a package of a consultation offering and gets a case. */
 @Service
 public class PurchaseConsultationPackageUseCase {
 
@@ -39,12 +37,6 @@ public class PurchaseConsultationPackageUseCase {
 
   /**
    * Locks the offering first (D-27), so an unpublish waits for the purchase or the purchase for it.
-   * The current user is the case's customer. Answers the new case as its customer sees it.
-   *
-   * @throws NotFoundException if there's no consultation offering with this id
-   * @throws BusinessRuleException if the offering isn't published ({@code OFFERING_NOT_AVAILABLE}),
-   *     or the package isn't the offering's or its price or session count isn't the confirmed one
-   *     ({@code PACKAGE_CHANGED})
    */
   @Transactional
   public CustomerConsultationCase invoke(

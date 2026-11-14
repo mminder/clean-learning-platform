@@ -11,13 +11,9 @@ import java.util.List;
 import org.springdoc.core.customizers.OpenApiCustomizer;
 
 /**
- * The one shared {@code ProblemDetail} schema of the error bodies (D-34), which the error answers a
- * route declares with {@link ProblemResponses} refer to. It's the body as sent, not a schema
- * derived from Spring's {@code ProblemDetail} class: that one has a {@code properties} map, which
- * Jackson writes as top-level fields, and neither {@code errors} nor {@code code}.
- *
- * <p>{@code type} is left out when it's {@code about:blank}, as every body of this API so far is,
- * so it's optional.
+ * The body as sent, not derived from Spring's {@code ProblemDetail} class: that one has a {@code
+ * properties} map, which Jackson writes as top-level fields, and neither {@code errors} nor {@code
+ * code}. {@code type} is optional: it's left out when it's {@code about:blank}.
  */
 class ProblemDetailSchemaCustomizer implements OpenApiCustomizer {
 

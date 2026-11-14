@@ -1,9 +1,10 @@
 package com.cleanlearning.domain.availability.value;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
+import com.cleanlearning.domain.shared.InvalidValueException;
 import java.time.LocalTime;
 import org.junit.jupiter.api.Test;
 
@@ -29,10 +30,10 @@ class TimeRangeTest {
 
   @Test
   void rejectsAnEndThatIsNotAfterTheStart() {
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(() -> range("12:00", "09:00"))
         .withMessage("A time range ends after it starts: 12:00–09:00.");
-    assertThatIllegalArgumentException()
+    assertThatExceptionOfType(InvalidValueException.class)
         .isThrownBy(() -> range("09:00", "09:00"))
         .withMessage("A time range ends after it starts: 09:00–09:00.");
   }
