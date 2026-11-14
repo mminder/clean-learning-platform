@@ -35,7 +35,7 @@ The case detail shows:
 - open and total credits; a cancelled case says instead "Cancelled on <date, time>" and whether the purchase price would be refunded ([UC-08](uc-08-cancel-consultation-case.md), decided 2026-11-13);
 - upcoming appointments, each with **Cancel** ([UC-07](uc-07-cancel-consultation-appointment.md)) and the call link ([UC-10](uc-10-join-call.md)); one that has started says "Now" until it ends, without **Cancel** (decided 2026-11-09);
 - past appointments: the ones that have ended, as consumed;
-- the expert's public notes, newest first ([UC-15](uc-15-take-consultation-notes.md));
+- the expert's public notes, newest first, under "Notes from your expert", each with its title, text, time and "edited <date, time>"; the section is hidden while there's none ([UC-15](uc-15-take-consultation-notes.md), decided 2026-11-14);
 - the actions **Book appointment** ([UC-06](uc-06-book-consultation-appointment.md)), disabled without open credits, and **Cancel case** ([UC-08](uc-08-cancel-consultation-case.md)), which a completed case doesn't have;
 - the hint "Book your first session" while the case has no appointment and an open credit ([UC-03](uc-03-purchase-consultation-package.md)); a case whose every credit was forfeited by late cancellations has none (added while building increment 05, accepted 2026-11-13);
 - for a cancelled case, none of the actions, no **Cancel** on an appointment and no hint (decided 2026-11-13).

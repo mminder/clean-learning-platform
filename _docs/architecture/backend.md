@@ -169,6 +169,7 @@ A concurrency test makes its race certain, not likely: it holds the contended ro
 | Purchase consultation package (UC-03) | offering |
 | Book appointment (UC-06) | case → expert (user row) |
 | Save availability (UC-13) | expert (user row) |
+| Save expert profile, upload or remove its photo (UC-14) | expert (user row) |
 | Cancel appointment / case (UC-07, UC-08) | case |
 | Adjust credits (UC-18) | case |
 | Assign expert to run (UC-17) | expert → run |

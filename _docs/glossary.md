@@ -35,7 +35,7 @@ Customer buys a Run     ──► Enrollment (purchase terms)
 | Customer | A user with `CUSTOMER`. Buys, books and attends. Always an individual buying for themself. |
 | Expert | A user with `EXPERT`. Leads consultations and training runs. |
 | Admin | A user with `ADMIN`. Manages offerings, cases and (MVP) users. |
-| Expert profile | Display name, bio, photo and personal Teams link of an expert. |
+| Expert profile | Display name, bio, photo and personal Teams link of an expert. Display name, bio and photo are public. In code, `ExpertProfile` is this public part, and `OwnExpertProfile` the whole profile with the Teams link, which only its expert loads. |
 | CurrentUser | The authenticated user (id and roles) that controllers pass into use cases. |
 
 ## Catalog
@@ -81,7 +81,7 @@ Customer buys a Run     ──► Enrollment (purchase terms)
 | Upcoming appointment | A `BOOKED` appointment that hasn't ended. One that has started is consumed, and still upcoming until its end, so the pages keep it, and its call link, within reach while the session runs. |
 | Forfeited credit | The credit of an appointment cancelled after its cancellation deadline (`creditRefunded = false`). |
 | Credit adjustment | A goodwill change by an admin: a delta (±), a mandatory reason, the admin, and a timestamp. |
-| Note | Text an expert writes on a case: title, text, visibility (`PRIVATE` or `PUBLIC`). |
+| Note | Text an expert writes on a case: title, text, visibility (`PRIVATE` or `PUBLIC`), the time it was written and the time of its last edit. |
 | Availability | An expert's selected calendar dates plus one set of daily time ranges that applies to all of them. |
 | Busy time | The times a new appointment can't overlap. An expert's: their `BOOKED` appointments plus the time slots of runs they're assigned to. A customer's: the `BOOKED` appointments of all their cases. |
 | Bookable slot | A start time on the 30-minute grid where the whole session fits inside the expert's availability, overlaps neither the expert's nor the customer's busy time, and is at least 24 h from now. |
@@ -98,7 +98,7 @@ Customer buys a Run     ──► Enrollment (purchase terms)
 
 | Term | Meaning |
 |---|---|
-| Teams link | Consultations use the assigned expert's personal link from the expert profile. Trainings use the run's link, set by the admin. |
+| Teams link | Consultations use the assigned expert's personal link from the expert profile, any `https://` link. Trainings use the run's link, set by the admin. |
 | Link window | Customers see a call's link from 1 h before it starts until it ends. Experts always see it. |
 
 ## Time

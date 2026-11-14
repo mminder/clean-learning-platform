@@ -18,14 +18,15 @@ The expert keeps notes on a case, either for themself or shared with the custome
 
 1. On the case detail ([UC-11](uc-11-view-my-consultation-cases.md)), the expert clicks **Add note**.
 2. The expert enters a title and text and chooses the visibility: **Private** (the default) or **Public**.
-3. The expert saves. The system stores the note with `createdAt`.
+3. The expert saves. The system stores the note with the time it was written.
 4. The note appears in the list, newest first, with its visibility badge.
 
 ## Alternative flows
 
-- **Edit:** the expert changes the title, text or visibility. The note then shows "edited <updatedAt>".
+- **Edit:** the expert changes the title, text or visibility. The note then shows "edited <date, time>", the time of its last save, and keeps its place in the list. Every save counts as an edit, also one that changes only the visibility (decided 2026-11-14).
 - **Delete:** after confirmation, the note is removed permanently.
-- **Missing title or text:** 400.
+- **Missing title or text, or only spaces:** 400.
+- **The note was deleted meanwhile, in another tab:** 404, and the notes reload. Two saves of one note don't lock: the last one wins (decided 2026-11-14).
 
 ## Business rules
 
