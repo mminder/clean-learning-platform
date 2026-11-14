@@ -3,6 +3,7 @@ package com.cleanlearning.domain.consultation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
+import com.cleanlearning.domain.consultation.change.NewConsultationCase;
 import com.cleanlearning.domain.consultation.value.PurchaseTerms;
 import com.cleanlearning.domain.offering.ConsultationPackage;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
@@ -63,7 +64,7 @@ class ConsultationOfferingForPurchaseTest {
     return offering(OfferingStatus.PUBLISHED, List.of(THREE_SESSIONS, FIVE_SESSIONS));
   }
 
-  private static ConsultationCase buyThreeSessions(ConsultationOfferingForPurchase offering) {
+  private static NewConsultationCase buyThreeSessions(ConsultationOfferingForPurchase offering) {
     return offering.purchase(
         CUSTOMER_1, THREE_SESSIONS.id(), Money.chf("450.00"), new SessionCount(3), NOW);
   }
@@ -78,7 +79,7 @@ class ConsultationOfferingForPurchaseTest {
 
   @Test
   void createsACaseWithTheCopiedTermsForTheCustomer() {
-    ConsultationCase consultationCase = buyThreeSessions(published());
+    NewConsultationCase consultationCase = buyThreeSessions(published());
 
     assertThat(consultationCase.id()).isNotNull();
     assertThat(consultationCase.customerId()).isEqualTo(CUSTOMER_1);
@@ -103,7 +104,7 @@ class ConsultationOfferingForPurchaseTest {
 
   @Test
   void buysAnyOfTheOfferingsPackages() {
-    ConsultationCase consultationCase =
+    NewConsultationCase consultationCase =
         published()
             .purchase(CUSTOMER_1, FIVE_SESSIONS.id(), Money.chf("700"), new SessionCount(5), NOW);
 
@@ -186,7 +187,7 @@ class ConsultationOfferingForPurchaseTest {
   @Test
   void comparesThePriceAsMoney() {
     // "450" and "450.00" are the same money
-    ConsultationCase consultationCase =
+    NewConsultationCase consultationCase =
         published()
             .purchase(CUSTOMER_1, THREE_SESSIONS.id(), Money.chf("450"), new SessionCount(3), NOW);
 

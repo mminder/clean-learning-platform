@@ -1,6 +1,6 @@
 package com.cleanlearning.application.consultation.port;
 
-import com.cleanlearning.domain.consultation.CaseCancellation;
+import com.cleanlearning.domain.consultation.change.CaseCancellation;
 
 public interface SaveCaseCancellationPort {
 

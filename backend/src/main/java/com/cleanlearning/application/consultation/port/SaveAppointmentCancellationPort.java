@@ -1,6 +1,6 @@
 package com.cleanlearning.application.consultation.port;
 
-import com.cleanlearning.domain.consultation.AppointmentCancellation;
+import com.cleanlearning.domain.consultation.change.AppointmentCancellation;
 
 public interface SaveAppointmentCancellationPort {
 

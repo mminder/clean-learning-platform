@@ -6,11 +6,11 @@ import com.cleanlearning.application.consultation.port.LoadCustomerBusyTimesPort
 import com.cleanlearning.application.consultation.port.LockCaseForBookingPort;
 import com.cleanlearning.application.consultation.port.SaveBookingPort;
 import com.cleanlearning.application.user.port.LockExpertPort;
-import com.cleanlearning.domain.consultation.Booking;
 import com.cleanlearning.domain.consultation.CaseForBooking;
-import com.cleanlearning.domain.consultation.CustomerAppointment;
 import com.cleanlearning.domain.consultation.SlotFinder;
+import com.cleanlearning.domain.consultation.change.Booking;
 import com.cleanlearning.domain.consultation.value.BusyTime;
+import com.cleanlearning.domain.consultation.view.CustomerAppointment;
 import com.cleanlearning.domain.shared.BusinessRuleException;
 import com.cleanlearning.domain.shared.BusinessTimeZone;
 import com.cleanlearning.domain.shared.NotFoundException;
@@ -113,6 +113,6 @@ public class BookConsultationAppointmentUseCase {
     // 6. Write.
     saveBooking.save(booking);
     // 7. Answer.
-    return booking.appointment().at(now);
+    return CustomerAppointment.of(booking.appointment(), now);
   }
 }

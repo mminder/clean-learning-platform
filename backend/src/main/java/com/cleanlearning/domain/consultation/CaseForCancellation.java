@@ -1,5 +1,7 @@
 package com.cleanlearning.domain.consultation;
 
+import com.cleanlearning.domain.consultation.change.AppointmentCancellation;
+import com.cleanlearning.domain.consultation.change.CaseCancellation;
 import com.cleanlearning.domain.consultation.value.AppointmentId;
 import com.cleanlearning.domain.consultation.value.CancellationOutcome;
 import com.cleanlearning.domain.consultation.value.CaseStatus;
@@ -146,7 +148,7 @@ public record CaseForCancellation(
     if (status == CaseStatus.CANCELLED) {
       throw new BusinessRuleException(CASE_CANCELLED, CASE_CANCELLED_DETAIL);
     }
-    if (Appointment.isCompleted(
+    if (CaseCredits.isCompleted(
         purchaseTerms.sessionCount(), bookedAppointments, forfeitedCredits(), now)) {
       throw new BusinessRuleException(CASE_COMPLETED, "This case is completed.");
     }

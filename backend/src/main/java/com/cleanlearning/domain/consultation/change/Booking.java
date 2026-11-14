@@ -1,5 +1,6 @@
-package com.cleanlearning.domain.consultation;
+package com.cleanlearning.domain.consultation.change;
 
+import com.cleanlearning.domain.consultation.Appointment;
 import com.cleanlearning.domain.user.value.UserId;
 import java.util.Objects;
 

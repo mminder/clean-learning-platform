@@ -23,25 +23,23 @@ import com.cleanlearning.application.consultation.port.SaveBookingPort;
 import com.cleanlearning.application.consultation.port.SaveCaseCancellationPort;
 import com.cleanlearning.application.consultation.port.SaveConsultationCasePort;
 import com.cleanlearning.domain.consultation.Appointment;
-import com.cleanlearning.domain.consultation.AppointmentCancellation;
-import com.cleanlearning.domain.consultation.AssignedExpert;
-import com.cleanlearning.domain.consultation.Booking;
-import com.cleanlearning.domain.consultation.CaseCancellation;
 import com.cleanlearning.domain.consultation.CaseForBooking;
 import com.cleanlearning.domain.consultation.CaseForCancellation;
-import com.cleanlearning.domain.consultation.ConsultationCase;
 import com.cleanlearning.domain.consultation.ConsultationOfferingForPurchase;
-import com.cleanlearning.domain.consultation.CustomerConsultationCase;
-import com.cleanlearning.domain.consultation.CustomerConsultationCaseSummary;
+import com.cleanlearning.domain.consultation.change.AppointmentCancellation;
+import com.cleanlearning.domain.consultation.change.Booking;
+import com.cleanlearning.domain.consultation.change.CaseCancellation;
+import com.cleanlearning.domain.consultation.change.NewConsultationCase;
 import com.cleanlearning.domain.consultation.value.AppointmentId;
 import com.cleanlearning.domain.consultation.value.BusyTime;
 import com.cleanlearning.domain.consultation.value.CancellationOutcome;
 import com.cleanlearning.domain.consultation.value.CaseStatus;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.consultation.value.PurchaseTerms;
+import com.cleanlearning.domain.consultation.view.CustomerConsultationCase;
+import com.cleanlearning.domain.consultation.view.CustomerConsultationCaseSummary;
 import com.cleanlearning.domain.image.value.ImageId;
 import com.cleanlearning.domain.offering.ConsultationPackage;
-import com.cleanlearning.domain.offering.EligibleExpert;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import com.cleanlearning.domain.offering.value.ConsultationPackageId;
 import com.cleanlearning.domain.offering.value.OfferingId;
@@ -49,6 +47,7 @@ import com.cleanlearning.domain.offering.value.OfferingName;
 import com.cleanlearning.domain.offering.value.SessionCount;
 import com.cleanlearning.domain.offering.value.SessionDuration;
 import com.cleanlearning.domain.shared.value.Money;
+import com.cleanlearning.domain.user.ExpertProfile;
 import com.cleanlearning.domain.user.value.DisplayName;
 import com.cleanlearning.domain.user.value.UserId;
 import jakarta.persistence.EntityManager;
@@ -122,7 +121,7 @@ class ConsultationCaseAdapter
 
   /** A new row, so it's persisted, not merged (backend.md, persistence). */
   @Override
-  public void create(ConsultationCase consultationCase) {
+  public void create(NewConsultationCase consultationCase) {
     PurchaseTerms terms = consultationCase.purchaseTerms();
     entityManager.persist(
         new ConsultationCaseEntity(
@@ -329,8 +328,8 @@ class ConsultationCaseAdapter
         Objects.requireNonNull(entity.getCreditRefunded(), "creditRefunded"));
   }
 
-  private static EligibleExpert toEligibleExpert(EligibleExpertRow row) {
-    return new EligibleExpert(new UserId(row.id()), new DisplayName(row.displayName()), row.bio());
+  private static ExpertProfile toEligibleExpert(EligibleExpertRow row) {
+    return new ExpertProfile(new UserId(row.id()), new DisplayName(row.displayName()), row.bio());
   }
 
   private static ConsultationPackage toConsultationPackage(ConsultationPackageEntity entity) {
@@ -376,13 +375,13 @@ class ConsultationCaseAdapter
   }
 
   /** The left join's expert columns are all null before the first booking. */
-  private static Optional<AssignedExpert> assignedExpert(CustomerConsultationCaseRow row) {
+  private static Optional<ExpertProfile> assignedExpert(CustomerConsultationCaseRow row) {
     UUID expertId = row.expertId();
     if (expertId == null) {
       return Optional.empty();
     }
     return Optional.of(
-        new AssignedExpert(
+        new ExpertProfile(
             new UserId(expertId),
             new DisplayName(Objects.requireNonNull(row.expertDisplayName(), "expertDisplayName")),
             Objects.requireNonNull(row.expertBio(), "expertBio")));

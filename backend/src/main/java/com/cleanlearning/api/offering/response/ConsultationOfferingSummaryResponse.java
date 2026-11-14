@@ -1,7 +1,7 @@
 package com.cleanlearning.api.offering.response;
 
-import com.cleanlearning.domain.offering.ConsultationOfferingSummary;
 import com.cleanlearning.domain.offering.value.OfferingStatus;
+import com.cleanlearning.domain.offering.view.ConsultationOfferingSummary;
 import java.util.UUID;
 
 /** A row of the admin's list of consultation offerings. */

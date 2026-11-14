@@ -1,10 +1,14 @@
-package com.cleanlearning.domain.consultation;
+package com.cleanlearning.domain.consultation.view;
 
+import com.cleanlearning.domain.consultation.Appointment;
+import com.cleanlearning.domain.consultation.CaseCredits;
+import com.cleanlearning.domain.consultation.RefundEligibility;
 import com.cleanlearning.domain.consultation.value.CancellationOutcome;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.consultation.value.PurchaseTerms;
 import com.cleanlearning.domain.image.value.ImageId;
 import com.cleanlearning.domain.offering.value.OfferingName;
+import com.cleanlearning.domain.user.ExpertProfile;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
@@ -16,10 +20,12 @@ import java.util.Optional;
  * appointments with the upcoming ones' cancellation preview, the credits, and its cancellation, if
  * it was cancelled, or else whether it can be cancelled and whether that would refund it (UC-08).
  * What depends on the time is derived at {@code asOf}, never stored (D-11); {@link Appointment}
- * holds the appointments' rules and completion, and {@link RefundEligibility} the refund's. A
- * cancelled appointment isn't shown (spec 05, decision 3): only its forfeited credit counts.
+ * holds the appointments' rules, {@link CaseCredits} the credits and completion, and {@link
+ * RefundEligibility} the refund's. A cancelled appointment isn't shown (spec 05, decision 3): only
+ * its forfeited credit counts.
  *
- * @param expert the assigned expert, empty until the first booking
+ * @param expert the assigned expert, empty until the first booking, which assigns them; they stay
+ *     after they stop being eligible (UC-06)
  * @param appointments the case's {@code BOOKED} appointments, in any order
  * @param forfeitedCredits the case's appointments cancelled late
  * @param cancellation the case's cancellation, empty while it's active
@@ -31,7 +37,7 @@ public record CustomerConsultationCase(
     Optional<ImageId> offeringImageId,
     PurchaseTerms purchaseTerms,
     Instant purchasedAt,
-    Optional<AssignedExpert> expert,
+    Optional<ExpertProfile> expert,
     List<Appointment> appointments,
     int forfeitedCredits,
     Optional<CancellationOutcome> cancellation,
@@ -63,7 +69,7 @@ public record CustomerConsultationCase(
    * counted as the booking counts them.
    */
   public int openCredits() {
-    return Appointment.openCredits(
+    return CaseCredits.openCredits(
         purchaseTerms.sessionCount(), appointments.size(), forfeitedCredits);
   }
 
@@ -80,7 +86,7 @@ public record CustomerConsultationCase(
    */
   public boolean canCancel() {
     return cancellation.isEmpty()
-        && !Appointment.isCompleted(
+        && !CaseCredits.isCompleted(
             purchaseTerms.sessionCount(), appointments, forfeitedCredits, asOf);
   }
 
@@ -112,6 +118,6 @@ public record CustomerConsultationCase(
 
   /** The appointments that have ended, newest first, all {@code CONSUMED}. */
   public List<CustomerAppointment> pastAppointments() {
-    return Appointment.past(appointments, asOf);
+    return CustomerAppointment.past(appointments, asOf);
   }
 }

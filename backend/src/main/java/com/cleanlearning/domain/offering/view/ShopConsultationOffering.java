@@ -1,11 +1,13 @@
-package com.cleanlearning.domain.offering;
+package com.cleanlearning.domain.offering.view;
 
 import com.cleanlearning.domain.image.value.ImageId;
+import com.cleanlearning.domain.offering.ConsultationPackage;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import com.cleanlearning.domain.offering.value.OfferingId;
 import com.cleanlearning.domain.offering.value.OfferingName;
 import com.cleanlearning.domain.offering.value.OfferingType;
 import com.cleanlearning.domain.offering.value.SessionDuration;
+import com.cleanlearning.domain.user.ExpertProfile;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -24,7 +26,7 @@ public record ShopConsultationOffering(
     SessionDuration sessionDuration,
     CancellationDeadline cancellationDeadline,
     List<ConsultationPackage> packages,
-    List<EligibleExpert> eligibleExperts) {
+    List<ExpertProfile> eligibleExperts) {
 
   public ShopConsultationOffering {
     Objects.requireNonNull(id, "id");

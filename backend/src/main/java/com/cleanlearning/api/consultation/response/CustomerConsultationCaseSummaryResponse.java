@@ -1,7 +1,7 @@
 package com.cleanlearning.api.consultation.response;
 
-import com.cleanlearning.domain.consultation.CustomerConsultationCaseSummary;
 import com.cleanlearning.domain.consultation.value.PurchaseGroup;
+import com.cleanlearning.domain.consultation.view.CustomerConsultationCaseSummary;
 import com.cleanlearning.domain.image.value.ImageId;
 import com.cleanlearning.domain.user.value.DisplayName;
 import java.time.Instant;

@@ -6,18 +6,19 @@ import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 import com.cleanlearning.domain.availability.Availability;
 import com.cleanlearning.domain.availability.value.TimeRange;
+import com.cleanlearning.domain.consultation.change.Booking;
 import com.cleanlearning.domain.consultation.value.BookableSlot;
 import com.cleanlearning.domain.consultation.value.BusyTime;
 import com.cleanlearning.domain.consultation.value.CaseStatus;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.consultation.value.PurchaseTerms;
-import com.cleanlearning.domain.offering.EligibleExpert;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import com.cleanlearning.domain.offering.value.SessionCount;
 import com.cleanlearning.domain.offering.value.SessionDuration;
 import com.cleanlearning.domain.shared.BusinessRuleException;
 import com.cleanlearning.domain.shared.BusinessTimeZone;
 import com.cleanlearning.domain.shared.value.Money;
+import com.cleanlearning.domain.user.ExpertProfile;
 import com.cleanlearning.domain.user.value.DisplayName;
 import com.cleanlearning.domain.user.value.UserId;
 import java.time.Instant;
@@ -40,14 +41,14 @@ class CaseForBookingTest {
 
   private static final ConsultationCaseId CASE = new ConsultationCaseId(UUID.randomUUID());
 
-  private static final EligibleExpert EXPERT_1 =
-      new EligibleExpert(
+  private static final ExpertProfile EXPERT_1 =
+      new ExpertProfile(
           new UserId(UUID.fromString("00000000-0000-0000-0000-000000000201")),
           new DisplayName("Expert 1"),
           "Career coach.");
 
-  private static final EligibleExpert EXPERT_2 =
-      new EligibleExpert(
+  private static final ExpertProfile EXPERT_2 =
+      new ExpertProfile(
           new UserId(UUID.fromString("00000000-0000-0000-0000-000000000202")),
           new DisplayName("Expert 2"),
           "Leadership coach.");
@@ -130,7 +131,7 @@ class CaseForBookingTest {
   }
 
   private static CaseForBooking withExpert(
-      UserId expert, int bookedAppointments, List<EligibleExpert> eligible) {
+      UserId expert, int bookedAppointments, List<ExpertProfile> eligible) {
     return new CaseForBooking(
         CASE,
         CaseStatus.ACTIVE,

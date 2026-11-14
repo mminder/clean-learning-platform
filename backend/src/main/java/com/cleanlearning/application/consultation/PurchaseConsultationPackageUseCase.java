@@ -3,9 +3,9 @@ package com.cleanlearning.application.consultation;
 import com.cleanlearning.application.consultation.port.LoadCustomerConsultationCasePort;
 import com.cleanlearning.application.consultation.port.LockConsultationOfferingForPurchasePort;
 import com.cleanlearning.application.consultation.port.SaveConsultationCasePort;
-import com.cleanlearning.domain.consultation.ConsultationCase;
 import com.cleanlearning.domain.consultation.ConsultationOfferingForPurchase;
-import com.cleanlearning.domain.consultation.CustomerConsultationCase;
+import com.cleanlearning.domain.consultation.change.NewConsultationCase;
+import com.cleanlearning.domain.consultation.view.CustomerConsultationCase;
 import com.cleanlearning.domain.shared.BusinessRuleException;
 import com.cleanlearning.domain.shared.NotFoundException;
 import com.cleanlearning.domain.user.CurrentUser;
@@ -55,7 +55,7 @@ public class PurchaseConsultationPackageUseCase {
             .orElseThrow(() ->
                 new NotFoundException("Offering " + command.offeringId().value() + " not found."));
     Instant now = clock.instant();
-    ConsultationCase consultationCase =
+    NewConsultationCase consultationCase =
         offering.purchase(
             user.id(), command.packageId(), command.price(), command.sessionCount(), now);
     saveCase.create(consultationCase);

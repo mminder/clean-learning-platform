@@ -1,7 +1,7 @@
 package com.cleanlearning.application.consultation.port;
 
-import com.cleanlearning.domain.consultation.CustomerConsultationCase;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
+import com.cleanlearning.domain.consultation.view.CustomerConsultationCase;
 import com.cleanlearning.domain.user.value.UserId;
 import java.time.Instant;
 import java.util.Optional;

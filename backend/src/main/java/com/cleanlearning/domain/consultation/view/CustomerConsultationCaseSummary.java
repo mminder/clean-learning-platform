@@ -1,5 +1,7 @@
-package com.cleanlearning.domain.consultation;
+package com.cleanlearning.domain.consultation.view;
 
+import com.cleanlearning.domain.consultation.Appointment;
+import com.cleanlearning.domain.consultation.CaseCredits;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.consultation.value.PurchaseGroup;
 import com.cleanlearning.domain.image.value.ImageId;
@@ -75,7 +77,7 @@ public record CustomerConsultationCaseSummary(
    * counted as the booking counts them.
    */
   public int openCredits() {
-    return Appointment.openCredits(sessionCount, appointments.size(), forfeitedCredits);
+    return CaseCredits.openCredits(sessionCount, appointments.size(), forfeitedCredits);
   }
 
   /**
@@ -83,13 +85,13 @@ public record CustomerConsultationCaseSummary(
    * 21); empty without one.
    */
   public Optional<CustomerAppointment> nextAppointment() {
-    return Appointment.upcoming(appointments, asOf).stream().findFirst();
+    return CustomerAppointment.upcoming(appointments, asOf).stream().findFirst();
   }
 
   /**
    * Computed, never stored (D-11): {@code PAST} for a cancelled case, whatever it had (spec 05,
    * decision 6); otherwise {@code UPCOMING} with an appointment that hasn't ended, otherwise {@code
-   * PAST} once the case is completed, as {@link Appointment#isCompleted} decides for the case
+   * PAST} once the case is completed, as {@link CaseCredits#isCompleted} decides for the case
    * detail too, otherwise {@code NEEDS_BOOKING}: an open credit is left.
    */
   public PurchaseGroup group() {
@@ -99,7 +101,7 @@ public record CustomerConsultationCaseSummary(
     if (nextAppointment().isPresent()) {
       return PurchaseGroup.UPCOMING;
     }
-    return Appointment.isCompleted(sessionCount, appointments, forfeitedCredits, asOf)
+    return CaseCredits.isCompleted(sessionCount, appointments, forfeitedCredits, asOf)
         ? PurchaseGroup.PAST
         : PurchaseGroup.NEEDS_BOOKING;
   }
@@ -130,7 +132,7 @@ public record CustomerConsultationCaseSummary(
   }
 
   private Instant completedOrderKey() {
-    return Appointment.past(appointments, asOf).stream()
+    return CustomerAppointment.past(appointments, asOf).stream()
         .findFirst()
         .map(CustomerAppointment::start)
         .orElse(purchasedAt);

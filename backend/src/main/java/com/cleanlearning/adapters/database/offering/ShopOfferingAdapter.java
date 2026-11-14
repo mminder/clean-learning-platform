@@ -8,16 +8,16 @@ import com.cleanlearning.application.offering.port.LoadShopOfferingPort;
 import com.cleanlearning.application.offering.port.LoadShopOfferingsPort;
 import com.cleanlearning.domain.image.value.ImageId;
 import com.cleanlearning.domain.offering.ConsultationPackage;
-import com.cleanlearning.domain.offering.EligibleExpert;
-import com.cleanlearning.domain.offering.ShopConsultationOffering;
-import com.cleanlearning.domain.offering.ShopOffering;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import com.cleanlearning.domain.offering.value.ConsultationPackageId;
 import com.cleanlearning.domain.offering.value.OfferingId;
 import com.cleanlearning.domain.offering.value.OfferingName;
 import com.cleanlearning.domain.offering.value.SessionCount;
 import com.cleanlearning.domain.offering.value.SessionDuration;
+import com.cleanlearning.domain.offering.view.ShopConsultationOffering;
+import com.cleanlearning.domain.offering.view.ShopOffering;
 import com.cleanlearning.domain.shared.value.Money;
+import com.cleanlearning.domain.user.ExpertProfile;
 import com.cleanlearning.domain.user.value.DisplayName;
 import com.cleanlearning.domain.user.value.UserId;
 import java.util.ArrayList;
@@ -93,8 +93,8 @@ class ShopOfferingAdapter implements LoadShopOfferingsPort, LoadShopOfferingPort
         new Money(row.price()));
   }
 
-  private static EligibleExpert toEligibleExpert(EligibleExpertRow row) {
-    return new EligibleExpert(new UserId(row.id()), new DisplayName(row.displayName()), row.bio());
+  private static ExpertProfile toEligibleExpert(EligibleExpertRow row) {
+    return new ExpertProfile(new UserId(row.id()), new DisplayName(row.displayName()), row.bio());
   }
 
   private static ShopOffering toShopOffering(List<ShopOfferingPriceRow> rows) {

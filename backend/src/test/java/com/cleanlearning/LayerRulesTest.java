@@ -40,6 +40,7 @@ class LayerRulesTest {
   private static final String PORTS = "com.cleanlearning.application.*.port";
   private static final String DOMAIN = "com.cleanlearning.domain..";
   private static final String DOMAIN_VALUES = "com.cleanlearning.domain..value";
+  private static final String DOMAIN_VIEWS = "com.cleanlearning.domain..view..";
   private static final String ADAPTERS_DATABASE = "com.cleanlearning.adapters.database..";
   private static final String ADAPTER_ENTITIES = "com.cleanlearning.adapters.database.*.entity";
   private static final String ADAPTER_ROWS = "com.cleanlearning.adapters.database.*.row";
@@ -91,6 +92,20 @@ class LayerRulesTest {
           .should()
           .onlyDependOnClassesThat()
           .resideInAnyPackage("java..", DOMAIN_VALUES);
+
+  /**
+   * Views depend on rules, never the other way round: what an actor sees is built from the rules.
+   */
+  @ArchTest
+  static final ArchRule onlyViewsDependOnViews =
+      noClasses()
+          .that()
+          .resideInAPackage(DOMAIN)
+          .and()
+          .resideOutsideOfPackage(DOMAIN_VIEWS)
+          .should()
+          .dependOnClassesThat()
+          .resideInAPackage(DOMAIN_VIEWS);
 
   @ArchTest
   static final ArchRule applicationIsFreeOfJpa =

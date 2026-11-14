@@ -1,12 +1,13 @@
 package com.cleanlearning.domain.consultation;
 
+import com.cleanlearning.domain.consultation.change.Booking;
 import com.cleanlearning.domain.consultation.value.AppointmentId;
 import com.cleanlearning.domain.consultation.value.BookableSlot;
 import com.cleanlearning.domain.consultation.value.CaseStatus;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.consultation.value.PurchaseTerms;
-import com.cleanlearning.domain.offering.EligibleExpert;
 import com.cleanlearning.domain.shared.BusinessRuleException;
+import com.cleanlearning.domain.user.ExpertProfile;
 import com.cleanlearning.domain.user.value.UserId;
 import java.time.Duration;
 import java.time.Instant;
@@ -33,7 +34,7 @@ public record CaseForBooking(
     Optional<UserId> assignedExpertId,
     int bookedAppointments,
     int forfeitedCredits,
-    List<EligibleExpert> eligibleExperts) {
+    List<ExpertProfile> eligibleExperts) {
 
   /** Every credit of the case is booked. */
   public static final String NO_OPEN_CREDITS = "NO_OPEN_CREDITS";
@@ -76,7 +77,7 @@ public record CaseForBooking(
    * counts them.
    */
   public int openCredits() {
-    return Appointment.openCredits(
+    return CaseCredits.openCredits(
         purchaseTerms.sessionCount(), bookedAppointments, forfeitedCredits);
   }
 

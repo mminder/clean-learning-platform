@@ -1,5 +1,6 @@
 package com.cleanlearning.domain.consultation;
 
+import com.cleanlearning.domain.consultation.change.NewConsultationCase;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.consultation.value.PurchaseTerms;
 import com.cleanlearning.domain.offering.ConsultationPackage;
@@ -55,7 +56,7 @@ public record ConsultationOfferingForPurchase(
    *     or {@link #PACKAGE_CHANGED} if the package isn't one of the offering's, or its price or
    *     session count isn't the confirmed one
    */
-  public ConsultationCase purchase(
+  public NewConsultationCase purchase(
       UserId customerId,
       ConsultationPackageId packageId,
       Money confirmedPrice,
@@ -76,7 +77,7 @@ public record ConsultationOfferingForPurchase(
                 new BusinessRuleException(
                     PACKAGE_CHANGED,
                     "This package has changed or is no longer available. Please choose again."));
-    return new ConsultationCase(
+    return new NewConsultationCase(
         new ConsultationCaseId(UUID.randomUUID()),
         customerId,
         id,

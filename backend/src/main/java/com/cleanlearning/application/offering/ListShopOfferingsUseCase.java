@@ -1,7 +1,7 @@
 package com.cleanlearning.application.offering;
 
 import com.cleanlearning.application.offering.port.LoadShopOfferingsPort;
-import com.cleanlearning.domain.offering.ShopOffering;
+import com.cleanlearning.domain.offering.view.ShopOffering;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

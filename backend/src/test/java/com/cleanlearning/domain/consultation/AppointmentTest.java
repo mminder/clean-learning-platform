@@ -8,7 +8,6 @@ import com.cleanlearning.domain.consultation.value.AppointmentId;
 import com.cleanlearning.domain.consultation.value.AppointmentStatus;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
-import com.cleanlearning.domain.offering.value.SessionCount;
 import com.cleanlearning.domain.shared.BusinessTimeZone;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -18,9 +17,9 @@ import org.junit.jupiter.api.Test;
 
 /**
  * A booked appointment at a given time (glossary, spec 04 decision 21): {@code BOOKED} until its
- * start, then {@code CONSUMED}; upcoming until its end, past from its end on; the credits the
- * booked appointments and the forfeited ones use; and UC-07's cancellation rules: cancellable until
- * its start, free until the deadline before it. Instants are in UTC; Zurich is UTC+1 in November.
+ * start, then {@code CONSUMED}; upcoming until its end, past from its end on; and UC-07's
+ * cancellation rules: cancellable until its start, free until the deadline before it. Instants are
+ * in UTC; Zurich is UTC+1 in November.
  */
 class AppointmentTest {
 
@@ -58,111 +57,6 @@ class AppointmentTest {
     assertThat(TEN_TO_ELEVEN.isUpcomingAt(START)).isTrue();
     assertThat(TEN_TO_ELEVEN.isUpcomingAt(END.minusSeconds(1))).isTrue();
     assertThat(TEN_TO_ELEVEN.isUpcomingAt(END)).isFalse();
-  }
-
-  @Test
-  void asTheCustomerSeesItCarriesTheStatusAtThatTime() {
-    assertThat(TEN_TO_ELEVEN.at(START.minusSeconds(1)))
-        .isEqualTo(
-            new CustomerAppointment(TEN_TO_ELEVEN.id(), START, END, AppointmentStatus.BOOKED));
-    assertThat(TEN_TO_ELEVEN.at(START))
-        .isEqualTo(
-            new CustomerAppointment(TEN_TO_ELEVEN.id(), START, END, AppointmentStatus.CONSUMED));
-  }
-
-  @Test
-  void theUpcomingOnesAreTheOnesNotEndedSoonestFirstARunningOneConsumed() {
-    Appointment past = appointment("2026-11-16T09:00:00Z", "2026-11-16T10:00:00Z");
-    Appointment running = appointment("2026-11-17T09:00:00Z", "2026-11-17T10:00:00Z");
-    Appointment later = appointment("2026-11-20T09:00:00Z", "2026-11-20T10:00:00Z");
-    Appointment soon = appointment("2026-11-18T09:00:00Z", "2026-11-18T10:00:00Z");
-    Instant asOf = Instant.parse("2026-11-17T09:30:00Z");
-
-    assertThat(Appointment.upcoming(List.of(later, past, soon, running), asOf))
-        .containsExactly(running.at(asOf), soon.at(asOf), later.at(asOf));
-    assertThat(Appointment.upcoming(List.of(later, past, soon, running), asOf))
-        .extracting(CustomerAppointment::status)
-        .containsExactly(
-            AppointmentStatus.CONSUMED, AppointmentStatus.BOOKED, AppointmentStatus.BOOKED);
-  }
-
-  @Test
-  void thePastOnesAreTheOnesEndedNewestFirstAllConsumed() {
-    Appointment first = appointment("2026-11-16T09:00:00Z", "2026-11-16T10:00:00Z");
-    Appointment second = appointment("2026-11-17T09:00:00Z", "2026-11-17T10:00:00Z");
-    Appointment upcoming = appointment("2026-11-20T09:00:00Z", "2026-11-20T10:00:00Z");
-    Instant asOf = Instant.parse("2026-11-17T10:00:00Z");
-
-    assertThat(Appointment.past(List.of(first, upcoming, second), asOf))
-        .containsExactly(second.at(asOf), first.at(asOf));
-    assertThat(Appointment.past(List.of(first, upcoming, second), asOf))
-        .extracting(CustomerAppointment::status)
-        .containsOnly(AppointmentStatus.CONSUMED);
-  }
-
-  @Test
-  void anAppointmentIsUpcomingOrPastNeverBoth() {
-    Appointment appointment = TEN_TO_ELEVEN;
-    for (Instant asOf : List.of(START.minusSeconds(1), START, END.minusSeconds(1), END)) {
-      assertThat(
-              Appointment.upcoming(List.of(appointment), asOf).size()
-                  + Appointment.past(List.of(appointment), asOf).size())
-          .as("at " + asOf)
-          .isOne();
-    }
-  }
-
-  @Test
-  void theOpenCreditsAreTheSessionsLessTheBookedAppointmentsConsumedOrNot() {
-    assertThat(Appointment.openCredits(new SessionCount(3), 0, 0)).isEqualTo(3);
-    assertThat(Appointment.openCredits(new SessionCount(3), 2, 0)).isEqualTo(1);
-    assertThat(Appointment.openCredits(new SessionCount(3), 3, 0)).isZero();
-    assertThat(Appointment.openCredits(new SessionCount(5), 1, 0)).isEqualTo(4);
-  }
-
-  @Test
-  void theOpenCreditsAlsoLackTheForfeitedOnes() {
-    assertThat(Appointment.openCredits(new SessionCount(3), 0, 1)).isEqualTo(2);
-    // one consumed, one cancelled in time (neither booked nor forfeited), one cancelled late
-    assertThat(Appointment.openCredits(new SessionCount(3), 1, 1)).isOne();
-    assertThat(Appointment.openCredits(new SessionCount(3), 2, 1)).isZero();
-    assertThat(Appointment.openCredits(new SessionCount(1), 0, 1)).isZero();
-  }
-
-  /**
-   * Spec 05, decision 13: completed once no credit is open and the last booked appointment has
-   * ended.
-   */
-  @Test
-  void aCaseIsCompletedWithoutOpenCreditsOnceItsLastAppointmentHasEnded() {
-    Appointment earlier = appointment("2026-11-16T09:00:00Z", "2026-11-16T10:00:00Z");
-    List<Appointment> both = List.of(TEN_TO_ELEVEN, earlier);
-    SessionCount two = new SessionCount(2);
-
-    assertThat(Appointment.isCompleted(two, both, 0, START.minusSeconds(1))).isFalse();
-    // while the last session runs, it isn't completed yet
-    assertThat(Appointment.isCompleted(two, both, 0, START)).isFalse();
-    assertThat(Appointment.isCompleted(two, both, 0, END.minusSeconds(1))).isFalse();
-    assertThat(Appointment.isCompleted(two, both, 0, END)).isTrue();
-  }
-
-  @Test
-  void aCaseWithAnOpenCreditIsNotCompleted() {
-    assertThat(Appointment.isCompleted(new SessionCount(3), List.of(TEN_TO_ELEVEN), 0, END))
-        .isFalse();
-    assertThat(Appointment.isCompleted(new SessionCount(3), List.of(), 0, END)).isFalse();
-    // one consumed, one forfeited, one open
-    assertThat(Appointment.isCompleted(new SessionCount(3), List.of(TEN_TO_ELEVEN), 1, END))
-        .isFalse();
-  }
-
-  @Test
-  void forfeitedCreditsCanCompleteACase() {
-    assertThat(Appointment.isCompleted(new SessionCount(1), List.of(), 1, START)).isTrue();
-    assertThat(Appointment.isCompleted(new SessionCount(2), List.of(TEN_TO_ELEVEN), 1, END))
-        .isTrue();
-    assertThat(Appointment.isCompleted(new SessionCount(2), List.of(TEN_TO_ELEVEN), 1, START))
-        .isFalse();
   }
 
   @Test
@@ -240,6 +134,18 @@ class AppointmentTest {
             Appointment.sortedUpcoming(
                 List.of(later, past, soon), Instant.parse("2026-11-17T09:30:00Z")))
         .containsExactly(soon, later);
+  }
+
+  @Test
+  void theSortedPastOnesAreTheAppointmentsThemselvesNewestFirst() {
+    Appointment first = appointment("2026-11-16T09:00:00Z", "2026-11-16T10:00:00Z");
+    Appointment second = appointment("2026-11-17T09:00:00Z", "2026-11-17T10:00:00Z");
+    Appointment upcoming = appointment("2026-11-20T09:00:00Z", "2026-11-20T10:00:00Z");
+
+    assertThat(
+            Appointment.sortedPast(
+                List.of(first, upcoming, second), Instant.parse("2026-11-17T10:00:00Z")))
+        .containsExactly(second, first);
   }
 
   @Test

@@ -1,7 +1,8 @@
-package com.cleanlearning.domain.consultation;
+package com.cleanlearning.domain.consultation.view;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.cleanlearning.domain.consultation.Appointment;
 import com.cleanlearning.domain.consultation.value.AppointmentId;
 import com.cleanlearning.domain.consultation.value.AppointmentStatus;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;

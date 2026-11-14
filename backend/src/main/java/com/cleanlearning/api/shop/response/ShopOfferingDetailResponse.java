@@ -1,8 +1,8 @@
 package com.cleanlearning.api.shop.response;
 
 import com.cleanlearning.domain.image.value.ImageId;
-import com.cleanlearning.domain.offering.ShopConsultationOffering;
 import com.cleanlearning.domain.offering.value.OfferingType;
+import com.cleanlearning.domain.offering.view.ShopConsultationOffering;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 

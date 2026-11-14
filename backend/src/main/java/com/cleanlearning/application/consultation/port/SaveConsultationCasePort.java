@@ -1,9 +1,9 @@
 package com.cleanlearning.application.consultation.port;
 
-import com.cleanlearning.domain.consultation.ConsultationCase;
+import com.cleanlearning.domain.consultation.change.NewConsultationCase;
 
 public interface SaveConsultationCasePort {
 
   /** Inserts a new case. */
-  void create(ConsultationCase consultationCase);
+  void create(NewConsultationCase consultationCase);
 }

@@ -1,4 +1,4 @@
-package com.cleanlearning.domain.consultation;
+package com.cleanlearning.domain.consultation.change;
 
 import com.cleanlearning.domain.consultation.value.AppointmentId;
 import java.util.Objects;

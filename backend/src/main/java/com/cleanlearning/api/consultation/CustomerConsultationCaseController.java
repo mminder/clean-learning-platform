@@ -22,9 +22,9 @@ import com.cleanlearning.application.consultation.ListCustomerConsultationCasesU
 import com.cleanlearning.application.consultation.ListEligibleExpertsForCaseUseCase;
 import com.cleanlearning.application.consultation.PurchaseConsultationPackageCommand;
 import com.cleanlearning.application.consultation.PurchaseConsultationPackageUseCase;
-import com.cleanlearning.domain.consultation.CustomerConsultationCase;
 import com.cleanlearning.domain.consultation.value.AppointmentId;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
+import com.cleanlearning.domain.consultation.view.CustomerConsultationCase;
 import com.cleanlearning.domain.offering.value.ConsultationPackageId;
 import com.cleanlearning.domain.offering.value.OfferingId;
 import com.cleanlearning.domain.offering.value.SessionCount;

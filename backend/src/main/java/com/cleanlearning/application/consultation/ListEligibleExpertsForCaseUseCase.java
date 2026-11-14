@@ -3,9 +3,9 @@ package com.cleanlearning.application.consultation;
 import com.cleanlearning.application.consultation.port.LoadCaseForBookingPort;
 import com.cleanlearning.domain.consultation.CaseForBooking;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
-import com.cleanlearning.domain.offering.EligibleExpert;
 import com.cleanlearning.domain.shared.NotFoundException;
 import com.cleanlearning.domain.user.CurrentUser;
+import com.cleanlearning.domain.user.ExpertProfile;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +31,7 @@ public class ListEligibleExpertsForCaseUseCase {
    * @throws NotFoundException if there's no case with this id, or it's another customer's
    */
   @Transactional(readOnly = true)
-  public List<EligibleExpert> invoke(CurrentUser user, ConsultationCaseId id) {
+  public List<ExpertProfile> invoke(CurrentUser user, ConsultationCaseId id) {
     CaseForBooking consultationCase =
         loadCase
             .load(id, user.id())

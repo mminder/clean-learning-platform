@@ -1,7 +1,8 @@
-package com.cleanlearning.domain.consultation;
+package com.cleanlearning.domain.consultation.view;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.cleanlearning.domain.consultation.Appointment;
 import com.cleanlearning.domain.consultation.value.AppointmentId;
 import com.cleanlearning.domain.consultation.value.AppointmentStatus;
 import com.cleanlearning.domain.consultation.value.CancellationOutcome;
@@ -13,6 +14,7 @@ import com.cleanlearning.domain.offering.value.OfferingName;
 import com.cleanlearning.domain.offering.value.SessionCount;
 import com.cleanlearning.domain.offering.value.SessionDuration;
 import com.cleanlearning.domain.shared.value.Money;
+import com.cleanlearning.domain.user.ExpertProfile;
 import com.cleanlearning.domain.user.value.DisplayName;
 import com.cleanlearning.domain.user.value.UserId;
 import java.time.Instant;
@@ -32,8 +34,8 @@ class CustomerConsultationCaseTest {
 
   private static final ConsultationCaseId CASE = new ConsultationCaseId(UUID.randomUUID());
 
-  private static final AssignedExpert EXPERT_2 =
-      new AssignedExpert(
+  private static final ExpertProfile EXPERT_2 =
+      new ExpertProfile(
           new UserId(UUID.fromString("00000000-0000-0000-0000-000000000202")),
           new DisplayName("Expert 2"),
           "Leadership coach.");
@@ -64,7 +66,7 @@ class CustomerConsultationCaseTest {
 
   private static CustomerConsultationCase withSessions(
       int sessionCount,
-      Optional<AssignedExpert> expert,
+      Optional<ExpertProfile> expert,
       List<Appointment> appointments,
       int forfeitedCredits,
       Instant asOf) {
@@ -74,7 +76,7 @@ class CustomerConsultationCaseTest {
 
   private static CustomerConsultationCase withSessions(
       int sessionCount,
-      Optional<AssignedExpert> expert,
+      Optional<ExpertProfile> expert,
       List<Appointment> appointments,
       int forfeitedCredits,
       Optional<CancellationOutcome> cancellation,
@@ -249,15 +251,20 @@ class CustomerConsultationCaseTest {
                 .upcomingAppointments())
         .containsExactly(
             new CustomerUpcomingAppointment(
-                TUESDAY.at(Instant.parse("2026-11-15T11:00:00Z")), true, freeUntil, true));
+                CustomerAppointment.of(TUESDAY, Instant.parse("2026-11-15T11:00:00Z")),
+                true,
+                freeUntil,
+                true));
     // at the deadline: late
     assertThat(withAppointments(List.of(TUESDAY), freeUntil).upcomingAppointments())
         .containsExactly(
-            new CustomerUpcomingAppointment(TUESDAY.at(freeUntil), true, freeUntil, false));
+            new CustomerUpcomingAppointment(
+                CustomerAppointment.of(TUESDAY, freeUntil), true, freeUntil, false));
     // running: consumed, and it can't be cancelled
     assertThat(withAppointments(List.of(TUESDAY), TUESDAY.start()).upcomingAppointments())
         .containsExactly(
-            new CustomerUpcomingAppointment(TUESDAY.at(TUESDAY.start()), false, freeUntil, false));
+            new CustomerUpcomingAppointment(
+                CustomerAppointment.of(TUESDAY, TUESDAY.start()), false, freeUntil, false));
   }
 
   @Test

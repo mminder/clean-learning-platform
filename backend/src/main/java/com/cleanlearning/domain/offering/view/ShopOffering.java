@@ -1,4 +1,4 @@
-package com.cleanlearning.domain.offering;
+package com.cleanlearning.domain.offering.view;
 
 import com.cleanlearning.domain.image.value.ImageId;
 import com.cleanlearning.domain.offering.value.OfferingId;

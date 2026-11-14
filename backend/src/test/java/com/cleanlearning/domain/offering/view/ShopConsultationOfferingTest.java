@@ -1,4 +1,4 @@
-package com.cleanlearning.domain.offering;
+package com.cleanlearning.domain.offering.view;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.cleanlearning.domain.image.value.ImageId;
+import com.cleanlearning.domain.offering.ConsultationPackage;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import com.cleanlearning.domain.offering.value.ConsultationPackageId;
 import com.cleanlearning.domain.offering.value.OfferingId;
@@ -14,6 +15,7 @@ import com.cleanlearning.domain.offering.value.OfferingType;
 import com.cleanlearning.domain.offering.value.SessionCount;
 import com.cleanlearning.domain.offering.value.SessionDuration;
 import com.cleanlearning.domain.shared.value.Money;
+import com.cleanlearning.domain.user.ExpertProfile;
 import com.cleanlearning.domain.user.value.DisplayName;
 import com.cleanlearning.domain.user.value.UserId;
 import java.util.ArrayList;
@@ -35,8 +37,8 @@ class ShopConsultationOfferingTest {
           new ConsultationPackageId(UUID.fromString("00000000-0000-0000-0000-000000001011")),
           new SessionCount(3),
           Money.chf("450.00"));
-  private static final EligibleExpert EXPERT_1 =
-      new EligibleExpert(
+  private static final ExpertProfile EXPERT_1 =
+      new ExpertProfile(
           new UserId(UUID.fromString("00000000-0000-0000-0000-000000000201")),
           new DisplayName("Expert 1"),
           "Career coach.");
@@ -78,7 +80,7 @@ class ShopConsultationOfferingTest {
   @Test
   void needsAPackage() {
     List<ConsultationPackage> noPackages = List.of();
-    List<EligibleExpert> experts = List.of(EXPERT_1);
+    List<ExpertProfile> experts = List.of(EXPERT_1);
     assertThatIllegalArgumentException()
         .isThrownBy(() ->
             new ShopConsultationOffering(
@@ -105,7 +107,7 @@ class ShopConsultationOfferingTest {
   @Test
   void rejectsMissingValues() {
     List<ConsultationPackage> packages = List.of(THREE_SESSIONS);
-    List<EligibleExpert> experts = List.of(EXPERT_1);
+    List<ExpertProfile> experts = List.of(EXPERT_1);
     assertThatNullPointerException()
         .isThrownBy(() ->
             new ShopConsultationOffering(
@@ -134,15 +136,5 @@ class ShopConsultationOfferingTest {
         .isThrownBy(() ->
             new ShopConsultationOffering(
                 ID, NAME, "Text", NO_IMAGE, SIXTY_MINUTES, ONE_DAY, packages, null));
-  }
-
-  @Test
-  void eligibleExpertNeedsAllItsValues() {
-    UserId id = EXPERT_1.id();
-    DisplayName displayName = EXPERT_1.displayName();
-    assertThatNullPointerException().isThrownBy(() -> new EligibleExpert(null, displayName, "Bio"));
-    assertThatNullPointerException().isThrownBy(() -> new EligibleExpert(id, null, "Bio"));
-    assertThatNullPointerException().isThrownBy(() -> new EligibleExpert(id, displayName, null));
-    assertThatNullPointerException().isThrownBy(() -> new UserId(null));
   }
 }
