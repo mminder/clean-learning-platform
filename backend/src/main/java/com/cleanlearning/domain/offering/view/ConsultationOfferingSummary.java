@@ -1,0 +1,27 @@
+package com.cleanlearning.domain.offering.view;
+
+import com.cleanlearning.domain.offering.value.OfferingId;
+import com.cleanlearning.domain.offering.value.OfferingName;
+import com.cleanlearning.domain.offering.value.OfferingStatus;
+import java.util.Objects;
+
+public record ConsultationOfferingSummary(
+    OfferingId id,
+    OfferingName name,
+    OfferingStatus status,
+    int packageCount,
+    int eligibleExpertCount) {
+
+  public ConsultationOfferingSummary {
+    Objects.requireNonNull(id, "id");
+    Objects.requireNonNull(name, "name");
+    Objects.requireNonNull(status, "status");
+    if (packageCount < 0) {
+      throw new IllegalArgumentException("The package count can't be negative: " + packageCount);
+    }
+    if (eligibleExpertCount < 0) {
+      throw new IllegalArgumentException(
+          "The eligible expert count can't be negative: " + eligibleExpertCount);
+    }
+  }
+}

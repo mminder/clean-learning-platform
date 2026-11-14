@@ -50,9 +50,9 @@ Work arrives as tasks. Follow [working on a task](_docs/tasks/README.md#working-
 
 Details: [_docs/architecture/backend.md](_docs/architecture/backend.md).
 
-- Root packages `api`, `application`, `domain`, `adapters.database` (plus `config`). Each has the feature sub-packages `user`, `offering`, `consultation`, `training`, `availability`, `image`; `api` also has `shop`, the public catalog endpoints. Shared value objects live in `domain.shared.value`.
+- Root packages `api`, `application`, `domain`, `adapters.database` (plus `config`). Each has the feature sub-packages `user`, `offering`, `consultation`, `training`, `availability`, `image`; `api` also has `shop`, the public catalog endpoints. In `domain.<feature>` the models that hold the rules sit at the top, what a decision returns and a `Save…Port` writes in `outcome`, what an actor sees at a time in `view`, and the value objects in `value`; a class outside `view` never depends on one inside. Shared value objects live in `domain.shared.value`.
 - Each use case is one `@Service` class named `<Verb><Noun>UseCase` at the top of `application.<feature>`, next to its command records. It has one public method named `invoke`, which is `@Transactional` and contains flow only.
-- Business rules live in `domain` POJOs and records. `domain` has no Spring or JPA imports. In `domain.<feature>`, the models sit at the top and the value objects in `value`; a value object depends only on Java and other value objects.
+- Business rules live in `domain` POJOs and records. `domain` has no Spring or JPA imports. In `domain.<feature>`, the models sit at the top and the value objects in `value`; a value object depends only on Java, other value objects and the shared exceptions.
 - A domain value with a rule beyond not null, a unit or behavior is a value object, and so is an id. A column that holds one repeats its rule as a check constraint ([D-36](_docs/decisions.md#architecture)).
 - Outgoing ports are interfaces named `<Purpose>Port` in `application.<feature>.port`. They are narrow and use-case specific, use only domain types, and are implemented in `adapters.database.<feature>`. There are no incoming ports: controllers call use cases directly and never a port; adapters see only the ports, never a use case.
 - Every controller says who may call it with `@PreAuthorize` at class level, matching its URL prefix (`hasRole('ADMIN')` under `/api/admin`); ArchUnit fails for a route without one.
@@ -97,7 +97,8 @@ CI (GitHub Actions, `.github/workflows/ci.yml`) runs the same commands on every 
 | Where | Command | Does |
 |---|---|---|
 | root | `docker compose up -d` | Postgres 18 on :5432 (`docker compose down -v` stops it and drops the data) |
-| `backend/` | `./mvnw verify` | all backend tests, including `LayerRulesTest` (needs Docker for Testcontainers) |
+| `backend/` | `./mvnw verify` | all backend tests, including `LayerRulesTest` (needs Docker for Testcontainers), and the Spotless format check |
+| `backend/` | `./mvnw spotless:apply` | format the Java code with google-java-format |
 | `backend/` | `./mvnw spring-boot:run -Dspring-boot.run.profiles=poc` | API on :8080 against the docker-compose Postgres, Flyway migrates and seeds on start |
 | `backend/` | `./mvnw -Pfrontend package` | one jar with the SPA: runs `npm ci` and `npm run build` in `frontend/` (installed Node and npm), copies `dist/` into `static/`. Without `-Pfrontend` the backend build doesn't touch the frontend |
 | `backend/` | `java -jar target/clean-learning-platform-*.jar --spring.profiles.active=poc` | the jar serves the SPA and the API on :8080 against the docker-compose Postgres; client routes like `/offerings/<id>` get `index.html` |

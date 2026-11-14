@@ -8,9 +8,11 @@ Java 25 · Spring Boot 4.x · Maven (wrapper) · Spring Data JPA / Hibernate · 
 
 There's no Lombok and no MapStruct. Value objects, commands and DTOs are Java `record`s (D-28).
 
+Java code is formatted by google-java-format through Spotless (D-38): `./mvnw spotless:apply` formats, and `./mvnw verify` fails on unformatted code.
+
 ## Packages
 
-The layers are the root packages (D-22), and the features are sub-packages within each layer (D-23). Within a feature package, the supporting types sit in a sub-package per role (D-37): `entity` and `row` in `adapters.database`, `response` and `request` in `api`, `port` in `application`, `value` in `domain`.
+The layers are the root packages (D-22), and the features are sub-packages within each layer (D-23). Within a feature package, the supporting types sit in a sub-package per role (D-37): `entity` and `row` in `adapters.database`, `response` and `request` in `api`, `port` in `application`, `outcome`, `view` and `value` in `domain`.
 
 ```
 com.cleanlearning
@@ -30,9 +32,9 @@ com.cleanlearning
 │  ├─ availability
 │  ├─ user
 │  └─ image
-├─ domain                     models + value objects (in value/), no framework imports
+├─ domain                     models (outcome/, view/, value/ below), no framework imports
 │  ├─ shared                  NotFoundException, BusinessTimeZone; value: Money, ...
-│  ├─ consultation            e.g. SlotFinder, CaseCredits, CaseCancellation
+│  ├─ consultation            e.g. SlotFinder, CaseCredits; outcome: Booking; view: CustomerAppointment
 │  ├─ training
 │  ├─ offering
 │  ├─ availability
@@ -79,12 +81,13 @@ Enforced by ArchUnit.
 | Package | May depend on | Must not depend on |
 |---|---|---|
 | `domain` | `java.*`, other `domain` packages | Spring, JPA, `application`, `api`, `adapters` |
+| `domain.<feature>` outside `view` | `java.*`, other `domain` packages except `view` ones | `view` packages |
 | `application.<feature>` (use cases) | ports, `domain`, Spring (`@Service`, `@Transactional`) | `api`, `adapters`, JPA |
 | `application.<feature>.port` (ports) | `domain` | use cases, `api`, `adapters`, JPA |
 | `api` | use cases, `domain`, Spring Web | ports, `adapters` |
 | `adapters.database` | ports, `domain`, JPA | use cases, `api` |
 
-Features aren't isolated from each other (D-23). A use case may use domain classes of another feature, and a database adapter may join tables of several features.
+Features aren't isolated from each other (D-23). A use case may use domain classes of another feature, and a database adapter may join tables of several features. Their dependencies stay acyclic, in `domain` and in `application`, which ArchUnit checks.
 
 ## Use cases
 
@@ -112,7 +115,7 @@ public class BookConsultationAppointmentUseCase {
         SlotFinder slotFinder = new SlotFinder(loadAvailability.load(expertId, today), busyTimes);
         Booking booking = consultationCase.book(expertId, command.start(), slotFinder, now); // the domain decides
         saveBooking.save(booking);
-        return booking.appointment().at(now);
+        return CustomerAppointment.of(booking.appointment(), now);
     }
 }
 ```
@@ -132,7 +135,9 @@ public class BookConsultationAppointmentUseCase {
 - **Value objects** (examples): `Money` (CHF), `CancellationDeadline` (hours), `SessionDuration`, `SessionCount` (at least 1), `OfferingName` and `DisplayName` (never blank), `TimeRange`, `LocalTimeSlot`, `Seats`, `EmailAddress`, typed ids (`ConsultationCaseId`, `UserId`, …).
 - **When a value is a value object** (D-36): when it has a rule beyond not null, a unit or behavior, or could be mixed up with another value of the same type. Other values stay Java types, like an offering's description and an expert's bio (`String`s that may be empty). A column that holds a value object repeats its rule as a check constraint.
 - **Use-case-specific domain objects** are encouraged, e.g. `CaseForBooking` and `CaseForCancellation` instead of one big `Case`.
-- **Models and value objects.** In `domain.<feature>`, the models a use case works with sit at the top, and the value objects in `value`. A value object describes one thing by its value (an amount, a duration, an id, a type) and depends only on Java and other value objects; ArchUnit checks this, so a class that needs a model is a model itself. Typed ids are value objects, so several models can share one, like `OfferingId`. Shared value objects live in `domain.shared.value`.
+- **The state they share is one model that each of them holds** (D-39), never loose fields repeated in every model. `CaseCredits` is a case's session count with its appointments, booked (`Appointment`) and cancelled (`CancelledAppointment`), and it holds the rules on them: total, open and forfeited credits, completed at `asOf`, the upcoming and past appointments at `asOf`. `CaseForBooking`, `CaseForCancellation` and the customer's views each hold one, and the adapter builds it in one place, from all the case's appointments. `CaseInList` is a case in a "My …" list: its id, purchase time, cancellation time and `CaseCredits`, with the groups and their order (D-17); a list's view holds one next to what its page shows (`CustomerConsultationCaseSummary`), so every actor's list groups and sorts with the same rule. A cancelled appointment is state of its own, `CancelledAppointment`, not the `AppointmentCancellation` outcome that made it.
+- **Models, outcomes, views and value objects** (D-37). In `domain.<feature>`, the models that hold the rules sit at the top: what a writing use case loads under the lock and decides with (`CaseForBooking`, `ConsultationOfferingForPurchase`), and state and rules several use cases share (`Appointment`, `CaseCredits`, `CaseInList`, `SlotFinder`). The `outcome` sub-package holds what a decision returns and a `Save…Port` writes (`Booking`, `CaseCancellation`). The `view` sub-package holds what an actor sees at a time, computed at `asOf` (`CustomerAppointment`, `ShopOffering`). A view depends on the rules, never the reverse; ArchUnit checks that no class outside `view` depends on one inside. The top level and `outcome` may depend on each other (`Booking` holds an `Appointment`). The value objects sit in `value`. A value object describes one thing by its value (an amount, a duration, an id, a type) and depends only on Java, other value objects and the shared exceptions (`InvalidValueException`); ArchUnit checks this, so a class that needs a model is a model itself. Typed ids are value objects, so several models can share one, like `OfferingId`. Shared value objects live in `domain.shared.value`.
+- **When a read needs a view** (D-37). A read use case may return a top-level model when the page shows exactly what the write decides with: the admin's edit form shows the `ConsultationOffering` it edits, and the bookable slots come from the `CaseForBooking` the booking checks. It returns a view when the page needs something the model lacks: data joined from elsewhere (the offering's name on a case), state derived at `asOf`, or another shape, such as a row of a list. A top-level model never gets a field that only a page needs: that is when a view is due.
 - **Derived state is computed, never stored:** `CONSUMED`, `COMPLETED`, open credits, refund eligibility before cancellation, link visibility. A column that holds a status maps only stored statuses: the domain's enum when it has no derived one (`OfferingStatus`; `CaseStatus`: `ACTIVE`, `CANCELLED`), otherwise an enum of the stored ones in `adapters.database.<feature>.entity` (`StoredAppointmentStatus`: `BOOKED`, `CANCELLED`), since the domain's `AppointmentStatus` has the derived `CONSUMED`.
 - **Rules as constants in one place:** slot grid 30 min, minimum notice 24 h, link window 1 h (D-10, D-19).
 - Methods that depend on the current time take a `Clock` or an `Instant now`. A local date, such as today, is taken in `BusinessTimeZone.ZONE` (`Europe/Zurich`), never in the clock's own zone: `LocalDate.ofInstant(clock.instant(), BusinessTimeZone.ZONE)`.
@@ -195,7 +200,7 @@ Clients rely only on the status for the second group, never on its body ([D-34](
 **400s:**
 
 - **Bean Validation** on a `@Valid @RequestBody` answers 400 with every invalid field in `errors`, sorted by path: `field` is the path Spring reports (`name`, `packages[1].price`), `message` is Hibernate Validator's default ("must not be blank") unless a constraint says otherwise. Messages are English whatever the browser's `Accept-Language` (`spring.web.locale` in `application.yml`, D-20).
-- **A value object's rule.** The request annotations repeat the use case's rules, but the value object stays the authority. A value it rejects anyway, such as a name of only no-break spaces, throws `IllegalArgumentException`, which `ApiExceptionHandler` maps to 400 with the message as `detail` and no `errors`. **In this code base, `IllegalArgumentException` means "invalid value"; don't throw it for anything else.** A broken invariant or a programming error is an `IllegalStateException` (or a `NullPointerException`), a 500.
+- **A value object's rule.** The request annotations repeat the use case's rules, but the value object stays the authority. A value it rejects anyway, such as a name of only no-break spaces, throws `InvalidValueException` (`domain.shared`), which `ApiExceptionHandler` maps to 400 with the message as `detail` and no `errors`. **Only `InvalidValueException` means "the caller sent an invalid value"; throw it only for a value that can come from a request.** `IllegalArgumentException` and `IllegalStateException` are programming errors or a broken invariant, for example on data an adapter loaded; they aren't handled and answer 500, so the message never reaches the client. A parse that can fail on request input, such as `Money.chf`, catches the JDK exception and rethrows `InvalidValueException`.
 - Spring MVC's own 400s (a malformed id, an unreadable body) have no `errors` either.
 - Known gap: a text value with a NUL character (`\u0000`), such as an offering name, answers 500, because Postgres rejects it in `text`. A value object (or a request check) should refuse it with a 400.
 

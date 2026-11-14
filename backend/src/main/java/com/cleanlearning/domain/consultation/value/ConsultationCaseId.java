@@ -5,7 +5,7 @@ import java.util.UUID;
 
 public record ConsultationCaseId(UUID value) {
 
-    public ConsultationCaseId {
-        Objects.requireNonNull(value, "value");
-    }
+  public ConsultationCaseId {
+    Objects.requireNonNull(value, "value");
+  }
 }

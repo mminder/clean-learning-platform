@@ -1,0 +1,140 @@
+package com.cleanlearning.domain.offering.view;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import com.cleanlearning.domain.image.value.ImageId;
+import com.cleanlearning.domain.offering.ConsultationPackage;
+import com.cleanlearning.domain.offering.value.CancellationDeadline;
+import com.cleanlearning.domain.offering.value.ConsultationPackageId;
+import com.cleanlearning.domain.offering.value.OfferingId;
+import com.cleanlearning.domain.offering.value.OfferingName;
+import com.cleanlearning.domain.offering.value.OfferingType;
+import com.cleanlearning.domain.offering.value.SessionCount;
+import com.cleanlearning.domain.offering.value.SessionDuration;
+import com.cleanlearning.domain.shared.value.Money;
+import com.cleanlearning.domain.user.ExpertProfile;
+import com.cleanlearning.domain.user.value.DisplayName;
+import com.cleanlearning.domain.user.value.UserId;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+
+class ShopConsultationOfferingTest {
+
+  private static final OfferingId ID =
+      new OfferingId(UUID.fromString("00000000-0000-0000-0000-000000001001"));
+  private static final OfferingName NAME = new OfferingName("Career Coaching");
+  private static final Optional<ImageId> NO_IMAGE = Optional.empty();
+  private static final SessionDuration SIXTY_MINUTES = new SessionDuration(60);
+  private static final CancellationDeadline ONE_DAY = new CancellationDeadline(24);
+  private static final ConsultationPackage THREE_SESSIONS =
+      new ConsultationPackage(
+          new ConsultationPackageId(UUID.fromString("00000000-0000-0000-0000-000000001011")),
+          new SessionCount(3),
+          Money.chf("450.00"));
+  private static final ExpertProfile EXPERT_1 =
+      new ExpertProfile(
+          new UserId(UUID.fromString("00000000-0000-0000-0000-000000000201")),
+          new DisplayName("Expert 1"),
+          "Career coach.");
+
+  @Test
+  void holdsWhatTheDetailPageShows() {
+    ShopConsultationOffering offering =
+        new ShopConsultationOffering(
+            ID,
+            NAME,
+            "Coaching.",
+            NO_IMAGE,
+            SIXTY_MINUTES,
+            ONE_DAY,
+            List.of(THREE_SESSIONS),
+            List.of(EXPERT_1));
+
+    assertThat(offering.type()).isEqualTo(OfferingType.CONSULTATION);
+    assertThat(offering.sessionDuration()).isEqualTo(SIXTY_MINUTES);
+    assertThat(offering.cancellationDeadline()).isEqualTo(ONE_DAY);
+    assertThat(offering.packages()).containsExactly(THREE_SESSIONS);
+    assertThat(offering.eligibleExperts()).containsExactly(EXPERT_1);
+  }
+
+  @Test
+  void cannotBeChangedThroughItsLists() {
+    List<ConsultationPackage> packages = new ArrayList<>(List.of(THREE_SESSIONS));
+    ShopConsultationOffering offering =
+        new ShopConsultationOffering(
+            ID, NAME, "Coaching.", NO_IMAGE, SIXTY_MINUTES, ONE_DAY, packages, List.of(EXPERT_1));
+
+    packages.clear();
+
+    assertThat(offering.packages()).containsExactly(THREE_SESSIONS);
+    assertThatThrownBy(() -> offering.eligibleExperts().clear())
+        .isInstanceOf(UnsupportedOperationException.class);
+  }
+
+  @Test
+  void needsAPackage() {
+    List<ConsultationPackage> noPackages = List.of();
+    List<ExpertProfile> experts = List.of(EXPERT_1);
+    assertThatIllegalArgumentException()
+        .isThrownBy(() ->
+            new ShopConsultationOffering(
+                ID, NAME, "Coaching.", NO_IMAGE, SIXTY_MINUTES, ONE_DAY, noPackages, experts))
+        .withMessageContaining("package");
+  }
+
+  @Test
+  void mayHaveNoEligibleExperts() {
+    ShopConsultationOffering offering =
+        new ShopConsultationOffering(
+            ID,
+            NAME,
+            "Coaching.",
+            NO_IMAGE,
+            SIXTY_MINUTES,
+            ONE_DAY,
+            List.of(THREE_SESSIONS),
+            List.of());
+
+    assertThat(offering.eligibleExperts()).isEmpty();
+  }
+
+  @Test
+  void rejectsMissingValues() {
+    List<ConsultationPackage> packages = List.of(THREE_SESSIONS);
+    List<ExpertProfile> experts = List.of(EXPERT_1);
+    assertThatNullPointerException()
+        .isThrownBy(() ->
+            new ShopConsultationOffering(
+                null, NAME, "Text", NO_IMAGE, SIXTY_MINUTES, ONE_DAY, packages, experts));
+    assertThatNullPointerException()
+        .isThrownBy(() ->
+            new ShopConsultationOffering(
+                ID, null, "Text", NO_IMAGE, SIXTY_MINUTES, ONE_DAY, packages, experts));
+    assertThatNullPointerException()
+        .isThrownBy(() ->
+            new ShopConsultationOffering(
+                ID, NAME, null, NO_IMAGE, SIXTY_MINUTES, ONE_DAY, packages, experts));
+    assertThatNullPointerException()
+        .isThrownBy(() ->
+            new ShopConsultationOffering(
+                ID, NAME, "Text", NO_IMAGE, null, ONE_DAY, packages, experts));
+    assertThatNullPointerException()
+        .isThrownBy(() ->
+            new ShopConsultationOffering(
+                ID, NAME, "Text", NO_IMAGE, SIXTY_MINUTES, null, packages, experts));
+    assertThatNullPointerException()
+        .isThrownBy(() ->
+            new ShopConsultationOffering(
+                ID, NAME, "Text", NO_IMAGE, SIXTY_MINUTES, ONE_DAY, null, experts));
+    assertThatNullPointerException()
+        .isThrownBy(() ->
+            new ShopConsultationOffering(
+                ID, NAME, "Text", NO_IMAGE, SIXTY_MINUTES, ONE_DAY, packages, null));
+  }
+}

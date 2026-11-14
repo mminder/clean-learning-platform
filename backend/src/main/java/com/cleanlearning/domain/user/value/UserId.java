@@ -5,7 +5,7 @@ import java.util.UUID;
 
 public record UserId(UUID value) {
 
-    public UserId {
-        Objects.requireNonNull(value, "value");
-    }
+  public UserId {
+    Objects.requireNonNull(value, "value");
+  }
 }
