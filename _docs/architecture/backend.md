@@ -12,7 +12,7 @@ Java code is formatted by google-java-format through Spotless (D-38): `./mvnw sp
 
 ## Packages
 
-The layers are the root packages (D-22), and the features are sub-packages within each layer (D-23). Within a feature package, the supporting types sit in a sub-package per role (D-37): `entity` and `row` in `adapters.database`, `response` and `request` in `api`, `port` in `application`, `value` in `domain`.
+The layers are the root packages (D-22), and the features are sub-packages within each layer (D-23). Within a feature package, the supporting types sit in a sub-package per role (D-37): `entity` and `row` in `adapters.database`, `response` and `request` in `api`, `port` in `application`, `change`, `view` and `value` in `domain`.
 
 ```
 com.cleanlearning
@@ -32,9 +32,9 @@ com.cleanlearning
 │  ├─ availability
 │  ├─ user
 │  └─ image
-├─ domain                     models + value objects (in value/), no framework imports
+├─ domain                     models (change/, view/, value/ below), no framework imports
 │  ├─ shared                  NotFoundException, BusinessTimeZone; value: Money, ...
-│  ├─ consultation            e.g. SlotFinder, CaseCredits, CaseCancellation
+│  ├─ consultation            e.g. SlotFinder, CaseCredits; change: Booking; view: CustomerAppointment
 │  ├─ training
 │  ├─ offering
 │  ├─ availability
@@ -81,6 +81,7 @@ Enforced by ArchUnit.
 | Package | May depend on | Must not depend on |
 |---|---|---|
 | `domain` | `java.*`, other `domain` packages | Spring, JPA, `application`, `api`, `adapters` |
+| `domain.<feature>` outside `view` | `java.*`, other `domain` packages except `view` ones | `view` packages |
 | `application.<feature>` (use cases) | ports, `domain`, Spring (`@Service`, `@Transactional`) | `api`, `adapters`, JPA |
 | `application.<feature>.port` (ports) | `domain` | use cases, `api`, `adapters`, JPA |
 | `api` | use cases, `domain`, Spring Web | ports, `adapters` |
@@ -114,7 +115,7 @@ public class BookConsultationAppointmentUseCase {
         SlotFinder slotFinder = new SlotFinder(loadAvailability.load(expertId, today), busyTimes);
         Booking booking = consultationCase.book(expertId, command.start(), slotFinder, now); // the domain decides
         saveBooking.save(booking);
-        return booking.appointment().at(now);
+        return CustomerAppointment.of(booking.appointment(), now);
     }
 }
 ```
@@ -134,7 +135,7 @@ public class BookConsultationAppointmentUseCase {
 - **Value objects** (examples): `Money` (CHF), `CancellationDeadline` (hours), `SessionDuration`, `SessionCount` (at least 1), `OfferingName` and `DisplayName` (never blank), `TimeRange`, `LocalTimeSlot`, `Seats`, `EmailAddress`, typed ids (`ConsultationCaseId`, `UserId`, …).
 - **When a value is a value object** (D-36): when it has a rule beyond not null, a unit or behavior, or could be mixed up with another value of the same type. Other values stay Java types, like an offering's description and an expert's bio (`String`s that may be empty). A column that holds a value object repeats its rule as a check constraint.
 - **Use-case-specific domain objects** are encouraged, e.g. `CaseForBooking` and `CaseForCancellation` instead of one big `Case`.
-- **Models and value objects.** In `domain.<feature>`, the models a use case works with sit at the top, and the value objects in `value`. A value object describes one thing by its value (an amount, a duration, an id, a type) and depends only on Java and other value objects; ArchUnit checks this, so a class that needs a model is a model itself. Typed ids are value objects, so several models can share one, like `OfferingId`. Shared value objects live in `domain.shared.value`.
+- **Models, changes, views and value objects** (D-37). In `domain.<feature>`, the models that hold the rules sit at the top: what a writing use case loads under the lock and decides with (`CaseForBooking`, `ConsultationOfferingForPurchase`), and rules several use cases share (`Appointment`, `CaseCredits`, `SlotFinder`). The `change` sub-package holds what a decision returns and a `Save…Port` writes (`Booking`, `CaseCancellation`). The `view` sub-package holds what an actor sees at a time, computed at `asOf` (`CustomerAppointment`, `ShopOffering`). A view depends on the rules, never the reverse; ArchUnit checks that no class outside `view` depends on one inside. The top level and `change` may depend on each other (`Booking` holds an `Appointment`). The value objects sit in `value`. A value object describes one thing by its value (an amount, a duration, an id, a type) and depends only on Java and other value objects; ArchUnit checks this, so a class that needs a model is a model itself. Typed ids are value objects, so several models can share one, like `OfferingId`. Shared value objects live in `domain.shared.value`.
 - **Derived state is computed, never stored:** `CONSUMED`, `COMPLETED`, open credits, refund eligibility before cancellation, link visibility. A column that holds a status maps only stored statuses: the domain's enum when it has no derived one (`OfferingStatus`; `CaseStatus`: `ACTIVE`, `CANCELLED`), otherwise an enum of the stored ones in `adapters.database.<feature>.entity` (`StoredAppointmentStatus`: `BOOKED`, `CANCELLED`), since the domain's `AppointmentStatus` has the derived `CONSUMED`.
 - **Rules as constants in one place:** slot grid 30 min, minimum notice 24 h, link window 1 h (D-10, D-19).
 - Methods that depend on the current time take a `Clock` or an `Instant now`. A local date, such as today, is taken in `BusinessTimeZone.ZONE` (`Europe/Zurich`), never in the clock's own zone: `LocalDate.ofInstant(clock.instant(), BusinessTimeZone.ZONE)`.
