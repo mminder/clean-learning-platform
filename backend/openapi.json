@@ -1989,6 +1989,12 @@
             "type" : "string",
             "format" : "uuid"
           },
+          "notes" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CustomerNoteResponse"
+            }
+          },
           "offeringImageId" : {
             "type" : [ "string", "null" ],
             "format" : "uuid"
@@ -2031,7 +2037,7 @@
             }
           }
         },
-        "required" : [ "canBook", "canCancel", "id", "offeringName", "openCredits", "pastAppointments", "purchaseTerms", "purchasedAt", "totalCredits", "upcomingAppointments" ]
+        "required" : [ "canBook", "canCancel", "id", "notes", "offeringName", "openCredits", "pastAppointments", "purchaseTerms", "purchasedAt", "totalCredits", "upcomingAppointments" ]
       },
       "CustomerConsultationCaseSummaryResponse" : {
         "type" : "object",
@@ -2079,6 +2085,30 @@
           }
         },
         "required" : [ "group", "id", "offeringName", "openCredits", "purchasedAt", "totalCredits" ]
+      },
+      "CustomerNoteResponse" : {
+        "type" : "object",
+        "properties" : {
+          "editedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "writtenAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "id", "text", "title", "writtenAt" ]
       },
       "CustomerUpcomingAppointmentResponse" : {
         "type" : "object",

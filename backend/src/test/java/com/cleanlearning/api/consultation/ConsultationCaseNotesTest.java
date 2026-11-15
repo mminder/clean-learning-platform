@@ -568,6 +568,202 @@ class ConsultationCaseNotesTest {
     assertThat(storedNotes()).hasSize(1);
   }
 
+  private MvcTestResult getCustomerCase(Object caseId, UUID user, Role... roles) {
+    return mockMvc
+        .get()
+        .uri(CUSTOMER_CASES + "/{id}", caseId)
+        .with(LoggedIn.as(user, roles))
+        .exchange();
+  }
+
+  /**
+   * Spec 06's scenario "Public notes reach the customer", security.md's shaped responses: the
+   * customer's case has the public note, without a visibility, and nothing of the private one, not
+   * even its id. Customer 2 still gets 404.
+   */
+  @Test
+  void theCustomerSeesThePublicNotesOnly() throws Exception {
+    String caseId = customer1sCaseWithExpert2();
+    String privateNote = added(caseId, FIRST_SESSION);
+    clock.set(NOW.plusSeconds(600));
+    String publicNote = added(caseId, note("Homework", "Read chapter 3", "PUBLIC"));
+    clock.set(NEXT_MORNING);
+    assertThat(
+            edit(
+                caseId,
+                publicNote,
+                note("Homework", "Read chapter 3\\nand 4", "PUBLIC"),
+                SeedData.EXPERT_2))
+        .hasStatusOk();
+
+    MvcTestResult customersCase = getCustomerCase(caseId, SeedData.CUSTOMER_1, Role.CUSTOMER);
+
+    assertThat(customersCase)
+        .hasStatusOk()
+        .bodyJson()
+        .isLenientlyEqualTo(
+            """
+            {
+              "notes": [{
+                "id": "%s",
+                "title": "Homework",
+                "text": "Read chapter 3\\nand 4",
+                "writtenAt": "2026-11-09T14:10:00Z",
+                "editedAt": "2026-11-10T08:00:00Z"
+              }]
+            }
+            """
+                .formatted(publicNote));
+    assertThat(customersCase)
+        .bodyJson()
+        .extractingPath("$.notes[0]")
+        .asMap()
+        .containsOnlyKeys("id", "title", "text", "writtenAt", "editedAt");
+    assertThat(customersCase.getResponse().getContentAsString())
+        .doesNotContain(privateNote)
+        .doesNotContain("First session")
+        .doesNotContain("Line one")
+        .doesNotContain("visibility");
+    assertThat(getCustomerCase(caseId, SeedData.CUSTOMER_2, Role.CUSTOMER))
+        .hasStatus(HttpStatus.NOT_FOUND)
+        .bodyJson()
+        .extractingPath("$.detail")
+        .isEqualTo("Case %s not found.".formatted(caseId));
+  }
+
+  /** Spec 06's scenario "Edit a note": made public, the customer sees it; private again, not. */
+  @Test
+  void aNoteMadePublicReachesTheCustomerAndMadePrivateAgainIsGone() throws Exception {
+    String caseId = customer1sCaseWithExpert2();
+    String noteId = added(caseId, FIRST_SESSION);
+    assertThat(getCustomerCase(caseId, SeedData.CUSTOMER_1, Role.CUSTOMER))
+        .hasStatusOk()
+        .bodyJson()
+        .extractingPath("$.notes")
+        .asList()
+        .isEmpty();
+    clock.set(NEXT_MORNING);
+
+    assertThat(edit(caseId, noteId, note("First session", "Text", "PUBLIC"), SeedData.EXPERT_2))
+        .hasStatusOk();
+    assertThat(getCustomerCase(caseId, SeedData.CUSTOMER_1, Role.CUSTOMER))
+        .hasStatusOk()
+        .bodyJson()
+        .isLenientlyEqualTo(
+            """
+            {
+              "notes": [{
+                "id": "%s",
+                "title": "First session",
+                "text": "Text",
+                "writtenAt": "2026-11-09T14:00:00Z",
+                "editedAt": "2026-11-10T08:00:00Z"
+              }]
+            }
+            """
+                .formatted(noteId));
+
+    assertThat(edit(caseId, noteId, note("First session", "Text", "PRIVATE"), SeedData.EXPERT_2))
+        .hasStatusOk();
+    MvcTestResult customersCase = getCustomerCase(caseId, SeedData.CUSTOMER_1, Role.CUSTOMER);
+    assertThat(customersCase).hasStatusOk().bodyJson().extractingPath("$.notes").asList().isEmpty();
+    assertThat(customersCase.getResponse().getContentAsString()).doesNotContain(noteId);
+  }
+
+  /**
+   * The answers of both cancellations are the customer's case, too: they load it through the same
+   * port, with the public notes only.
+   */
+  @Test
+  void bothCancellationsAnswerThePublicNotesOnly() throws Exception {
+    String caseId = customer1sCaseWithExpert2();
+    booked(caseId, SeedData.EXPERT_2, ELEVEN, SeedData.CUSTOMER_1);
+    String privateNote = added(caseId, FIRST_SESSION);
+    String publicNote = added(caseId, note("Homework", "Read chapter 3", "PUBLIC"));
+    String appointmentId =
+        JsonPath.read(
+            getCustomerCase(caseId, SeedData.CUSTOMER_1, Role.CUSTOMER)
+                .getResponse()
+                .getContentAsString(),
+            "$.upcomingAppointments[0].id");
+
+    MvcTestResult appointmentCancelled =
+        mockMvc
+            .post()
+            .uri(
+                CUSTOMER_CASES + "/{id}/appointments/{appointmentId}/cancel", caseId, appointmentId)
+            .with(LoggedIn.as(SeedData.CUSTOMER_1, Role.CUSTOMER))
+            .with(Csrf.token())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{ \"creditRefunded\": true }")
+            .exchange();
+    MvcTestResult caseCancelled =
+        mockMvc
+            .post()
+            .uri(CUSTOMER_CASES + "/{id}/cancel", caseId)
+            .with(LoggedIn.as(SeedData.CUSTOMER_1, Role.CUSTOMER))
+            .with(Csrf.token())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{ \"refundEligible\": true }")
+            .exchange();
+
+    for (MvcTestResult answer : List.of(appointmentCancelled, caseCancelled)) {
+      assertThat(answer)
+          .hasStatusOk()
+          .bodyJson()
+          .extractingPath("$.notes[*].id")
+          .asList()
+          .containsExactly(publicNote);
+      assertThat(answer.getResponse().getContentAsString()).doesNotContain(privateNote);
+    }
+  }
+
+  /**
+   * Spec 06's scenario "An expert who is also the customer": the customer's view is the customer's,
+   * whoever holds it. Expert 1 booked themself and sees only the public note on the customer's
+   * route, and both on the expert's.
+   */
+  @Test
+  void anExpertWhoIsTheCustomerSeesThePublicNotesOnlyOnTheCustomersRoute() throws Exception {
+    assertThat(
+            mockMvc
+                .put()
+                .uri("/api/expert/availability")
+                .with(LoggedIn.as(SeedData.EXPERT_1, Role.EXPERT))
+                .with(Csrf.token())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    { "dates": ["2026-11-17"], "timeRanges": [{ "start": "09:00", "end": "12:00" }] }
+                    """))
+        .hasStatusOk();
+    String caseId = caseOf(SeedData.EXPERT_1, SeedData.EXPERT_1, TEN);
+    MvcTestResult privateAdded = add(caseId, FIRST_SESSION, SeedData.EXPERT_1);
+    assertThat(privateAdded).hasStatus(HttpStatus.CREATED);
+    String privateNote = JsonPath.read(privateAdded.getResponse().getContentAsString(), "$.id");
+    clock.set(NOW.plusSeconds(600));
+    MvcTestResult publicAdded =
+        add(caseId, note("Homework", "Read chapter 3", "PUBLIC"), SeedData.EXPERT_1);
+    assertThat(publicAdded).hasStatus(HttpStatus.CREATED);
+    String publicNote = JsonPath.read(publicAdded.getResponse().getContentAsString(), "$.id");
+
+    MvcTestResult customersCase =
+        getCustomerCase(caseId, SeedData.EXPERT_1, Role.EXPERT, Role.CUSTOMER);
+    assertThat(customersCase)
+        .hasStatusOk()
+        .bodyJson()
+        .extractingPath("$.notes[*].id")
+        .asList()
+        .containsExactly(publicNote);
+    assertThat(customersCase.getResponse().getContentAsString()).doesNotContain(privateNote);
+    assertThat(getCase(caseId, SeedData.EXPERT_1))
+        .hasStatusOk()
+        .bodyJson()
+        .extractingPath("$.notes[*].id")
+        .asList()
+        .containsExactly(publicNote, privateNote);
+  }
+
   @Test
   void aBodyThatIsNotJsonIsAnUnsupportedMediaType() throws Exception {
     String caseId = customer1sCaseWithExpert2();

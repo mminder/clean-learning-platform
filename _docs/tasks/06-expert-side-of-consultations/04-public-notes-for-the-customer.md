@@ -5,7 +5,7 @@
 | Increment | [06 The expert's side of consultations](../../specs/06-expert-side-of-consultations.md) |
 | Type | AFK |
 | Blocked by | [03](03-notes.md) |
-| Status | Todo |
+| Status | Done |
 
 ## Goal
 
@@ -25,13 +25,13 @@ Work in this order, test first:
 
 ## Acceptance criteria
 
-- [ ] The customer's case shows the public note under "Notes from your expert", with its title, text, time and "edited …" once it was edited; the section is hidden without a public note (Playwright).
-- [ ] The customer's response contains no private note, not even its id, and no visibility field (REST).
-- [ ] A note made public appears for the customer, and one made private again disappears (REST).
-- [ ] The answers of both cancellations, which are the customer's case too, carry the public notes the same way: they load the case through the same port (REST).
-- [ ] Expert 1, who booked themself and wrote a private and a public note, sees only the public one on the customer's route, and both on the expert's (REST).
-- [ ] Customer 2 still gets 404 for Customer 1's case.
-- [ ] `openapi.json` and `schema.d.ts` have `notes` and `CustomerNoteResponse`; every check passes.
+- [x] The customer's case shows the public note under "Notes from your expert", with its title, text, time and "edited …" once it was edited; the section is hidden without a public note (Playwright).
+- [x] The customer's response contains no private note, not even its id, and no visibility field (REST).
+- [x] A note made public appears for the customer, and one made private again disappears (REST).
+- [x] The answers of both cancellations, which are the customer's case too, carry the public notes the same way: they load the case through the same port (REST).
+- [x] Expert 1, who booked themself and wrote a private and a public note, sees only the public one on the customer's route, and both on the expert's (REST).
+- [x] Customer 2 still gets 404 for Customer 1's case.
+- [x] `openapi.json` and `schema.d.ts` have `notes` and `CustomerNoteResponse`; every check passes.
 
 ## Tests
 
@@ -47,3 +47,8 @@ Work in this order, test first:
 - The admin's case, which never has notes: UC-18.
 
 ## Notes
+
+- The REST tests are in `ConsultationCaseNotesTest`, next to the expert's, which already sets up Customer 1's case with Expert 2: the customer's case with both kinds of notes (also the security test: the body has neither the private note's id, title nor text, no `visibility`, and the public note has exactly `id`, `title`, `text`, `writtenAt` and `editedAt`; Customer 2 gets 404), a note made public and private again, both cancellations' answers, and Expert 1 who booked themself. With the `visibility = PUBLIC` condition removed from `NoteRepository.findPublicNotes`, all four fail: three on the private note in the body, and the cancellations with the domain's refusal, which turns a private note that reaches `CustomerConsultationCase` into a 500, never into a response.
+- `CustomerNoteResponse` is a field of its own at the end of `CustomerConsultationCaseResponse`; the strict expectation of the purchase's answer in `CustomerConsultationCaseControllerTest` now has `"notes": []`.
+- `NoteCard` needed no change: its `NoteContent` is the four fields both responses share.
+- The check by hand ran a Playwright script (Playwright from the npx cache, not a project dependency) against the Vite dev server and the backend with the `poc` profile. As in task 03, the dev database had Customer 1's case with Expert 1, not Expert 2, so the check used that case as Expert 1; the only rows it added were two notes, deleted afterwards. Before any note, the customer's case had no "Notes from your expert"; Expert 1 added the private "First session" and the public "Homework" and edited "Homework"; after a reload, Customer 1 saw only "Homework", below the appointments, with "(Zurich time)", its line break, its time and "edited …", without buttons or a badge, and nothing of "First session" on the page; Expert 1 made "Homework" private, and after a reload Customer 1's section was gone. The dev server runs on the real clock, so the times shown were today's.

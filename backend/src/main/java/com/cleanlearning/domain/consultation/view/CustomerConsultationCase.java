@@ -1,6 +1,7 @@
 package com.cleanlearning.domain.consultation.view;
 
 import com.cleanlearning.domain.consultation.CaseCredits;
+import com.cleanlearning.domain.consultation.Note;
 import com.cleanlearning.domain.consultation.RefundEligibility;
 import com.cleanlearning.domain.consultation.value.CancellationOutcome;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
@@ -15,7 +16,9 @@ import java.util.Optional;
 
 /**
  * What depends on the time is derived at {@code asOf}, never stored (D-11). A cancelled appointment
- * isn't shown: only its forfeited credit counts.
+ * isn't shown: only its forfeited credit counts. The notes are the public ones, newest first, in
+ * the order the adapter loads them (UC-15); a private note is refused, as it never reaches the
+ * customer (D-14).
  */
 public record CustomerConsultationCase(
     ConsultationCaseId id,
@@ -26,6 +29,7 @@ public record CustomerConsultationCase(
     Optional<ExpertProfile> expert,
     CaseCredits credits,
     Optional<CancellationOutcome> cancellation,
+    List<Note> notes,
     Instant asOf) {
 
   public CustomerConsultationCase {
@@ -38,6 +42,10 @@ public record CustomerConsultationCase(
     Objects.requireNonNull(credits, "credits");
     credits.requireSessionCountOf(purchaseTerms);
     Objects.requireNonNull(cancellation, "cancellation");
+    notes = List.copyOf(notes);
+    if (!notes.stream().allMatch(Note::isPublic)) {
+      throw new IllegalArgumentException("The customer's case holds public notes only.");
+    }
     Objects.requireNonNull(asOf, "asOf");
   }
 

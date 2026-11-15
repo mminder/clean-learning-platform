@@ -15,6 +15,7 @@ import {
   type AppointmentToCancel,
 } from './CancelAppointmentDialog'
 import { CancelCaseDialog } from './CancelCaseDialog'
+import { NoteCard } from './NoteCard'
 import {
   useCustomerConsultationCase,
   type CustomerAppointment,
@@ -28,8 +29,9 @@ import { cancelledCaseRefundText } from './refund-texts'
  * past appointments, in Zurich time, each upcoming one with **Cancel** while it can be cancelled (UC-07), but no
  * free-cancellation time (spec 05, decision 1). A cancelled appointment isn't listed (decision 3). A cancelled case
  * says when it was cancelled and its refund outcome in place of the credits, and has no actions and no hint (decision
- * 6). The server decides `canBook`, `canCancel` and each appointment's status and `canCancel`. Another customer's case
- * is "Case not found", like an unknown one.
+ * 6). Below the appointments, the expert's public notes under "Notes from your expert", hidden while there's none (spec
+ * 06, decision 6): the server sends no private note. The server decides `canBook`, `canCancel` and each appointment's
+ * status and `canCancel`. Another customer's case is "Case not found", like an unknown one.
  */
 export function ConsultationCasePage() {
   // The route /my/cases/:id always has an id.
@@ -82,6 +84,7 @@ export function ConsultationCasePage() {
     cancellation,
     canCancel,
     canBook,
+    notes,
   } = consultationCase.data
   const hasAppointment =
     upcomingAppointments.length > 0 || pastAppointments.length > 0
@@ -200,6 +203,21 @@ export function ConsultationCasePage() {
             </AppointmentItem>
           ))}
         </Appointments>
+      )}
+      {notes.length > 0 && (
+        <section className="space-y-4">
+          <h2 className="text-xl font-semibold">
+            Notes from your expert{' '}
+            <span className="text-base font-normal text-muted-foreground">
+              (Zurich time)
+            </span>
+          </h2>
+          <ul className="space-y-3">
+            {notes.map((note) => (
+              <NoteCard key={note.id} note={note} />
+            ))}
+          </ul>
+        </section>
       )}
       <CancelAppointmentDialog
         consultationCase={consultationCase.data}

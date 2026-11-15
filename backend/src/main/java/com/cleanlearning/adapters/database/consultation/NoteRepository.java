@@ -19,6 +19,19 @@ interface NoteRepository extends Repository<NoteEntity, UUID> {
       """)
   List<NoteEntity> findNotes(UUID consultationCaseId);
 
+  /**
+   * The customer's: only the public notes, filtered in SQL, so a private one never leaves the
+   * database (D-14). In the order of {@link #findNotes}.
+   */
+  @Query(
+      """
+      select n from NoteEntity n
+      where n.consultationCaseId = :consultationCaseId
+        and n.visibility = com.cleanlearning.domain.consultation.value.NoteVisibility.PUBLIC
+      order by n.writtenAt desc, n.id desc
+      """)
+  List<NoteEntity> findPublicNotes(UUID consultationCaseId);
+
   /** Scoped to the case and its assigned expert in SQL. */
   @Query(
       """

@@ -539,6 +539,7 @@ export interface components {
             expert?: components["schemas"]["AssignedExpertResponse"] | null;
             /** Format: uuid */
             id: string;
+            notes: components["schemas"]["CustomerNoteResponse"][];
             /** Format: uuid */
             offeringImageId?: string | null;
             offeringName: string;
@@ -571,6 +572,16 @@ export interface components {
             purchasedAt: string;
             /** Format: int32 */
             totalCredits: number;
+        };
+        CustomerNoteResponse: {
+            /** Format: date-time */
+            editedAt?: string | null;
+            /** Format: uuid */
+            id: string;
+            text: string;
+            title: string;
+            /** Format: date-time */
+            writtenAt: string;
         };
         CustomerUpcomingAppointmentResponse: {
             canCancel: boolean;

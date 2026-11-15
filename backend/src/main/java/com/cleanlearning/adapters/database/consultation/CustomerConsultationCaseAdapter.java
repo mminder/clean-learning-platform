@@ -6,6 +6,7 @@ import com.cleanlearning.adapters.database.consultation.row.CustomerConsultation
 import com.cleanlearning.application.consultation.port.LoadCustomerConsultationCasePort;
 import com.cleanlearning.application.consultation.port.LoadCustomerConsultationCasesPort;
 import com.cleanlearning.domain.consultation.CaseInList;
+import com.cleanlearning.domain.consultation.Note;
 import com.cleanlearning.domain.consultation.value.CancellationOutcome;
 import com.cleanlearning.domain.consultation.value.CaseStatus;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
@@ -36,20 +37,32 @@ class CustomerConsultationCaseAdapter
 
   private final ConsultationCaseRepository repository;
 
-  CustomerConsultationCaseAdapter(ConsultationCaseRepository repository) {
+  private final NoteRepository noteRepository;
+
+  CustomerConsultationCaseAdapter(
+      ConsultationCaseRepository repository, NoteRepository noteRepository) {
     this.repository = repository;
+    this.noteRepository = noteRepository;
   }
 
   /**
    * The query flushes a case created in the same transaction first, so the purchase answers its new
-   * case, and so does a cancellation's change of an appointment.
+   * case, and so does a cancellation's change of an appointment. The notes are the public ones
+   * only.
    */
   @Override
   public Optional<CustomerConsultationCase> load(
       ConsultationCaseId id, UserId customerId, Instant asOf) {
     return repository
         .findCustomerCase(id.value(), customerId.value())
-        .map(row -> toCustomerConsultationCase(row, repository.findAppointments(row.id()), asOf));
+        .map(row ->
+            toCustomerConsultationCase(
+                row,
+                repository.findAppointments(row.id()),
+                noteRepository.findPublicNotes(row.id()).stream()
+                    .map(ConsultationCaseMapper::toNote)
+                    .toList(),
+                asOf));
   }
 
   @Override
@@ -65,7 +78,10 @@ class CustomerConsultationCaseAdapter
   }
 
   private static CustomerConsultationCase toCustomerConsultationCase(
-      CustomerConsultationCaseRow row, List<AppointmentEntity> appointments, Instant asOf) {
+      CustomerConsultationCaseRow row,
+      List<AppointmentEntity> appointments,
+      List<Note> notes,
+      Instant asOf) {
     return new CustomerConsultationCase(
         new ConsultationCaseId(row.id()),
         new OfferingName(row.offeringName()),
@@ -79,6 +95,7 @@ class CustomerConsultationCaseAdapter
         assignedExpert(row),
         ConsultationCaseMapper.toCaseCredits(row.sessionCount(), appointments),
         cancellation(row),
+        notes,
         asOf);
   }
 
