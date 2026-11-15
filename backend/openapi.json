@@ -1406,6 +1406,70 @@
         "tags" : [ "expert-consultation-case-controller" ]
       }
     },
+    "/api/expert/profile" : {
+      "get" : {
+        "operationId" : "getExpertProfile",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ExpertProfileResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "expert-profile-controller" ]
+      },
+      "put" : {
+        "operationId" : "saveExpertProfile",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ExpertProfileRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ExpertProfileResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "415" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Unsupported Media Type"
+          }
+        },
+        "tags" : [ "expert-profile-controller" ]
+      }
+    },
     "/api/images/{id}" : {
       "get" : {
         "operationId" : "getImage",
@@ -2360,6 +2424,38 @@
           }
         },
         "required" : [ "id", "text", "title", "visibility", "writtenAt" ]
+      },
+      "ExpertProfileRequest" : {
+        "type" : "object",
+        "properties" : {
+          "bio" : {
+            "type" : "string"
+          },
+          "displayName" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "teamsLink" : {
+            "type" : [ "string", "null" ],
+            "pattern" : "^(https://[!-~]+)?$"
+          }
+        },
+        "required" : [ "bio", "displayName" ]
+      },
+      "ExpertProfileResponse" : {
+        "type" : "object",
+        "properties" : {
+          "bio" : {
+            "type" : "string"
+          },
+          "displayName" : {
+            "type" : "string"
+          },
+          "teamsLink" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "bio", "displayName" ]
       },
       "ExpertResponse" : {
         "type" : "object",

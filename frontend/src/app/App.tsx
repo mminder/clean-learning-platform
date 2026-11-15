@@ -9,6 +9,7 @@ import { ConsultationOfferingsPage } from '@/features/offering/ConsultationOffer
 import { NewConsultationOfferingPage } from '@/features/offering/NewConsultationOfferingPage'
 import { OfferingDetailPage } from '@/features/shop/OfferingDetailPage'
 import { ShopPage } from '@/features/shop/ShopPage'
+import { ExpertProfilePage } from '@/features/user/ExpertProfilePage'
 import { LoginPage } from '@/features/user/LoginPage'
 import { Layout } from './Layout'
 import { NotFoundPage } from './NotFoundPage'
@@ -32,6 +33,7 @@ export function App() {
             element={<ExpertConsultationCasePage />}
           />
           <Route path="expert/availability" element={<AvailabilityPage />} />
+          <Route path="expert/profile" element={<ExpertProfilePage />} />
         </Route>
         <Route element={<RequireRole role="ADMIN" />}>
           <Route

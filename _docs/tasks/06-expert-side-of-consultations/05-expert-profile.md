@@ -5,7 +5,7 @@
 | Increment | [06 The expert's side of consultations](../../specs/06-expert-side-of-consultations.md) |
 | Type | AFK |
 | Blocked by | – |
-| Status | Todo |
+| Status | Done |
 
 ## Goal
 
@@ -28,15 +28,15 @@ Work in this order, test first:
 
 ## Acceptance criteria
 
-- [ ] Expert 2 changes the display name, the bio and the Teams link and saves: "Saved", and the same values after a reload (REST and Playwright).
-- [ ] The shop's offering detail, the expert picker, Customer 1's case and its card on **My purchases** show the new display name (REST for the first three's routes, Playwright for the pages).
-- [ ] A blank display name, and a Teams link that isn't an `https://` link (`http://example.com`, `example.com`, a link with a space), answer 400 with a message next to the field, and nothing is saved (REST and Playwright).
-- [ ] An empty bio is saved as empty; an empty Teams link, `""` or `null`, removes the link (REST).
-- [ ] Expert 1 and Expert 2 each read and save only their own profile: the routes have no id (REST).
-- [ ] The bodies of the shop's offering detail, the eligible experts and the customer's case don't contain the saved Teams link (REST).
-- [ ] `expert_profile.teams_link` refuses a value that `TeamsLink` refuses (a test of the check constraint, as `NameCheckConstraintsTest`).
-- [ ] `/expert/profile` shows "Page not found" to a user without `EXPERT`; the role matrix has both rows, and its `PUT` changes no data.
-- [ ] `openapi.json` and `schema.d.ts` have both routes; every check passes.
+- [x] Expert 2 changes the display name, the bio and the Teams link and saves: "Saved", and the same values after a reload (REST and Playwright).
+- [x] The shop's offering detail, the expert picker, Customer 1's case and its card on **My purchases** show the new display name (REST for the first three's routes, Playwright for the pages).
+- [x] A blank display name, and a Teams link that isn't an `https://` link (`http://example.com`, `example.com`, a link with a space), answer 400 with a message next to the field, and nothing is saved (REST and Playwright).
+- [x] An empty bio is saved as empty; an empty Teams link, `""` or `null`, removes the link (REST).
+- [x] Expert 1 and Expert 2 each read and save only their own profile: the routes have no id (REST).
+- [x] The bodies of the shop's offering detail, the eligible experts and the customer's case don't contain the saved Teams link (REST).
+- [x] `expert_profile.teams_link` refuses a value that `TeamsLink` refuses (a test of the check constraint, as `NameCheckConstraintsTest`).
+- [x] `/expert/profile` shows "Page not found" to a user without `EXPERT`; the role matrix has both rows, and its `PUT` changes no data.
+- [x] `openapi.json` and `schema.d.ts` have both routes; every check passes.
 
 ## Tests
 
@@ -54,3 +54,10 @@ Work in this order, test first:
 - Profiles for customers or admins: UC-14's out of scope.
 
 ## Notes
+
+- The check by hand ran a Playwright script (Playwright from the npx cache, not a project dependency) against the Vite dev server and the backend with the `poc` profile, which applied V12 to the dev database. Expert 2's header read **Shop**, **My cases**, **Availability**, **Profile**, **Consultations**; **Profile** showed the seeded name and bio and no link; `http://example.com`, `example.com` and a link with a space each answered 400 with "must be an https:// link" next to **Teams link**, and a blank display name "must not be blank" next to **Display name**, with the profile unchanged; "Expert Two", a new bio and `https://example.com/meet/expert-2` saved with "Saved" and came back after a reload. As a visitor, Career Coaching's detail showed "Expert Two" with the new bio; Customer 2's booking dialog (the dev database's case without an expert, nothing booked) showed them in the expert picker; neither page contained the link. The dev database's Customer 1 case has Expert 1, not Expert 2, so Expert 1 renamed themself "Expert One" on **Profile**, which left Expert 2's profile as it was, and Customer 1's card on **My purchases** and the case detail showed "Expert One". Customer 1 on `/expert/profile` read "Page not found". Both profiles were set back to the seed afterwards, `updated_at` included; nothing else was added.
+- The check constraint's test is a class of its own, `TeamsLinkCheckConstraintTest`, next to `NameCheckConstraintsTest` and `ImageCheckConstraintsTest`: a link isn't a name. It runs the links of `TeamsLinkTest` against the column.
+- `TeamsLink.PATTERN` is the one expression: the value object matches it, and `ExpertProfileRequest` wraps it as `^(…)?$`, so `""` passes Bean Validation and is no link, as `null` is. The migration repeats it as `'^https://[!-~]+$'`.
+- A display name of only no-break spaces passes `@NotBlank` and is refused by `DisplayName`: a 400 whose `detail` shows above the form, not next to the field, as for an offering's name. A display name of ordinary spaces gets "must not be blank" next to the field.
+- The **Teams link** input is a plain text input, not `type="url"`: the browser would refuse `example.com` itself before the backend's message could show.
+- `ExpertProfileControllerTest.theTestCleanupRestoresTheSeededProfiles` runs `delete-test-data.sql` after saving both profiles and checks that both are as before, without a link; it fails with a changed bio in the script.

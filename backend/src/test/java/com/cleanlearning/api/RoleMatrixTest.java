@@ -224,6 +224,16 @@ class RoleMatrixTest {
               DELETE,
               "/api/expert/consultation-cases/" + UNKNOWN_ID + "/notes/" + UNKNOWN_ID,
               Access.EXPERT),
+          Route.of(GET, "/api/expert/profile", Access.EXPERT),
+          // A display name of only a no-break space: Bean Validation lets it through, the value
+          // object answers 400 before anything is saved.
+          Route.withJson(
+              PUT,
+              "/api/expert/profile",
+              """
+              {"displayName": " ", "bio": "", "teamsLink": null}\
+              """,
+              Access.EXPERT),
           Route.of(GET, "/api/images/" + UNKNOWN_ID, Access.PUBLIC), // unknown id: 404
           Route.of(
               HEAD, "/api/images/" + UNKNOWN_ID, Access.PUBLIC), // the GET route answers HEAD, too

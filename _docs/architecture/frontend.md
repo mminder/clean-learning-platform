@@ -58,7 +58,7 @@ A shadcn/ui component is added when a page first uses it: run `npx shadcn@latest
 ## Navigation and auth
 
 - On start, the SPA calls `GET /api/me`. A 401 means visitor.
-- The header shows **Shop** plus one section per role the user holds (union navigation, D-03), in this order: **My purchases** (`CUSTOMER`), **My cases** and **Availability** (`EXPERT`), **Consultations** (`ADMIN`).
+- The header shows **Shop** plus one section per role the user holds (union navigation, D-03), in this order: **My purchases** (`CUSTOMER`), **My cases**, **Availability** and **Profile** (`EXPERT`), **Consultations** (`ADMIN`).
 - After login, the SPA redirects to the landing page by priority Expert (`/expert/cases`) → Admin (`/admin/consultations`, until the admin's **Cases**, `/admin/cases`, exists) → Customer (`/my`), otherwise the shop (`landingPath` in `features/user/landing.ts`), or back to the page where login was started (e.g. from **Buy**).
 - Route guards only hide pages. **The backend is the authority**. `RequireRole` (`app/`) wraps a section's routes: a visitor goes to `/login?redirect=<path>`, a user without the role sees the not-found page.
 - A 401 from any query or mutation other than `useMe` refetches `['me']` (the `QueryClient` in `app/queryClient.ts`), so `RequireRole` then sends the user to the login.
