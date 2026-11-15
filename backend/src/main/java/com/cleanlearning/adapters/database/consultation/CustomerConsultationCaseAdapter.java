@@ -122,7 +122,8 @@ class CustomerConsultationCaseAdapter
         new ExpertProfile(
             new UserId(expertId),
             new DisplayName(Objects.requireNonNull(row.expertDisplayName(), "expertDisplayName")),
-            Objects.requireNonNull(row.expertBio(), "expertBio")));
+            Objects.requireNonNull(row.expertBio(), "expertBio"),
+            Optional.ofNullable(row.expertPhotoId()).map(ImageId::new)));
   }
 
   private static CustomerConsultationCaseSummary toCustomerConsultationCaseSummary(

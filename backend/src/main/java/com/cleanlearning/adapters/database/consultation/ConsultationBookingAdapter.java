@@ -14,6 +14,7 @@ import com.cleanlearning.domain.consultation.CaseForBooking;
 import com.cleanlearning.domain.consultation.outcome.Booking;
 import com.cleanlearning.domain.consultation.value.BusyTime;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
+import com.cleanlearning.domain.image.value.ImageId;
 import com.cleanlearning.domain.user.ExpertProfile;
 import com.cleanlearning.domain.user.value.DisplayName;
 import com.cleanlearning.domain.user.value.UserId;
@@ -106,7 +107,11 @@ class ConsultationBookingAdapter
   }
 
   private static ExpertProfile toEligibleExpert(EligibleExpertRow row) {
-    return new ExpertProfile(new UserId(row.id()), new DisplayName(row.displayName()), row.bio());
+    return new ExpertProfile(
+        new UserId(row.id()),
+        new DisplayName(row.displayName()),
+        row.bio(),
+        Optional.ofNullable(row.photoId()).map(ImageId::new));
   }
 
   private static BusyTime toBusyTime(AppointmentEntity entity) {

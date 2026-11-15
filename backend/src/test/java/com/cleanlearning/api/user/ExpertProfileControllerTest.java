@@ -11,10 +11,12 @@ import com.cleanlearning.TestClock;
 import com.cleanlearning.domain.user.value.Role;
 import com.jayway.jsonpath.JsonPath;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import javax.sql.DataSource;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
@@ -101,6 +103,16 @@ class ExpertProfileControllerTest {
     return "\"" + value + "\"";
   }
 
+  /** Expert 2 as the shop, the expert picker and the customer's case show them after the save. */
+  private static Map<String, @Nullable Object> expertTwo() {
+    Map<String, @Nullable Object> expert = new HashMap<>();
+    expert.put("id", SeedData.EXPERT_2.toString());
+    expert.put("displayName", "Expert Two");
+    expert.put("bio", NEW_BIO);
+    expert.put("photoId", null);
+    return expert;
+  }
+
   private static Map<String, String> error(String field, String message) {
     return Map.of("field", field, "message", message);
   }
@@ -124,7 +136,8 @@ class ExpertProfileControllerTest {
         {
           "displayName": "Expert Two",
           "bio": "Leadership coach for new team leads.",
-          "teamsLink": "https://example.com/meet/expert-2"
+          "teamsLink": "https://example.com/meet/expert-2",
+          "photoId": null
         }
         """;
 
@@ -145,7 +158,8 @@ class ExpertProfileControllerTest {
             {
               "displayName": "Expert 2",
               "bio": "Leadership coach and former engineering manager. Works with new team leads on their first year in the role.",
-              "teamsLink": null
+              "teamsLink": null,
+              "photoId": null
             }
             """);
   }
@@ -157,7 +171,7 @@ class ExpertProfileControllerTest {
         .bodyJson()
         .isStrictlyEqualTo(
             """
-            { "displayName": "Expert 2", "bio": "", "teamsLink": null }
+            { "displayName": "Expert 2", "bio": "", "teamsLink": null, "photoId": null }
             """);
     assertThat(stored(SeedData.EXPERT_2)).isEqualTo("Expert 2 |  | no link");
   }
@@ -284,7 +298,12 @@ class ExpertProfileControllerTest {
         .bodyJson()
         .isStrictlyEqualTo(
             """
-            { "displayName": "Expert One", "bio": "Career coach.", "teamsLink": "https://example.com/1" }
+            {
+              "displayName": "Expert One",
+              "bio": "Career coach.",
+              "teamsLink": "https://example.com/1",
+              "photoId": null
+            }
             """);
     assertThat(stored(SeedData.EXPERT_2)).isEqualTo("Expert Two | " + NEW_BIO + " | " + TEAMS_LINK);
   }
@@ -299,9 +318,7 @@ class ExpertProfileControllerTest {
         .hasStatusOk()
         .bodyJson()
         .extractingPath("$.consultation.eligibleExperts[1]")
-        .isEqualTo(
-            Map.of(
-                "id", SeedData.EXPERT_2.toString(), "displayName", "Expert Two", "bio", NEW_BIO));
+        .isEqualTo(expertTwo());
     assertThat(detail).body().asString().doesNotContain(TEAMS_LINK);
   }
 
@@ -365,9 +382,7 @@ class ExpertProfileControllerTest {
         .hasStatusOk()
         .bodyJson()
         .extractingPath("$[1]")
-        .isEqualTo(
-            Map.of(
-                "id", SeedData.EXPERT_2.toString(), "displayName", "Expert Two", "bio", NEW_BIO));
+        .isEqualTo(expertTwo());
     assertThat(eligibleExperts).body().asString().doesNotContain(TEAMS_LINK);
 
     MvcTestResult consultationCase =
@@ -380,9 +395,7 @@ class ExpertProfileControllerTest {
         .hasStatusOk()
         .bodyJson()
         .extractingPath("$.expert")
-        .isEqualTo(
-            Map.of(
-                "id", SeedData.EXPERT_2.toString(), "displayName", "Expert Two", "bio", NEW_BIO));
+        .isEqualTo(expertTwo());
     assertThat(consultationCase).body().asString().doesNotContain(TEAMS_LINK);
 
     MvcTestResult myPurchases =

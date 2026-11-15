@@ -27,8 +27,8 @@ interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, 
       """
       select new com.cleanlearning.adapters.database.consultation.row.CustomerConsultationCaseRow(
           c.id, o.name, o.imageId, c.pricePaid, c.sessionCount, c.sessionDurationMinutes,
-          c.cancellationDeadlineHours, c.purchasedAt, p.userId, p.displayName, p.bio, c.status, c.cancelledAt,
-          c.refundEligible)
+          c.cancellationDeadlineHours, c.purchasedAt, p.userId, p.displayName, p.bio, p.photoId, c.status,
+          c.cancelledAt, c.refundEligible)
       from ConsultationCaseEntity c
       join OfferingEntity o on o.id = c.consultationOfferingId
       left join ExpertProfileEntity p on p.userId = c.assignedExpertId
@@ -140,7 +140,7 @@ interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, 
   @Query(
       """
       select new com.cleanlearning.adapters.database.offering.row.EligibleExpertRow(
-          p.userId, p.displayName, p.bio)
+          p.userId, p.displayName, p.bio, p.photoId)
       from EligibleExpertEntity e
       join ExpertProfileEntity p on p.userId = e.expertId
       where e.consultationOfferingId = :consultationOfferingId

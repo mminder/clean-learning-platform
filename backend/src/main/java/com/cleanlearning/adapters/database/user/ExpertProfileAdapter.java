@@ -3,6 +3,7 @@ package com.cleanlearning.adapters.database.user;
 import com.cleanlearning.adapters.database.user.entity.ExpertProfileEntity;
 import com.cleanlearning.application.user.port.LoadOwnExpertProfilePort;
 import com.cleanlearning.application.user.port.SaveOwnExpertProfilePort;
+import com.cleanlearning.domain.image.value.ImageId;
 import com.cleanlearning.domain.user.ExpertProfile;
 import com.cleanlearning.domain.user.OwnExpertProfile;
 import com.cleanlearning.domain.user.value.DisplayName;
@@ -26,7 +27,11 @@ class ExpertProfileAdapter implements LoadOwnExpertProfilePort, SaveOwnExpertPro
   public OwnExpertProfile load(UserId expertId) {
     ExpertProfileEntity entity = find(expertId);
     return new OwnExpertProfile(
-        new ExpertProfile(expertId, new DisplayName(entity.getDisplayName()), entity.getBio()),
+        new ExpertProfile(
+            expertId,
+            new DisplayName(entity.getDisplayName()),
+            entity.getBio(),
+            Optional.ofNullable(entity.getPhotoId()).map(ImageId::new)),
         Optional.ofNullable(entity.getTeamsLink()).map(TeamsLink::new));
   }
 
@@ -37,6 +42,7 @@ class ExpertProfileAdapter implements LoadOwnExpertProfilePort, SaveOwnExpertPro
     entity.setDisplayName(profile.profile().displayName().value());
     entity.setBio(profile.profile().bio());
     entity.setTeamsLink(profile.teamsLink().map(TeamsLink::value).orElse(null));
+    entity.setPhotoId(profile.profile().photoId().map(ImageId::value).orElse(null));
   }
 
   private ExpertProfileEntity find(UserId expertId) {

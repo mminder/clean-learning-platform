@@ -46,7 +46,8 @@ class CustomerConsultationCaseTest {
       new ExpertProfile(
           new UserId(UUID.fromString("00000000-0000-0000-0000-000000000202")),
           new DisplayName("Expert 2"),
-          "Leadership coach.");
+          "Leadership coach.",
+          Optional.empty());
 
   /** Mon 16 Nov 2026, 10:00–11:00 in Zurich. */
   private static final Appointment MONDAY =

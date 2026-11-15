@@ -190,7 +190,10 @@ class RoleMatrixTest {
               Access.ADMIN), // unknown id: 404
           // unknown id: 404
           Route.withImage(
-              PUT, "/api/admin/consultation-offerings/" + UNKNOWN_ID + "/image", Access.ADMIN),
+              PUT,
+              "/api/admin/consultation-offerings/" + UNKNOWN_ID + "/image",
+              TestImages.png(100),
+              Access.ADMIN),
           // unknown id: 404
           Route.of(
               DELETE, "/api/admin/consultation-offerings/" + UNKNOWN_ID + "/image", Access.ADMIN),
@@ -234,6 +237,10 @@ class RoleMatrixTest {
               {"displayName": " ", "bio": "", "teamsLink": null}\
               """,
               Access.EXPERT),
+          // A GIF: the domain answers 400 before anything is saved.
+          Route.withImage(PUT, "/api/expert/profile/photo", TestImages.gif(100), Access.EXPERT),
+          // The caller has no photo, so nothing changes.
+          Route.of(DELETE, "/api/expert/profile/photo", Access.EXPERT),
           Route.of(GET, "/api/images/" + UNKNOWN_ID, Access.PUBLIC), // unknown id: 404
           Route.of(
               HEAD, "/api/images/" + UNKNOWN_ID, Access.PUBLIC), // the GET route answers HEAD, too
@@ -337,7 +344,7 @@ class RoleMatrixTest {
                   .content(json));
     }
 
-    static Route withImage(HttpMethod method, String path, Access access) {
+    static Route withImage(HttpMethod method, String path, byte[] file, Access access) {
       return new Route(
           method,
           path,
@@ -345,8 +352,7 @@ class RoleMatrixTest {
           () ->
               MockMvcRequestBuilders.multipart(method, path)
                   .file(
-                      new MockMultipartFile(
-                          "file", "image.png", MediaType.IMAGE_PNG_VALUE, TestImages.png(100))));
+                      new MockMultipartFile("file", "image.png", MediaType.IMAGE_PNG_VALUE, file)));
     }
 
     @Override

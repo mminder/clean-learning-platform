@@ -18,6 +18,7 @@ public record CustomerConsultationCaseRow(
     @Nullable UUID expertId,
     @Nullable String expertDisplayName,
     @Nullable String expertBio,
+    @Nullable UUID expertPhotoId,
     CaseStatus status,
     @Nullable Instant cancelledAt,
     @Nullable Boolean refundEligible) {}

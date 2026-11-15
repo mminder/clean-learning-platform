@@ -1470,6 +1470,76 @@
         "tags" : [ "expert-profile-controller" ]
       }
     },
+    "/api/expert/profile/photo" : {
+      "delete" : {
+        "operationId" : "removeExpertPhoto",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ExpertProfileResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "expert-profile-controller" ]
+      },
+      "put" : {
+        "operationId" : "uploadExpertPhoto",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "file" : {
+                    "type" : "string",
+                    "format" : "binary"
+                  }
+                },
+                "required" : [ "file" ]
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ExpertProfileResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "415" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Unsupported Media Type"
+          }
+        },
+        "tags" : [ "expert-profile-controller" ]
+      }
+    },
     "/api/images/{id}" : {
       "get" : {
         "operationId" : "getImage",
@@ -1730,6 +1800,10 @@
           },
           "id" : {
             "type" : "string",
+            "format" : "uuid"
+          },
+          "photoId" : {
+            "type" : [ "string", "null" ],
             "format" : "uuid"
           }
         },
@@ -2236,6 +2310,10 @@
           "id" : {
             "type" : "string",
             "format" : "uuid"
+          },
+          "photoId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
           }
         },
         "required" : [ "bio", "displayName", "id" ]
@@ -2450,6 +2528,10 @@
           },
           "displayName" : {
             "type" : "string"
+          },
+          "photoId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
           },
           "teamsLink" : {
             "type" : [ "string", "null" ]

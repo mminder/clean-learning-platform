@@ -41,7 +41,8 @@ class ShopConsultationOfferingTest {
       new ExpertProfile(
           new UserId(UUID.fromString("00000000-0000-0000-0000-000000000201")),
           new DisplayName("Expert 1"),
-          "Career coach.");
+          "Career coach.",
+          Optional.empty());
 
   @Test
   void holdsWhatTheDetailPageShows() {

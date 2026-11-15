@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button'
+import { ExpertPhotoSection } from './ExpertPhotoSection'
 import { ExpertProfileForm } from './ExpertProfileForm'
 import { toRequest, useExpertProfile, useSaveExpertProfile } from './queries'
 
@@ -12,8 +13,8 @@ export function ExpertProfilePage() {
       <header className="space-y-2">
         <h1 className="text-2xl font-semibold">Profile</h1>
         <p className="text-muted-foreground">
-          Customers see your display name and bio in the shop and on their
-          cases. Your Teams link is where your consultations take place.
+          Customers see your display name, bio and photo in the shop and on
+          their cases. Your Teams link is where your consultations take place.
         </p>
       </header>
       {profile.isPending && (
@@ -28,11 +29,14 @@ export function ExpertProfilePage() {
         </div>
       )}
       {profile.isSuccess && (
-        <ExpertProfileForm
-          // The form starts from the loaded profile once; a save makes the saved one its starting point.
-          defaultValues={toRequest(profile.data)}
-          onSave={(changed) => saveProfile.mutateAsync(changed)}
-        />
+        <>
+          <ExpertPhotoSection photoId={profile.data.photoId} />
+          <ExpertProfileForm
+            // The form starts from the loaded profile once; a save makes the saved one its starting point.
+            defaultValues={toRequest(profile.data)}
+            onSave={(changed) => saveProfile.mutateAsync(changed)}
+          />
+        </>
       )}
     </div>
   )

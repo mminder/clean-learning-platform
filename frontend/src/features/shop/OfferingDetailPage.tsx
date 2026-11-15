@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router'
 import type { components } from '@/api/schema'
-import { ImagePlaceholder } from '@/components/ImagePlaceholder'
+import { ExpertPhoto } from '@/components/ExpertPhoto'
 import { OfferingImage } from '@/components/OfferingImage'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -118,7 +118,7 @@ function ConsultationDetail({
         <ul className="space-y-6">
           {consultation.eligibleExperts.map((expert) => (
             <li key={expert.id} className="flex gap-4">
-              <ImagePlaceholder className="size-20 shrink-0 rounded-full" />
+              <ExpertPhoto photoId={expert.photoId} className="size-20" />
               <div className="space-y-1">
                 <h3 className="font-medium">{expert.displayName}</h3>
                 <p className="max-w-prose whitespace-pre-line text-muted-foreground">

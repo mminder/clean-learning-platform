@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 import { cn } from 'cn'
-import { ImagePlaceholder } from '@/components/ImagePlaceholder'
+import { ExpertPhoto } from '@/components/ExpertPhoto'
 import { OfferingImage } from '@/components/OfferingImage'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -158,7 +158,7 @@ export function ConsultationCasePage() {
         <section className="space-y-4">
           <h2 className="text-xl font-semibold">Your expert</h2>
           <div className="flex gap-4">
-            <ImagePlaceholder className="size-20 shrink-0 rounded-full" />
+            <ExpertPhoto photoId={expert.photoId} className="size-20" />
             <div className="space-y-1">
               <h3 className="font-medium">{expert.displayName}</h3>
               <p className="max-w-prose whitespace-pre-line text-muted-foreground">

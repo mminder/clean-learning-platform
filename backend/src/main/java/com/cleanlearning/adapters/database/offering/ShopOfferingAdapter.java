@@ -90,7 +90,11 @@ class ShopOfferingAdapter implements LoadShopOfferingsPort, LoadShopOfferingPort
   }
 
   private static ExpertProfile toEligibleExpert(EligibleExpertRow row) {
-    return new ExpertProfile(new UserId(row.id()), new DisplayName(row.displayName()), row.bio());
+    return new ExpertProfile(
+        new UserId(row.id()),
+        new DisplayName(row.displayName()),
+        row.bio(),
+        Optional.ofNullable(row.photoId()).map(ImageId::new));
   }
 
   private static ShopOffering toShopOffering(List<ShopOfferingPriceRow> rows) {

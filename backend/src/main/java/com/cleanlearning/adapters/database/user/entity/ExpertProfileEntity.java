@@ -19,6 +19,9 @@ public class ExpertProfileEntity {
   // Null without a link.
   private @Nullable String teamsLink;
 
+  // Null without a photo.
+  private @Nullable UUID photoId;
+
   protected ExpertProfileEntity() {}
 
   public UUID getUserId() {
@@ -37,6 +40,10 @@ public class ExpertProfileEntity {
     return teamsLink;
   }
 
+  public @Nullable UUID getPhotoId() {
+    return photoId;
+  }
+
   public void setDisplayName(String displayName) {
     this.displayName = displayName;
   }
@@ -47,5 +54,9 @@ public class ExpertProfileEntity {
 
   public void setTeamsLink(@Nullable String teamsLink) {
     this.teamsLink = teamsLink;
+  }
+
+  public void setPhotoId(@Nullable UUID photoId) {
+    this.photoId = photoId;
   }
 }

@@ -146,6 +146,56 @@ export function useSaveExpertProfile() {
   })
 }
 
+/**
+ * Uploads the current expert's photo, or replaces it, at once and apart from the form's save (UC-14). The server
+ * detects the type from the file's first bytes; a file it refuses answers 400 with a `detail` for the user. It
+ * invalidates every query, as a save does: the photo shows in the shop, in the expert picker and on cases.
+ */
+export function useUploadExpertPhoto() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const body = new FormData()
+      body.append('file', file)
+      const { data, error, response } = await client.PUT(
+        '/api/expert/profile/photo',
+        // The contract types the part as a string (format binary), but the browser sends a File in a FormData, as
+        // for the offering's image (useUploadConsultationOfferingImage).
+        { body: body as unknown as { file: string } },
+      )
+      if (data === undefined) {
+        throw new ApiError(
+          `Uploading the photo failed: ${response.status}`,
+          response.status,
+          problemOf(response.status, error),
+        )
+      }
+      return data
+    },
+    onSuccess: () => queryClient.invalidateQueries(),
+  })
+}
+
+/** Removes the current expert's photo, at once and apart from the form's save (UC-14). */
+export function useRemoveExpertPhoto() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const { data, response } = await client.DELETE(
+        '/api/expert/profile/photo',
+      )
+      if (data === undefined) {
+        throw new ApiError(
+          `Removing the photo failed: ${response.status}`,
+          response.status,
+        )
+      }
+      return data
+    },
+    onSuccess: () => queryClient.invalidateQueries(),
+  })
+}
+
 /** The form's values for a saved profile: no link is an empty field, which the form sends as `""`. */
 export function toRequest({
   displayName,

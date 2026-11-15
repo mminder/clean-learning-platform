@@ -5,7 +5,7 @@
 | Increment | [06 The expert's side of consultations](../../specs/06-expert-side-of-consultations.md) |
 | Type | AFK |
 | Blocked by | [05](05-expert-profile.md) |
-| Status | Todo |
+| Status | Done |
 
 ## Goal
 
@@ -28,14 +28,14 @@ Work in this order, test first:
 
 ## Acceptance criteria
 
-- [ ] After an upload, **Profile**, the shop's offering detail, the expert picker and Customer 1's case show the photo instead of the placeholder (REST for the routes' `photoId`, Playwright for the pages).
-- [ ] A replacement has a new `photoId`, and the old image's URL answers 404; after a removal the placeholder shows again everywhere, and the photo's URL answers 404 (REST).
-- [ ] A file that isn't a JPEG, PNG or WebP, and one larger than 2 MB, answer 400; the section shows the message, and the photo stays as it was (REST and Playwright).
-- [ ] A body that isn't multipart answers 415.
-- [ ] Each expert changes only their own photo: the routes have no id (REST).
-- [ ] No image is left behind: after a replacement and a removal, the `image` table has no row that nothing refers to (REST).
-- [ ] The offering's image still uploads, replaces and removes as before (the existing tests pass).
-- [ ] The role matrix has both rows; `openapi.json` and `schema.d.ts` have the routes and `photoId`; every check passes.
+- [x] After an upload, **Profile**, the shop's offering detail, the expert picker and Customer 1's case show the photo instead of the placeholder (REST for the routes' `photoId`, Playwright for the pages).
+- [x] A replacement has a new `photoId`, and the old image's URL answers 404; after a removal the placeholder shows again everywhere, and the photo's URL answers 404 (REST).
+- [x] A file that isn't a JPEG, PNG or WebP, and one larger than 2 MB, answer 400; the section shows the message, and the photo stays as it was (REST and Playwright).
+- [x] A body that isn't multipart answers 415.
+- [x] Each expert changes only their own photo: the routes have no id (REST).
+- [x] No image is left behind: after a replacement and a removal, the `image` table has no row that nothing refers to (REST).
+- [x] The offering's image still uploads, replaces and removes as before (the existing tests pass).
+- [x] The role matrix has both rows; `openapi.json` and `schema.d.ts` have the routes and `photoId`; every check passes.
 
 ## Tests
 
@@ -51,3 +51,10 @@ Work in this order, test first:
 - A concurrency test for two uploads at once (spec decision 13).
 
 ## Notes
+
+- **Backend:** `ExpertProfile` holds `Optional<ImageId> photoId`; `OwnExpertProfile.edit` keeps the photo, `changePhoto` and `removePhoto` keep everything else. `ExpertProfileAdapter.save` writes the photo with the rest, so a profile save after an upload keeps it (`ExpertPhotoTest.savingTheProfileKeepsThePhoto`). `UploadExpertPhotoUseCase` and `RemoveExpertPhotoUseCase` lock the expert, load, change, save the image and the profile, and delete the old image, as the offering's use cases do. `EligibleExpertRow` and `CustomerConsultationCaseRow` gain the photo's id, which both `findEligibleExperts` queries (the shop's and the booking's) and `findCustomerCase` select. The routes' REST tests are a class of their own, `ExpertPhotoTest`, next to `ExpertProfileControllerTest`, as `ConsultationOfferingImageTest` is next to the offering's controller test.
+- **The role matrix's `PUT /api/expert/profile/photo`** sends a GIF, not the offering's PNG: the route has no id that could be unknown, so a valid image would change the caller's photo. The domain answers 400 before anything is saved. `Route.withImage` now takes the file. `DELETE` changes nothing, since the callers have no photo. The plan's tests table says so now.
+- **The upload limit:** `ImageUploadLimitTest` has a second test, Expert 2 uploading 2 MB (200) and 2 MB plus one byte (400, the photo stays) over HTTP. Its login moved from `@BeforeEach` into each test.
+- **Existing tests** that compare the profile, the eligible experts or the assigned expert strictly now have `"photoId": null` (`ExpertProfileControllerTest`, `ShopControllerTest`, `ConsultationCaseBookingTest`). Guarded by hand: without `photo_id = null` in the cleanup script, `theTestCleanupRemovesThePhotos` fails; without the old image's delete, the replacement test fails.
+- **Frontend:** `ExpertPhoto` is `OfferingImage` with `shrink-0 rounded-full`, so a photo and the placeholder share the round frame. `ExpertPhotoSection` sits above `ExpertProfileForm` on **Profile**, at 128 px; an unsaved edit in the form survives a photo change, since the form takes its defaults once. Both mutations invalidate every query, as the profile's save does. UC-06's "Until expert photos exist" is now "an expert without a photo has a placeholder".
+- **Check by hand** (Playwright from the npx cache, the Vite dev server and the `poc` backend, which applied V13 to the dev database): **Profile** showed the placeholder and **Upload photo**; a 600×150 JPEG uploaded as `multipart/form-data` with the CSRF header and showed with **Replace photo** and **Remove photo**; a text file and a JPEG of 2 MB plus one byte each showed their 400 `detail` under the buttons ("An image is a JPEG, PNG or WebP file.", "An image is at most 2 MB.") and kept the photo; a 150×600 PNG replaced it with a new id, and the JPEG's URL answered 404. Career Coaching's detail (as a visitor) and Customer 2's expert picker (the dev database's case without an expert) showed Expert 2's photo, and Expert 1 the placeholder; the dev database's Customer 1 case has Expert 1, so Expert 1 uploaded the JPEG and then the PNG, and the case showed each. Every picture, wide or tall, was a square of 128, 80 or 48 px with `object-fit: cover` and a full radius, the middle of the picture cropped, not squeezed (screenshots). **Remove photo** brought back the placeholder on **Profile**, in the shop, in the picker and on the case, and the photos' URLs answered 404. The only API answers >= 400 were the first `GET /api/me` (401) and the two intended 400s. Afterwards the dev database had no images and both profiles as before, `updated_at` included.

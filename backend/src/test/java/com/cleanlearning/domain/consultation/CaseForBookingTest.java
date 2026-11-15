@@ -47,13 +47,15 @@ class CaseForBookingTest {
       new ExpertProfile(
           new UserId(UUID.fromString("00000000-0000-0000-0000-000000000201")),
           new DisplayName("Expert 1"),
-          "Career coach.");
+          "Career coach.",
+          Optional.empty());
 
   private static final ExpertProfile EXPERT_2 =
       new ExpertProfile(
           new UserId(UUID.fromString("00000000-0000-0000-0000-000000000202")),
           new DisplayName("Expert 2"),
-          "Leadership coach.");
+          "Leadership coach.",
+          Optional.empty());
 
   private static final UserId SOMEONE_ELSE = new UserId(UUID.randomUUID());
 

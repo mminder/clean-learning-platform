@@ -324,6 +324,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/expert/profile/photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["uploadExpertPhoto"];
+        post?: never;
+        delete: operations["removeExpertPhoto"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/images/{id}": {
         parameters: {
             query?: never;
@@ -445,6 +461,8 @@ export interface components {
             displayName: string;
             /** Format: uuid */
             id: string;
+            /** Format: uuid */
+            photoId?: string | null;
         };
         AvailabilityRequest: {
             dates: string[];
@@ -626,6 +644,8 @@ export interface components {
             displayName: string;
             /** Format: uuid */
             id: string;
+            /** Format: uuid */
+            photoId?: string | null;
         };
         ExpertAppointmentResponse: {
             /** Format: date-time */
@@ -708,6 +728,8 @@ export interface components {
         ExpertProfileResponse: {
             bio: string;
             displayName: string;
+            /** Format: uuid */
+            photoId?: string | null;
             teamsLink?: string | null;
         };
         ExpertResponse: {
@@ -2050,6 +2072,71 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    uploadExpertPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpertProfileResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    removeExpertPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpertProfileResponse"];
                 };
             };
         };
