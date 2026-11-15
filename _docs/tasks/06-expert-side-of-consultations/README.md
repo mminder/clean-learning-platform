@@ -79,8 +79,8 @@ This plan holds the decisions that several tasks rely on. The tasks link here in
 ```
 note            id                   uuid primary key
                 consultation_case_id uuid not null references consultation_case (id)
-                title                text not null, check (title ~ '\S')
-                text                 text not null, check (text ~ '\S')
+                title                text not null collate "und-x-icu", check (title ~ '\S')
+                text                 text not null collate "und-x-icu", check (text ~ '\S')
                 visibility           text not null, check (visibility in ('PRIVATE', 'PUBLIC'))
                 written_at           timestamptz not null, from the application's Clock
                 edited_at            timestamptz, null until the first edit, from the application's Clock
@@ -92,7 +92,7 @@ expert_profile  + teams_link text, null without a link, check (teams_link ~ '^ht
 ```
 
 - **The note's times** come from the `Clock`, as the purchase's does: `created_at` and `updated_at` stay the database's technical times (spec decision 5).
-- **The checks repeat the value objects' rules** ([D-36](../../decisions.md#architecture)): `NoteTitle` and `NoteText` are never blank, with `OfferingName`'s meaning of blank and V3's check; `TeamsLink` is `https://` followed by at least one printable ASCII character without a space, the same expression in Java and in Postgres.
+- **The checks repeat the value objects' rules** ([D-36](../../decisions.md#architecture)): `NoteTitle` and `NoteText` are never blank, with `OfferingName`'s meaning of blank and V3's check, under the ICU collation as `offering.name` is, since without it Postgres's `\s` misses the no-break spaces (`NameCheckConstraintsTest`); `TeamsLink` is `https://` followed by at least one printable ASCII character without a space, the same expression in Java and in Postgres.
 - **The seed doesn't change** (spec decision 16): the seeded profiles have neither a Teams link nor a photo. Tests and the demo set them through the API.
 - **`photo_id` is unique**, like `offering.image_id`: an image belongs to one owner at most, and the index serves the foreign key check when an image is deleted.
 - **The migrations are numbered in the tasks' order.** If the order changes, renumber before merging: a migration below one that already ran fails on a database that has it.
@@ -324,7 +324,7 @@ Each list of appointments is hidden while it's empty and has "(Zurich time)" onc
 
 - **`NoteCard`**: a note's title, its text with its line breaks (`whitespace-pre-line`), "9 Nov 2026, 15:00" from `writtenAt`, and "edited 10 Nov 2026, 09:00" once it has an `editedAt`; a slot for what only the expert has. Both pages use it.
 - **The expert's notes** (03): on each card the badge "Private" or "Public", **Edit** and **Delete**. **Add note** and **Edit** open `NoteDialog`: a form with **Title**, **Text** (a `textarea`) and the visibility as two radio buttons, **Private** (the default of a new note) and **Public**; React Hook Form with `NoteRequest` as its values, no rules in the form, a 400's messages next to the fields (`showSaveError`). It closes after the save. **Delete** asks with `ConfirmDialog`: "Delete the note "First session"?", "This can't be undone.", **Cancel** and **Delete**.
-- **A note that's gone** (a 404 of a save or a delete): the dialog says "This note no longer exists." with only **Close**, and the case reloads.
+- **A note that's gone** (a 404 of a save or a delete): the case reloads. After a save, the dialog says "This note no longer exists." with only **Close**; after a delete, whose `ConfirmDialog` has closed, the same message shows above the notes (03).
 - **The customer's notes** (04): a section "Notes from your expert" below the appointments, with a `NoteCard` each and "(Zurich time)" next to the heading; hidden while there's none (spec decision 6).
 
 ### Profile

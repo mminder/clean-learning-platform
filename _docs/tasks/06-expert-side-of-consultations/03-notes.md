@@ -5,7 +5,7 @@
 | Increment | [06 The expert's side of consultations](../../specs/06-expert-side-of-consultations.md) |
 | Type | AFK |
 | Blocked by | [02](02-expert-case-detail.md) |
-| Status | Todo |
+| Status | Done |
 
 ## Goal
 
@@ -26,15 +26,15 @@ Work in this order, test first:
 
 ## Acceptance criteria
 
-- [ ] A new note is first in the list, with the badge "Private", the time it was written and its line break; `POST` answers 201 (REST and Playwright).
-- [ ] An edit at 10 Nov 2026, 09:00 answers 200 with that `editedAt`; the note says "edited 10 Nov 2026, 09:00" and keeps its place in the list, also when only its visibility changed (REST and Playwright).
-- [ ] A delete answers 204 after the confirmation "Delete the note "First session"?" with "This can't be undone."; a second delete answers 404 (REST and Playwright).
-- [ ] A title or a text that is missing, empty or only spaces answers 400 with a message next to each field, and nothing is saved; a missing visibility answers 400 (REST and Playwright).
-- [ ] Notes can be added, edited and deleted on an active, a completed and a cancelled case (REST).
-- [ ] Expert 1 adding, editing or deleting a note on Customer 1's case, which has Expert 2, gets 404, and nothing changes; so does a note of another case of Expert 2 under this case's path (REST).
-- [ ] Saving a note that was deleted in another tab says "This note no longer exists.", and the notes reload (Playwright).
-- [ ] The note's times come from the `Clock`, not from the database (the REST tests set the clock).
-- [ ] `openapi.json` and `schema.d.ts` have the three routes and `notes`; the role matrix has the three rows; every check passes.
+- [x] A new note is first in the list, with the badge "Private", the time it was written and its line break; `POST` answers 201 (REST and Playwright).
+- [x] An edit at 10 Nov 2026, 09:00 answers 200 with that `editedAt`; the note says "edited 10 Nov 2026, 09:00" and keeps its place in the list, also when only its visibility changed (REST and Playwright).
+- [x] A delete answers 204 after the confirmation "Delete the note "First session"?" with "This can't be undone."; a second delete answers 404 (REST and Playwright).
+- [x] A title or a text that is missing, empty or only spaces answers 400 with a message next to each field, and nothing is saved; a missing visibility answers 400 (REST and Playwright).
+- [x] Notes can be added, edited and deleted on an active, a completed and a cancelled case (REST).
+- [x] Expert 1 adding, editing or deleting a note on Customer 1's case, which has Expert 2, gets 404, and nothing changes; so does a note of another case of Expert 2 under this case's path (REST).
+- [x] Saving a note that was deleted in another tab says "This note no longer exists.", and the notes reload (Playwright).
+- [x] The note's times come from the `Clock`, not from the database (the REST tests set the clock).
+- [x] `openapi.json` and `schema.d.ts` have the three routes and `notes`; the role matrix has the three rows; every check passes.
 
 ## Tests
 
@@ -50,3 +50,10 @@ Work in this order, test first:
 - Customer replies, attachments, notes per appointment and rich text: UC-15's out of scope.
 
 ## Notes
+
+- The check by hand ran a Playwright script (Playwright from the npx cache, not a project dependency) against the Vite dev server and the backend with the `poc` profile. The dev database already had Customer 1's case with Expert 1, so the check used that case as Expert 1, and the only rows it added were notes, deleted afterwards. It added a private note with two lines (201, first, "Private", the line break, the time), sent an empty and an only-spaces title and text (400, "must not be blank" next to both fields, nothing saved), edited the older of two notes and made it public, then private again (200, "edited …", its place kept), deleted it after the confirmation and its **Cancel** (204), and saved in one tab a note deleted in another (404, "This note no longer exists." with only **Close**, the notes reloaded). The dev server runs on the real clock, so the page showed today's times; the times of 9 and 10 Nov 2026 are checked by the REST tests with the `TestClock`.
+- `note.title` and `note.text` are declared `collate "und-x-icu"`, which the plan's schema didn't say: without it Postgres's `\S` doesn't treat the no-break spaces as blank, so the check would accept a title that `NoteTitle` refuses. `NameCheckConstraintsTest` covers both columns and fails without the collation. The plan's schema now says so.
+- A delete's 404 (a note deleted in another tab) shows "This note no longer exists." above the notes, not in a dialog: `ConfirmDialog` closes when it's confirmed. The notes reload, as after a save's 404. The plan's "Notes on the pages" now says so.
+- `ConsultationCaseMapper.toNote` maps a `NoteEntity`, so 04's customer adapter can use it, too.
+- The ownership test fails when any of the three scoped queries (`findExpertNote`, `deleteExpertNote`, `isAssignedExpert`) drops its case or its expert condition: each was loosened in turn to check.
+- Known gap, not handled (spec decision 7, no lock): a note deleted by another request between `EditNoteUseCase`'s load and its update, in the same few milliseconds, makes Hibernate's update hit no row and answers 500 instead of 404.

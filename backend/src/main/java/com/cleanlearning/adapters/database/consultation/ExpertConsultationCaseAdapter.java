@@ -6,6 +6,7 @@ import com.cleanlearning.adapters.database.consultation.row.ExpertConsultationCa
 import com.cleanlearning.application.consultation.port.LoadExpertConsultationCasePort;
 import com.cleanlearning.application.consultation.port.LoadExpertConsultationCasesPort;
 import com.cleanlearning.domain.consultation.CaseInList;
+import com.cleanlearning.domain.consultation.Note;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.consultation.view.ExpertConsultationCase;
 import com.cleanlearning.domain.consultation.view.ExpertConsultationCaseSummary;
@@ -28,8 +29,12 @@ class ExpertConsultationCaseAdapter
 
   private final ConsultationCaseRepository repository;
 
-  ExpertConsultationCaseAdapter(ConsultationCaseRepository repository) {
+  private final NoteRepository noteRepository;
+
+  ExpertConsultationCaseAdapter(
+      ConsultationCaseRepository repository, NoteRepository noteRepository) {
     this.repository = repository;
+    this.noteRepository = noteRepository;
   }
 
   @Override
@@ -37,7 +42,14 @@ class ExpertConsultationCaseAdapter
       ConsultationCaseId id, UserId expertId, Instant asOf) {
     return repository
         .findExpertCase(id.value(), expertId.value())
-        .map(row -> toExpertConsultationCase(row, repository.findAppointments(row.id()), asOf));
+        .map(row ->
+            toExpertConsultationCase(
+                row,
+                repository.findAppointments(row.id()),
+                noteRepository.findNotes(row.id()).stream()
+                    .map(ConsultationCaseMapper::toNote)
+                    .toList(),
+                asOf));
   }
 
   @Override
@@ -53,7 +65,10 @@ class ExpertConsultationCaseAdapter
   }
 
   private static ExpertConsultationCase toExpertConsultationCase(
-      ExpertConsultationCaseRow row, List<AppointmentEntity> appointments, Instant asOf) {
+      ExpertConsultationCaseRow row,
+      List<AppointmentEntity> appointments,
+      List<Note> notes,
+      Instant asOf) {
     return new ExpertConsultationCase(
         new ConsultationCaseId(row.id()),
         row.customerName(),
@@ -64,6 +79,7 @@ class ExpertConsultationCaseAdapter
         row.purchasedAt(),
         ConsultationCaseMapper.toCaseCredits(row.sessionCount(), appointments),
         Optional.ofNullable(row.cancelledAt()),
+        notes,
         asOf);
   }
 

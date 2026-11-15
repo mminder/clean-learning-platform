@@ -1218,6 +1218,194 @@
         "tags" : [ "expert-consultation-case-controller" ]
       }
     },
+    "/api/expert/consultation-cases/{id}/notes" : {
+      "post" : {
+        "operationId" : "addNote",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NoteRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ExpertNoteResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "415" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Unsupported Media Type"
+          }
+        },
+        "tags" : [ "expert-consultation-case-controller" ]
+      }
+    },
+    "/api/expert/consultation-cases/{id}/notes/{noteId}" : {
+      "delete" : {
+        "operationId" : "deleteNote",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "noteId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "expert-consultation-case-controller" ]
+      },
+      "put" : {
+        "operationId" : "editNote",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "noteId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NoteRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ExpertNoteResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "415" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Unsupported Media Type"
+          }
+        },
+        "tags" : [ "expert-consultation-case-controller" ]
+      }
+    },
     "/api/images/{id}" : {
       "get" : {
         "operationId" : "getImage",
@@ -2028,6 +2216,12 @@
             "type" : "string",
             "format" : "uuid"
           },
+          "notes" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ExpertNoteResponse"
+            }
+          },
           "offeringName" : {
             "type" : "string"
           },
@@ -2064,7 +2258,7 @@
             }
           }
         },
-        "required" : [ "cancellationDeadlineHours", "cancelledAppointments", "customerEmail", "customerName", "id", "offeringName", "openCredits", "pastAppointments", "purchasedAt", "sessionCount", "sessionDurationMinutes", "totalCredits", "upcomingAppointments" ]
+        "required" : [ "cancellationDeadlineHours", "cancelledAppointments", "customerEmail", "customerName", "id", "notes", "offeringName", "openCredits", "pastAppointments", "purchasedAt", "sessionCount", "sessionDurationMinutes", "totalCredits", "upcomingAppointments" ]
       },
       "ExpertConsultationCaseSummaryResponse" : {
         "type" : "object",
@@ -2108,6 +2302,34 @@
           }
         },
         "required" : [ "customerName", "group", "id", "offeringName", "openCredits", "purchasedAt", "totalCredits" ]
+      },
+      "ExpertNoteResponse" : {
+        "type" : "object",
+        "properties" : {
+          "editedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "visibility" : {
+            "type" : "string",
+            "enum" : [ "PRIVATE", "PUBLIC" ]
+          },
+          "writtenAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "id", "text", "title", "visibility", "writtenAt" ]
       },
       "ExpertResponse" : {
         "type" : "object",
@@ -2156,6 +2378,24 @@
           }
         },
         "required" : [ "amount", "currency" ]
+      },
+      "NoteRequest" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "title" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "visibility" : {
+            "type" : "string",
+            "enum" : [ "PRIVATE", "PUBLIC" ]
+          }
+        },
+        "required" : [ "text", "title", "visibility" ]
       },
       "PocLoginRequest" : {
         "type" : "object",

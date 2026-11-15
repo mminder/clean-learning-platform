@@ -1,11 +1,18 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { isBadRequest, isNotFound } from '@/lib/api-error'
 import { formatDateTime } from '@/lib/date'
 import { formatDateAndTimes } from './appointment-times'
-import { useExpertConsultationCase } from './expert-queries'
+import {
+  useDeleteNote,
+  useExpertConsultationCase,
+  type ExpertNote,
+} from './expert-queries'
+import { NoteCard } from './NoteCard'
+import { NoteDialog } from './NoteDialog'
 
 /**
  * UC-11's case detail for its assigned expert, following the customer's `ConsultationCasePage`: the customer's name
@@ -13,7 +20,8 @@ import { useExpertConsultationCase } from './expert-queries'
  * appointments in Zurich time. A cancelled case says when it was cancelled in place of the credits, without its refund
  * outcome (spec 06, decision 4). The server decides the lists and each appointment's status: a running one is among the
  * upcoming ones with "Now" (decision 2), and the cancelled ones are a list of their own (decision 14). Another expert's
- * case is "Case not found", like an unknown one.
+ * case is "Case not found", like an unknown one. Below them, the notes, newest first, each with its visibility, **Edit**
+ * and **Delete**, and **Add note** (UC-15).
  */
 export function ExpertConsultationCasePage() {
   // The route /expert/cases/:id always has an id.
@@ -60,6 +68,7 @@ export function ExpertConsultationCasePage() {
     upcomingAppointments,
     pastAppointments,
     cancelledAppointments,
+    notes,
   } = consultationCase.data
   return (
     <article className="space-y-8">
@@ -127,7 +136,90 @@ export function ExpertConsultationCasePage() {
           ))}
         </Appointments>
       )}
+      <Notes caseId={consultationCase.data.id} notes={notes} />
     </article>
+  )
+}
+
+/**
+ * The notes with **Add note**, **Edit** and **Delete**. The page renders one `NoteDialog` and keeps the note it was
+ * opened for. A delete asks first; a note deleted meanwhile, in another tab, says so above the notes, which reload.
+ */
+function Notes({ caseId, notes }: { caseId: string; notes: ExpertNote[] }) {
+  const deleteNote = useDeleteNote(caseId)
+  const [dialog, setDialog] = useState<{
+    open: boolean
+    note?: ExpertNote
+  }>({ open: false })
+  const [deleteError, setDeleteError] = useState<string>()
+
+  async function remove(noteId: string) {
+    setDeleteError(undefined)
+    try {
+      await deleteNote.mutateAsync(noteId)
+    } catch (error) {
+      setDeleteError(
+        isNotFound(error)
+          ? 'This note no longer exists.'
+          : 'Deleting failed. Please try again.',
+      )
+    }
+  }
+
+  return (
+    <section className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-xl font-semibold">
+          Notes{' '}
+          <span className="text-base font-normal text-muted-foreground">
+            (Zurich time)
+          </span>
+        </h2>
+        <Button onClick={() => setDialog({ open: true })}>Add note</Button>
+      </div>
+      {deleteError !== undefined && (
+        <p role="alert" className="text-destructive">
+          {deleteError}
+        </p>
+      )}
+      <ul className="space-y-3">
+        {notes.map((note) => (
+          <NoteCard key={note.id} note={note}>
+            <Badge
+              variant={note.visibility === 'PUBLIC' ? 'default' : 'outline'}
+            >
+              {note.visibility === 'PUBLIC' ? 'Public' : 'Private'}
+            </Badge>
+            <span className="ml-auto flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDialog({ open: true, note })}
+              >
+                Edit
+              </Button>
+              <ConfirmDialog
+                title={`Delete the note "${note.title}"?`}
+                description="This can't be undone."
+                confirmLabel="Delete"
+                destructive
+                onConfirm={() => void remove(note.id)}
+              >
+                <Button variant="outline" size="sm">
+                  Delete
+                </Button>
+              </ConfirmDialog>
+            </span>
+          </NoteCard>
+        ))}
+      </ul>
+      <NoteDialog
+        caseId={caseId}
+        note={dialog.note}
+        open={dialog.open}
+        onOpenChange={(open) => setDialog((current) => ({ ...current, open }))}
+      />
+    </section>
   )
 }
 

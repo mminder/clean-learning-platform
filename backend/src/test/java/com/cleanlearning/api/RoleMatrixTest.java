@@ -65,6 +65,12 @@ class RoleMatrixTest {
        "packages": [], "eligibleExpertIds": []}
       """;
 
+  /** A note, valid as far as Bean Validation and the value objects go. */
+  private static final String NOTE =
+      """
+      {"title": "Probe", "text": "Probe", "visibility": "PRIVATE"}\
+      """;
+
   // Every route gets a row here; everyRouteHasARow() fails for a route without one. @PreAuthorize
   // runs after Spring
   // MVC has read and validated the request, so a row with a body sends one that passes, and an
@@ -204,6 +210,20 @@ class RoleMatrixTest {
               GET,
               "/api/expert/consultation-cases/" + UNKNOWN_ID,
               Access.EXPERT), // unknown id: 404
+          // unknown case: 404
+          Route.withJson(
+              POST, "/api/expert/consultation-cases/" + UNKNOWN_ID + "/notes", NOTE, Access.EXPERT),
+          // unknown case: 404
+          Route.withJson(
+              PUT,
+              "/api/expert/consultation-cases/" + UNKNOWN_ID + "/notes/" + UNKNOWN_ID,
+              NOTE,
+              Access.EXPERT),
+          // unknown case: 404
+          Route.of(
+              DELETE,
+              "/api/expert/consultation-cases/" + UNKNOWN_ID + "/notes/" + UNKNOWN_ID,
+              Access.EXPERT),
           Route.of(GET, "/api/images/" + UNKNOWN_ID, Access.PUBLIC), // unknown id: 404
           Route.of(
               HEAD, "/api/images/" + UNKNOWN_ID, Access.PUBLIC), // the GET route answers HEAD, too

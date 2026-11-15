@@ -9,7 +9,8 @@ import org.jspecify.annotations.Nullable;
 /**
  * The case as its assigned expert sees it: the terms without the price paid, and {@code
  * cancelledAt} without the refund outcome (D-18); {@code cancelledAt} is {@code null} for an active
- * case. The server computes the lists and the statuses.
+ * case. The server computes the lists and the statuses. The notes are every note, private and
+ * public, newest first.
  */
 public record ExpertConsultationCaseResponse(
     UUID id,
@@ -25,7 +26,8 @@ public record ExpertConsultationCaseResponse(
     @Nullable Instant cancelledAt,
     List<ExpertAppointmentResponse> upcomingAppointments,
     List<ExpertAppointmentResponse> pastAppointments,
-    List<ExpertCancelledAppointmentResponse> cancelledAppointments) {
+    List<ExpertCancelledAppointmentResponse> cancelledAppointments,
+    List<ExpertNoteResponse> notes) {
 
   public static ExpertConsultationCaseResponse from(ExpertConsultationCase consultationCase) {
     return new ExpertConsultationCaseResponse(
@@ -46,6 +48,7 @@ public record ExpertConsultationCaseResponse(
         consultationCase.pastAppointments().stream().map(ExpertAppointmentResponse::from).toList(),
         consultationCase.cancelledAppointments().stream()
             .map(ExpertCancelledAppointmentResponse::from)
-            .toList());
+            .toList(),
+        consultationCase.notes().stream().map(ExpertNoteResponse::from).toList());
   }
 }

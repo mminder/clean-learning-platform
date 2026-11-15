@@ -5,9 +5,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.cleanlearning.domain.consultation.Appointment;
 import com.cleanlearning.domain.consultation.CancelledAppointment;
 import com.cleanlearning.domain.consultation.CaseCredits;
+import com.cleanlearning.domain.consultation.Note;
 import com.cleanlearning.domain.consultation.value.AppointmentId;
 import com.cleanlearning.domain.consultation.value.AppointmentStatus;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
+import com.cleanlearning.domain.consultation.value.NoteText;
+import com.cleanlearning.domain.consultation.value.NoteTitle;
+import com.cleanlearning.domain.consultation.value.NoteVisibility;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import com.cleanlearning.domain.offering.value.OfferingName;
 import com.cleanlearning.domain.offering.value.SessionCount;
@@ -59,6 +63,14 @@ class ExpertConsultationCaseTest {
 
   private static ExpertConsultationCase consultationCase(
       List<Appointment> booked, List<CancelledAppointment> cancelled, Instant asOf) {
+    return consultationCase(booked, cancelled, List.of(), asOf);
+  }
+
+  private static ExpertConsultationCase consultationCase(
+      List<Appointment> booked,
+      List<CancelledAppointment> cancelled,
+      List<Note> notes,
+      Instant asOf) {
     return new ExpertConsultationCase(
         CASE,
         "Customer 1",
@@ -69,6 +81,7 @@ class ExpertConsultationCaseTest {
         Instant.parse("2026-11-09T13:03:12.345Z"),
         new CaseCredits(new SessionCount(5), booked, cancelled),
         Optional.empty(),
+        notes,
         asOf);
   }
 
@@ -144,5 +157,42 @@ class ExpertConsultationCaseTest {
     assertThat(consultationCase.cancelledAppointments())
         .containsExactly(tuesdayA, tuesdayB, monday);
     assertThat(ids(consultationCase.upcomingAppointments())).containsExactly(WEDNESDAY.id());
+  }
+
+  /**
+   * UC-15: the expert sees every note, private and public, in the order the query sorts them,
+   * newest first; an edit doesn't move one.
+   */
+  @Test
+  void holdsEveryNoteInTheOrderItWasLoaded() {
+    Note newer =
+        Note.write(
+            CASE,
+            new NoteTitle("Homework"),
+            new NoteText("Read chapter 3"),
+            NoteVisibility.PUBLIC,
+            NOW.plusSeconds(60));
+    Note older =
+        Note.write(
+                CASE,
+                new NoteTitle("First session"),
+                new NoteText("Line one\nLine two"),
+                NoteVisibility.PRIVATE,
+                NOW)
+            .edit(
+                new NoteTitle("First session"),
+                new NoteText("Line one"),
+                NoteVisibility.PRIVATE,
+                NOW.plusSeconds(120));
+
+    ExpertConsultationCase consultationCase =
+        consultationCase(List.of(), List.of(), List.of(newer, older), NOW);
+
+    assertThat(consultationCase.notes()).containsExactly(newer, older);
+  }
+
+  @Test
+  void aCaseWithoutNotesHasAnEmptyList() {
+    assertThat(consultationCase(List.of(), List.of(), NOW).notes()).isEmpty();
   }
 }
