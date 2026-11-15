@@ -22,14 +22,15 @@ The expert sees every case they're assigned to and what's coming up.
 | Group | Contains | Order |
 |---|---|---|
 | Upcoming | cases with an upcoming appointment, one that hasn't ended ([glossary](../glossary.md#consultation)) | next appointment, ascending |
-| Needs booking | `ACTIVE` cases with open credits and no upcoming appointment | first booking date, ascending |
-| Past (collapsed) | `COMPLETED` or `CANCELLED` cases | last appointment, descending |
+| Needs booking | `ACTIVE` cases with open credits and no upcoming appointment | purchase date, ascending, as on "My purchases": nothing stores the first booking date (decided 2026-11-14) |
+| Past (collapsed) | `COMPLETED` or `CANCELLED` cases | newest first, as on "My purchases" ([UC-05](uc-05-view-my-purchases.md)) |
 
-3. Each card shows the customer's name, the offering, the next booked appointment (date and time), the open (bookable) credits, and the total credits.
+3. Each card shows the customer's name, the offering, the next booked appointment (date and time), the open (bookable) credits, and the total credits; a cancelled case's card says "Cancelled" in place of the next appointment and the credits (decided 2026-11-14).
 4. The expert opens a case. The detail shows:
    - the customer's name and email;
-   - the offering and the purchase terms;
-   - all appointments: upcoming until they end (with the Join link, [UC-10](uc-10-join-call.md)), consumed, and cancelled (refunded or forfeited);
+   - the offering and, of the purchase terms, the session count, the session duration, the cancellation deadline and the purchase time, but not the price paid (decided 2026-11-14);
+   - the open and total credits; a cancelled case says instead "Cancelled on <date, time>", without the refund outcome (decided 2026-11-14);
+   - all appointments: upcoming until they end (with the Join link, [UC-10](uc-10-join-call.md)), consumed, and, in a list of their own, cancelled (refunded or forfeited), also the ones cancelled with their case (decided 2026-11-14 by the product owner);
    - all notes, private and public ([UC-15](uc-15-take-consultation-notes.md)).
 
 ## Alternative and error flows
@@ -45,6 +46,7 @@ The expert sees every case they're assigned to and what's coming up.
 
 - Only cases where the expert is the assigned expert.
 - The customer's email is visible to the assigned expert (D-18).
+- The price paid and a cancelled case's refund outcome aren't part of the expert's API (D-18).
 
 ## Out of scope
 

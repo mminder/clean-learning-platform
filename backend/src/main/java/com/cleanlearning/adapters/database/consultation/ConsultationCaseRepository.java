@@ -4,6 +4,8 @@ import com.cleanlearning.adapters.database.consultation.entity.AppointmentEntity
 import com.cleanlearning.adapters.database.consultation.entity.ConsultationCaseEntity;
 import com.cleanlearning.adapters.database.consultation.row.CustomerConsultationCaseRow;
 import com.cleanlearning.adapters.database.consultation.row.CustomerConsultationCaseSummaryRow;
+import com.cleanlearning.adapters.database.consultation.row.ExpertConsultationCaseRow;
+import com.cleanlearning.adapters.database.consultation.row.ExpertConsultationCaseSummaryRow;
 import com.cleanlearning.adapters.database.offering.entity.ConsultationPackageEntity;
 import com.cleanlearning.adapters.database.offering.row.EligibleExpertRow;
 import jakarta.persistence.LockModeType;
@@ -19,14 +21,16 @@ interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, 
 
   /**
    * In every status of the offering: an archived offering's cases keep working. Scoped to the
-   * customer in SQL, so another customer's case isn't found.
+   * customer in SQL, so another customer's case isn't found. The assigned expert's Teams link is
+   * read for the link window alone: the domain hands it to an upcoming appointment only inside it
+   * (D-19).
    */
   @Query(
       """
       select new com.cleanlearning.adapters.database.consultation.row.CustomerConsultationCaseRow(
           c.id, o.name, o.imageId, c.pricePaid, c.sessionCount, c.sessionDurationMinutes,
-          c.cancellationDeadlineHours, c.purchasedAt, p.userId, p.displayName, p.bio, c.status, c.cancelledAt,
-          c.refundEligible)
+          c.cancellationDeadlineHours, c.purchasedAt, p.userId, p.displayName, p.bio, p.photoId,
+          p.teamsLink, c.status, c.cancelledAt, c.refundEligible)
       from ConsultationCaseEntity c
       join OfferingEntity o on o.id = c.consultationOfferingId
       left join ExpertProfileEntity p on p.userId = c.assignedExpertId
@@ -45,6 +49,39 @@ interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, 
       where c.customerId = :customerId
       """)
   List<CustomerConsultationCaseSummaryRow> findCustomerCases(UUID customerId);
+
+  /**
+   * In no particular order: the use case sorts them (D-17). Scoped to the assigned expert in SQL,
+   * so a case without an expert is in no expert's list.
+   */
+  @Query(
+      """
+      select new com.cleanlearning.adapters.database.consultation.row.ExpertConsultationCaseSummaryRow(
+          c.id, u.name, o.name, c.sessionCount, c.purchasedAt, c.cancelledAt)
+      from ConsultationCaseEntity c
+      join OfferingEntity o on o.id = c.consultationOfferingId
+      join UserEntity u on u.id = c.customerId
+      where c.assignedExpertId = :expertId
+      """)
+  List<ExpertConsultationCaseSummaryRow> findExpertCases(UUID expertId);
+
+  /**
+   * In every status of the offering and of the case. Scoped to the assigned expert in SQL, so
+   * another expert's case and a case without an expert aren't found. No price paid and no refund
+   * outcome (D-18). The Teams link is the expert's own (D-19).
+   */
+  @Query(
+      """
+      select new com.cleanlearning.adapters.database.consultation.row.ExpertConsultationCaseRow(
+          c.id, u.name, u.email, o.name, c.sessionCount, c.sessionDurationMinutes,
+          c.cancellationDeadlineHours, c.purchasedAt, c.cancelledAt, p.teamsLink)
+      from ConsultationCaseEntity c
+      join OfferingEntity o on o.id = c.consultationOfferingId
+      join UserEntity u on u.id = c.customerId
+      left join ExpertProfileEntity p on p.userId = c.assignedExpertId
+      where c.id = :id and c.assignedExpertId = :expertId
+      """)
+  Optional<ExpertConsultationCaseRow> findExpertCase(UUID id, UUID expertId);
 
   @Query(
       "select p from ConsultationPackageEntity p where p.consultationOfferingId = :consultationOfferingId")
@@ -72,6 +109,15 @@ interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, 
       """)
   List<AppointmentEntity> findAppointmentsOfCustomer(UUID customerId);
 
+  /** Every appointment, booked and cancelled, of the cases whose assigned expert this is. */
+  @Query(
+      """
+      select a from AppointmentEntity a
+      join ConsultationCaseEntity c on c.id = a.consultationCaseId
+      where c.assignedExpertId = :expertId
+      """)
+  List<AppointmentEntity> findAppointmentsOfExpertCases(UUID expertId);
+
   @Query(
       """
       select a from AppointmentEntity a
@@ -97,7 +143,7 @@ interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, 
   @Query(
       """
       select new com.cleanlearning.adapters.database.offering.row.EligibleExpertRow(
-          p.userId, p.displayName, p.bio)
+          p.userId, p.displayName, p.bio, p.photoId)
       from EligibleExpertEntity e
       join ExpertProfileEntity p on p.userId = e.expertId
       where e.consultationOfferingId = :consultationOfferingId

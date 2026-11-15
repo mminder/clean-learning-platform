@@ -28,12 +28,26 @@ export function Layout() {
               </Link>
             )}
             {isExpert && (
-              <Link
-                to="/expert/availability"
-                className="ml-6 text-sm font-medium hover:underline"
-              >
-                Availability
-              </Link>
+              <>
+                <Link
+                  to="/expert/cases"
+                  className="ml-6 text-sm font-medium hover:underline"
+                >
+                  My cases
+                </Link>
+                <Link
+                  to="/expert/availability"
+                  className="ml-6 text-sm font-medium hover:underline"
+                >
+                  Availability
+                </Link>
+                <Link
+                  to="/expert/profile"
+                  className="ml-6 text-sm font-medium hover:underline"
+                >
+                  Profile
+                </Link>
+              </>
             )}
             {isAdmin && (
               <Link

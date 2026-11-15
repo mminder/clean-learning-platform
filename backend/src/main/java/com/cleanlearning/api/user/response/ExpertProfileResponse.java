@@ -1,0 +1,23 @@
+package com.cleanlearning.api.user.response;
+
+import com.cleanlearning.domain.image.value.ImageId;
+import com.cleanlearning.domain.user.OwnExpertProfile;
+import com.cleanlearning.domain.user.value.TeamsLink;
+import java.util.UUID;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * The expert's own profile. Their Teams link is also in their cases and in a customer's upcoming
+ * appointment inside the link window.
+ */
+public record ExpertProfileResponse(
+    String displayName, String bio, @Nullable String teamsLink, @Nullable UUID photoId) {
+
+  public static ExpertProfileResponse from(OwnExpertProfile profile) {
+    return new ExpertProfileResponse(
+        profile.profile().displayName().value(),
+        profile.profile().bio(),
+        profile.teamsLink().map(TeamsLink::value).orElse(null),
+        profile.profile().photoId().map(ImageId::value).orElse(null));
+  }
+}

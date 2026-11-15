@@ -21,9 +21,9 @@ Participants find the right Teams link at the right time.
 
 ## Alternative and error flows
 
-- **Customer before the link window:** instead of the button, "The link will be available from 13:00 (Zurich time)."
+- **Customer before the link window:** instead of the button, "The link will be available from 13:00 (Zurich time).", whether a link is configured or not. The button appears when the window opens, without a reload (decided 2026-11-14).
 - **Customer after the call ended:** no link.
-- **No link configured** (the expert profile has no Teams link, or the run has none): "The meeting link has not been provided yet."
+- **No link configured** (the expert profile has no Teams link, or the run has none): the customer reads "The meeting link has not been provided yet." inside the link window. The expert reads "Add your Teams link in your profile." on their appointments, with a link to **Profile** ([UC-14](uc-14-manage-expert-profile.md), decided 2026-11-14).
 
 ## Business rules
 

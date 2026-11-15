@@ -1,6 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { client } from '@/api/client'
+import type { components } from '@/api/schema'
 import { ApiError } from '@/lib/api-error'
+import { problemOf } from '@/lib/problem'
+
+export type ExpertProfileRequest = components['schemas']['ExpertProfileRequest']
+
+export type ExpertProfile = components['schemas']['ExpertProfileResponse']
 
 /** The logged-in user, or `null` for a visitor: a 401 from `GET /api/me` is no error. */
 export function useMe() {
@@ -94,4 +100,107 @@ export function useExperts() {
       return data
     },
   })
+}
+
+/** The current expert's own profile, with their Teams link (UC-14). */
+export function useExpertProfile() {
+  return useQuery({
+    queryKey: ['expert', 'profile'],
+    queryFn: async () => {
+      const { data, response } = await client.GET('/api/expert/profile')
+      // not `error`: a 401 has an empty body, and openapi-fetch then returns `error: undefined`
+      if (data === undefined) {
+        throw new ApiError(
+          `Loading the profile failed: ${response.status}`,
+          response.status,
+        )
+      }
+      return data
+    },
+  })
+}
+
+/**
+ * Saves the current expert's profile (UC-14 step 4). It invalidates every query: the name and the bio show in the
+ * shop, in the expert picker, on cases and in the admin's list of experts. It stays pending until the queries on the
+ * screen have reloaded.
+ */
+export function useSaveExpertProfile() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (profile: ExpertProfileRequest) => {
+      const { data, error, response } = await client.PUT(
+        '/api/expert/profile',
+        { body: profile },
+      )
+      if (data === undefined) {
+        throw new ApiError(
+          `Saving the profile failed: ${response.status}`,
+          response.status,
+          problemOf(response.status, error),
+        )
+      }
+      return data
+    },
+    onSuccess: () => queryClient.invalidateQueries(),
+  })
+}
+
+/**
+ * Uploads the current expert's photo, or replaces it, at once and apart from the form's save (UC-14). The server
+ * detects the type from the file's first bytes; a file it refuses answers 400 with a `detail` for the user. It
+ * invalidates every query, as a save does: the photo shows in the shop, in the expert picker and on cases.
+ */
+export function useUploadExpertPhoto() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const body = new FormData()
+      body.append('file', file)
+      const { data, error, response } = await client.PUT(
+        '/api/expert/profile/photo',
+        // The contract types the part as a string (format binary), but the browser sends a File in a FormData, as
+        // for the offering's image (useUploadConsultationOfferingImage).
+        { body: body as unknown as { file: string } },
+      )
+      if (data === undefined) {
+        throw new ApiError(
+          `Uploading the photo failed: ${response.status}`,
+          response.status,
+          problemOf(response.status, error),
+        )
+      }
+      return data
+    },
+    onSuccess: () => queryClient.invalidateQueries(),
+  })
+}
+
+/** Removes the current expert's photo, at once and apart from the form's save (UC-14). */
+export function useRemoveExpertPhoto() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const { data, response } = await client.DELETE(
+        '/api/expert/profile/photo',
+      )
+      if (data === undefined) {
+        throw new ApiError(
+          `Removing the photo failed: ${response.status}`,
+          response.status,
+        )
+      }
+      return data
+    },
+    onSuccess: () => queryClient.invalidateQueries(),
+  })
+}
+
+/** The form's values for a saved profile: no link is an empty field, which the form sends as `""`. */
+export function toRequest({
+  displayName,
+  bio,
+  teamsLink,
+}: ExpertProfile): ExpertProfileRequest {
+  return { displayName, bio, teamsLink: teamsLink ?? '' }
 }

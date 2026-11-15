@@ -21,6 +21,7 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,9 +31,10 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
 /**
  * The upload limit of the real servlet container (D-21): Spring's default of 1 MB would refuse an
- * image of 2 MB, and a larger file must answer 400, not 413 or 500. MockMvc builds the multipart
- * request itself and never meets the limit, so this test sends the requests over HTTP, logged in
- * through the PoC login like the SPA, with its CSRF cookie and header.
+ * image of 2 MB, and a larger file must answer 400, not 413 or 500, for the offering's image and
+ * the expert's photo alike. MockMvc builds the multipart request itself and never meets the limit,
+ * so this test sends the requests over HTTP, logged in through the PoC login like the SPA, with its
+ * CSRF cookie and header.
  */
 @IntegrationTest
 class ImageUploadLimitTest {
@@ -47,12 +49,13 @@ class ImageUploadLimitTest {
 
   private final HttpClient http = HttpClient.newBuilder().cookieHandler(cookies).build();
 
-  private String offeringId;
-
   @BeforeEach
-  void logInAsAdminWithADraft() throws Exception {
+  void getTheCsrfCookie() throws Exception {
     // The first request gets the CSRF cookie, as the SPA's first GET /api/me does.
     send(HttpRequest.newBuilder(uri("/api/me")).GET());
+  }
+
+  private void logIn(UUID userId) throws Exception {
     HttpResponse<String> login =
         send(
             HttpRequest.newBuilder(uri("/api/poc/login"))
@@ -63,9 +66,11 @@ class ImageUploadLimitTest {
                         """
                         { "userId": "%s" }
                         """
-                            .formatted(SeedData.ADMIN_1))));
+                            .formatted(userId))));
     assertThat(login.statusCode()).isEqualTo(200);
+  }
 
+  private String createDraft() throws Exception {
     String created =
         mockMvc
             .post()
@@ -81,31 +86,52 @@ class ImageUploadLimitTest {
             .exchange()
             .getResponse()
             .getContentAsString();
-    offeringId = JsonPath.read(created, "$.id");
+    return JsonPath.read(created, "$.id");
   }
 
   @Test
   @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
   void acceptsTwoMegabytesAndAnswersOneByteMoreWithBadRequest() throws Exception {
-    HttpResponse<String> accepted = upload(TestImages.jpeg(TestImages.MAX_BYTES));
+    logIn(SeedData.ADMIN_1);
+    String path = "/api/admin/consultation-offerings/" + createDraft();
+    HttpResponse<String> accepted = upload(path + "/image", TestImages.jpeg(TestImages.MAX_BYTES));
     assertThat(accepted.statusCode()).isEqualTo(200);
     String imageId = JsonPath.read(accepted.body(), "$.imageId");
 
-    HttpResponse<String> refused = upload(TestImages.jpeg(TestImages.MAX_BYTES + 1));
+    assertTooLarge(upload(path + "/image", TestImages.jpeg(TestImages.MAX_BYTES + 1)));
 
+    // the offering keeps its image
+    HttpResponse<String> offering = send(HttpRequest.newBuilder(uri(path)).GET());
+    assertThat((String) JsonPath.read(offering.body(), "$.imageId")).isEqualTo(imageId);
+  }
+
+  @Test
+  @Sql(scripts = SeedData.DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)
+  void anExpertPhotoOfOneByteMoreThanTwoMegabytesAnswersBadRequest() throws Exception {
+    logIn(SeedData.EXPERT_2);
+    String path = "/api/expert/profile";
+    HttpResponse<String> accepted = upload(path + "/photo", TestImages.jpeg(TestImages.MAX_BYTES));
+    assertThat(accepted.statusCode()).isEqualTo(200);
+    String photoId = JsonPath.read(accepted.body(), "$.photoId");
+
+    assertTooLarge(upload(path + "/photo", TestImages.jpeg(TestImages.MAX_BYTES + 1)));
+
+    // the expert keeps their photo
+    HttpResponse<String> profile = send(HttpRequest.newBuilder(uri(path)).GET());
+    assertThat((String) JsonPath.read(profile.body(), "$.photoId")).isEqualTo(photoId);
+  }
+
+  private static void assertTooLarge(HttpResponse<String> refused) {
     assertThat(refused.statusCode()).isEqualTo(400);
     assertThat(refused.headers().firstValue("Content-Type")).hasValue("application/problem+json");
     assertThat((String) JsonPath.read(refused.body(), "$.detail"))
         .isEqualTo("An image is at most 2 MB.");
-    // the offering keeps its image
-    HttpResponse<String> offering =
-        send(HttpRequest.newBuilder(uri("/api/admin/consultation-offerings/" + offeringId)).GET());
-    assertThat((String) JsonPath.read(offering.body(), "$.imageId")).isEqualTo(imageId);
   }
 
-  private HttpResponse<String> upload(byte[] jpeg) throws IOException, InterruptedException {
+  private HttpResponse<String> upload(String path, byte[] jpeg)
+      throws IOException, InterruptedException {
     return send(
-        HttpRequest.newBuilder(uri("/api/admin/consultation-offerings/" + offeringId + "/image"))
+        HttpRequest.newBuilder(uri(path))
             .header("Content-Type", "multipart/form-data; boundary=" + BOUNDARY)
             .header(Csrf.HEADER, csrfToken())
             .PUT(BodyPublishers.ofByteArray(multipart(jpeg))));

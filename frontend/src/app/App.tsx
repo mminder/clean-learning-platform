@@ -1,12 +1,15 @@
 import { Route, Routes } from 'react-router'
 import { AvailabilityPage } from '@/features/availability/AvailabilityPage'
 import { ConsultationCasePage } from '@/features/consultation/ConsultationCasePage'
+import { ExpertConsultationCasePage } from '@/features/consultation/ExpertConsultationCasePage'
+import { MyCasesPage } from '@/features/consultation/MyCasesPage'
 import { MyPurchasesPage } from '@/features/consultation/MyPurchasesPage'
 import { ConsultationOfferingPage } from '@/features/offering/ConsultationOfferingPage'
 import { ConsultationOfferingsPage } from '@/features/offering/ConsultationOfferingsPage'
 import { NewConsultationOfferingPage } from '@/features/offering/NewConsultationOfferingPage'
 import { OfferingDetailPage } from '@/features/shop/OfferingDetailPage'
 import { ShopPage } from '@/features/shop/ShopPage'
+import { ExpertProfilePage } from '@/features/user/ExpertProfilePage'
 import { LoginPage } from '@/features/user/LoginPage'
 import { Layout } from './Layout'
 import { NotFoundPage } from './NotFoundPage'
@@ -24,7 +27,13 @@ export function App() {
           <Route path="my/cases/:id" element={<ConsultationCasePage />} />
         </Route>
         <Route element={<RequireRole role="EXPERT" />}>
+          <Route path="expert/cases" element={<MyCasesPage />} />
+          <Route
+            path="expert/cases/:id"
+            element={<ExpertConsultationCasePage />}
+          />
           <Route path="expert/availability" element={<AvailabilityPage />} />
+          <Route path="expert/profile" element={<ExpertProfilePage />} />
         </Route>
         <Route element={<RequireRole role="ADMIN" />}>
           <Route

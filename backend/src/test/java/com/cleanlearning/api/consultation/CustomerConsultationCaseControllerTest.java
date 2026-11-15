@@ -212,7 +212,8 @@ class CustomerConsultationCaseControllerTest {
           "cancellation": null,
           "canCancel": true,
           "refundIfCancelledNow": { "refundEligible": true, "reason": null, "appointment": null },
-          "canBook": true
+          "canBook": true,
+          "notes": []
         }
         """
             .formatted(id, JsonPath.read(body, "$.purchasedAt"));

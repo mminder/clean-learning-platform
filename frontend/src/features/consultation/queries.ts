@@ -1,8 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { client } from '@/api/client'
 import type { components } from '@/api/schema'
 import { ApiError, isConflict } from '@/lib/api-error'
 import { problemOf } from '@/lib/problem'
+import { customerConsultationCasesKey, useReloadCases } from './case-keys'
 
 export type PurchaseConsultationPackageRequest =
   components['schemas']['PurchaseConsultationPackageRequest']
@@ -37,10 +38,6 @@ export interface CancelAppointmentVariables {
   appointmentId: string
   creditRefunded: boolean
 }
-
-// The list's key is the detail keys' prefix, so invalidating it invalidates every detail, too. A case's experts and
-// slots are under its key, so invalidating the case invalidates them, too.
-const customerConsultationCasesKey = ['customer', 'consultation-cases']
 
 /** One case's key: the prefix of its eligible experts' and its bookable slots' keys. */
 export function customerConsultationCaseKey(id: string) {
@@ -93,7 +90,7 @@ export function useCustomerConsultationCase(id: string) {
  * dialog showed a stale offering; the dialog reloads its packages, and the shop when it closes (`BuyConsultationDialog`).
  */
 export function usePurchaseConsultationPackage() {
-  const queryClient = useQueryClient()
+  const reloadCases = useReloadCases()
   return useMutation({
     mutationFn: async (purchase: PurchaseConsultationPackageRequest) => {
       const { data, error, response } = await client.POST(
@@ -109,8 +106,7 @@ export function usePurchaseConsultationPackage() {
       }
       return data
     },
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: customerConsultationCasesKey }),
+    onSuccess: reloadCases,
   })
 }
 
@@ -177,9 +173,7 @@ export function useBookableSlots(caseId: string, expertId: string | undefined) {
  * experts and slots. It stays pending until the queries on the screen have reloaded.
  */
 export function useBookConsultationAppointment(caseId: string) {
-  const queryClient = useQueryClient()
-  const reloadCases = () =>
-    queryClient.invalidateQueries({ queryKey: customerConsultationCasesKey })
+  const reloadCases = useReloadCases()
   return useMutation({
     mutationFn: async (booking: BookConsultationAppointmentRequest) => {
       const { data, error, response } = await client.POST(
@@ -207,9 +201,7 @@ export function useBookConsultationAppointment(caseId: string) {
  * the screen have reloaded.
  */
 export function useCancelConsultationAppointment(caseId: string) {
-  const queryClient = useQueryClient()
-  const reloadCases = () =>
-    queryClient.invalidateQueries({ queryKey: customerConsultationCasesKey })
+  const reloadCases = useReloadCases()
   return useMutation({
     mutationFn: async ({
       appointmentId,
@@ -243,9 +235,7 @@ export function useCancelConsultationAppointment(caseId: string) {
  * case, and their experts and slots. It stays pending until the queries on the screen have reloaded.
  */
 export function useCancelConsultationCase(caseId: string) {
-  const queryClient = useQueryClient()
-  const reloadCases = () =>
-    queryClient.invalidateQueries({ queryKey: customerConsultationCasesKey })
+  const reloadCases = useReloadCases()
   return useMutation({
     mutationFn: async (refundEligible: boolean) => {
       const { data, error, response } = await client.POST(

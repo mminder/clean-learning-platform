@@ -244,6 +244,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/expert/consultation-cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listExpertConsultationCases"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/expert/consultation-cases/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getExpertConsultationCase"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/expert/consultation-cases/{id}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["addNote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/expert/consultation-cases/{id}/notes/{noteId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["editNote"];
+        post?: never;
+        delete: operations["deleteNote"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/expert/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getExpertProfile"];
+        put: operations["saveExpertProfile"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/expert/profile/photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["uploadExpertPhoto"];
+        post?: never;
+        delete: operations["removeExpertPhoto"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/images/{id}": {
         parameters: {
             query?: never;
@@ -365,6 +461,8 @@ export interface components {
             displayName: string;
             /** Format: uuid */
             id: string;
+            /** Format: uuid */
+            photoId?: string | null;
         };
         AvailabilityRequest: {
             dates: string[];
@@ -475,6 +573,7 @@ export interface components {
             expert?: components["schemas"]["AssignedExpertResponse"] | null;
             /** Format: uuid */
             id: string;
+            notes: components["schemas"]["CustomerNoteResponse"][];
             /** Format: uuid */
             offeringImageId?: string | null;
             offeringName: string;
@@ -508,6 +607,16 @@ export interface components {
             /** Format: int32 */
             totalCredits: number;
         };
+        CustomerNoteResponse: {
+            /** Format: date-time */
+            editedAt?: string | null;
+            /** Format: uuid */
+            id: string;
+            text: string;
+            title: string;
+            /** Format: date-time */
+            writtenAt: string;
+        };
         CustomerUpcomingAppointmentResponse: {
             canCancel: boolean;
             creditRefundedIfCancelledNow: boolean;
@@ -518,9 +627,13 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
+            linkAvailableFrom: string;
+            linkWindowOpen: boolean;
+            /** Format: date-time */
             start: string;
             /** @enum {string} */
             status: "BOOKED" | "CONSUMED";
+            teamsLink?: string | null;
         };
         DeadlinePassedAppointmentResponse: {
             /** Format: date-time */
@@ -535,6 +648,94 @@ export interface components {
             displayName: string;
             /** Format: uuid */
             id: string;
+            /** Format: uuid */
+            photoId?: string | null;
+        };
+        ExpertAppointmentResponse: {
+            /** Format: date-time */
+            end: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            start: string;
+            /** @enum {string} */
+            status: "BOOKED" | "CONSUMED";
+        };
+        ExpertCancelledAppointmentResponse: {
+            creditRefunded: boolean;
+            /** Format: date-time */
+            end: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            start: string;
+        };
+        ExpertConsultationCaseResponse: {
+            /** Format: int32 */
+            cancellationDeadlineHours: number;
+            cancelledAppointments: components["schemas"]["ExpertCancelledAppointmentResponse"][];
+            /** Format: date-time */
+            cancelledAt?: string | null;
+            customerEmail: string;
+            customerName: string;
+            /** Format: uuid */
+            id: string;
+            notes: components["schemas"]["ExpertNoteResponse"][];
+            offeringName: string;
+            /** Format: int32 */
+            openCredits: number;
+            pastAppointments: components["schemas"]["ExpertAppointmentResponse"][];
+            /** Format: date-time */
+            purchasedAt: string;
+            /** Format: int32 */
+            sessionCount: number;
+            /** Format: int32 */
+            sessionDurationMinutes: number;
+            teamsLink?: string | null;
+            /** Format: int32 */
+            totalCredits: number;
+            upcomingAppointments: components["schemas"]["ExpertAppointmentResponse"][];
+        };
+        ExpertConsultationCaseSummaryResponse: {
+            /** Format: date-time */
+            cancelledAt?: string | null;
+            customerName: string;
+            /** @enum {string} */
+            group: "UPCOMING" | "NEEDS_BOOKING" | "PAST";
+            /** Format: uuid */
+            id: string;
+            nextAppointment?: components["schemas"]["ExpertAppointmentResponse"] | null;
+            offeringName: string;
+            /** Format: int32 */
+            openCredits: number;
+            /** Format: date-time */
+            purchasedAt: string;
+            /** Format: int32 */
+            totalCredits: number;
+        };
+        ExpertNoteResponse: {
+            /** Format: date-time */
+            editedAt?: string | null;
+            /** Format: uuid */
+            id: string;
+            text: string;
+            title: string;
+            /** @enum {string} */
+            visibility: "PRIVATE" | "PUBLIC";
+            /** Format: date-time */
+            writtenAt: string;
+        };
+        ExpertProfileRequest: {
+            bio: string;
+            displayName: string;
+            teamsLink?: string | null;
+        };
+        ExpertProfileResponse: {
+            bio: string;
+            displayName: string;
+            /** Format: uuid */
+            photoId?: string | null;
+            teamsLink?: string | null;
         };
         ExpertResponse: {
             displayName: string;
@@ -551,6 +752,12 @@ export interface components {
         MoneyResponse: {
             amount: string;
             currency: string;
+        };
+        NoteRequest: {
+            text: string;
+            title: string;
+            /** @enum {string} */
+            visibility: "PRIVATE" | "PUBLIC";
         };
         PocLoginRequest: {
             /** Format: uuid */
@@ -1602,6 +1809,339 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    listExpertConsultationCases: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpertConsultationCaseSummaryResponse"][];
+                };
+            };
+        };
+    };
+    getExpertConsultationCase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpertConsultationCaseResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    addNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpertNoteResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    editNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                noteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoteRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpertNoteResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    deleteNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                noteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    getExpertProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpertProfileResponse"];
+                };
+            };
+        };
+    };
+    saveExpertProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExpertProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpertProfileResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    uploadExpertPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpertProfileResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    removeExpertPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpertProfileResponse"];
                 };
             };
         };

@@ -18,7 +18,7 @@ The customer turns an open credit into an appointment with an expert.
 ## Main flow
 
 1. The customer clicks **Book appointment** on the case detail.
-2. **If the case has no assigned expert yet**, the system shows the offering's eligible experts (name, photo, bio), and the customer selects one. Until expert photos exist ([UC-14](uc-14-manage-expert-profile.md)), a placeholder stands in for the photo, as on the offering detail.
+2. **If the case has no assigned expert yet**, the system shows the offering's eligible experts (name, photo, bio), and the customer selects one. An expert without a photo ([UC-14](uc-14-manage-expert-profile.md)) has a placeholder instead, as on the offering detail.
 3. The system shows the dates on which the expert has bookable slots, and the customer selects a date.
 4. The system shows that date's bookable start times as "start–end", and the customer selects one.
 5. The system shows a confirmation with the expert, date, time and duration, and "Free cancellation until <start − deadline>", for example: "Book Expert 2 on 17 Nov 2026, 10:00–11:00 (60 min, Zurich time)?" and "Free cancellation until 16 Nov 2026, 10:00." If start − deadline isn't after now, which a deadline longer than the minimum notice allows, it says "This time is within the cancellation deadline, so it can't be cancelled for free." instead (decided 2026-11-10).

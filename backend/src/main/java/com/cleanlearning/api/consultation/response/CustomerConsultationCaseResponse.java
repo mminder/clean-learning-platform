@@ -10,7 +10,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * {@code cancellation} is {@code null} for an active case; {@code refundIfCancelledNow} is {@code
  * null} exactly when {@code canCancel} is false. The server computes everything that depends on the
- * time.
+ * time. {@code notes} are the public ones, newest first.
  */
 public record CustomerConsultationCaseResponse(
     UUID id,
@@ -26,7 +26,8 @@ public record CustomerConsultationCaseResponse(
     @Nullable CancellationOutcomeResponse cancellation,
     boolean canCancel,
     @Nullable RefundEligibilityResponse refundIfCancelledNow,
-    boolean canBook) {
+    boolean canBook,
+    List<CustomerNoteResponse> notes) {
 
   public static CustomerConsultationCaseResponse from(CustomerConsultationCase consultationCase) {
     return new CustomerConsultationCaseResponse(
@@ -47,6 +48,7 @@ public record CustomerConsultationCaseResponse(
         consultationCase.cancellation().map(CancellationOutcomeResponse::from).orElse(null),
         consultationCase.canCancel(),
         consultationCase.refundIfCancelledNow().map(RefundEligibilityResponse::from).orElse(null),
-        consultationCase.canBook());
+        consultationCase.canBook(),
+        consultationCase.notes().stream().map(CustomerNoteResponse::from).toList());
   }
 }

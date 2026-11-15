@@ -20,7 +20,7 @@
 frontend/src
 ├─ app/                 router, providers (QueryClient), layout, header navigation
 ├─ api/                 generated schema types + configured openapi-fetch client
-├─ components/          shared components, e.g. ImagePlaceholder, OfferingImage, Field
+├─ components/          shared components, e.g. ImagePlaceholder, OfferingImage, ExpertPhoto, Field
 │  └─ ui/               shadcn/ui components
 ├─ lib/                 date formatting (Zurich), money formatting, error mapping
 └─ features/            mirrors the backend features
@@ -58,8 +58,8 @@ A shadcn/ui component is added when a page first uses it: run `npx shadcn@latest
 ## Navigation and auth
 
 - On start, the SPA calls `GET /api/me`. A 401 means visitor.
-- The header shows **Shop** plus one section per role the user holds (union navigation, D-03), in this order: **My purchases** (`CUSTOMER`), **Availability** (`EXPERT`), **Consultations** (`ADMIN`).
-- After login, the SPA redirects to the landing page by priority Expert (`/expert/cases`) → Admin (`/admin/cases`) → Customer (`/my`), or back to the page where login was started (e.g. from **Buy**).
+- The header shows **Shop** plus one section per role the user holds (union navigation, D-03), in this order: **My purchases** (`CUSTOMER`), **My cases**, **Availability** and **Profile** (`EXPERT`), **Consultations** (`ADMIN`).
+- After login, the SPA redirects to the landing page by priority Expert (`/expert/cases`) → Admin (`/admin/consultations`, until the admin's **Cases**, `/admin/cases`, exists) → Customer (`/my`), otherwise the shop (`landingPath` in `features/user/landing.ts`), or back to the page where login was started (e.g. from **Buy**).
 - Route guards only hide pages. **The backend is the authority**. `RequireRole` (`app/`) wraps a section's routes: a visitor goes to `/login?redirect=<path>`, a user without the role sees the not-found page.
 - A 401 from any query or mutation other than `useMe` refetches `['me']` (the `QueryClient` in `app/queryClient.ts`), so `RequireRole` then sends the user to the login.
 - After login, the SPA resets the query cache, so no data of the visitor or the previous user remains, and the queries on the screen load again. After logout, it loads the shop as a new page (`window.location.assign('/')`), so nothing of the user stays in memory. Not a reset and a navigation inside the SPA: the reset empties `['me']`, and `RequireRole` on the page being left would send the visitor to the login instead of the shop.
@@ -109,8 +109,8 @@ UC-16's `ConsultationOfferingForm` is the pattern ([increment 02](../tasks/02-ma
 - **Mutations** invalidate what they change and return the invalidation, so they stay pending until the queries on the screen have reloaded.
 - **A 409** comes from a stale page. The mutation refetches what it changed (`isConflict` in `lib/api-error.ts`), and the page shows the `detail` above the form (`problemMessage` or `showSaveError` in `lib/problem.ts`). A delete doesn't refetch the deleted resource, whose page closes (a refetch would answer 404).
 - **Read-only:** a form that may not be changed, such as an archived offering's, wraps its fields in a disabled `<fieldset>`, has no **Save**, and the page says why. It shows the saved values: the page gives the form a new `key` when it turns read-only, so unsaved edits, which can't be saved any more, don't look saved.
-- **Uploads** (an offering's image) have their own section and mutation, apart from the form's **Save**, and take effect at once. The file goes through the generated client as a `FormData` body: openapi-fetch passes it on without a JSON content type, so the browser sets the multipart one, and the CSRF middleware adds its header as on any `PUT`. A file input's `accept` only helps the picker; the backend decides, and a 400's `detail` shows next to the section.
-- **Images** are plain `<img src="/api/images/{id}">`, through `OfferingImage` (`components/`), which shows `ImagePlaceholder` in the same frame when there's no image.
+- **Uploads** (an offering's image, an expert's photo) have their own section and mutation, apart from the form's **Save**, and take effect at once. The file goes through the generated client as a `FormData` body: openapi-fetch passes it on without a JSON content type, so the browser sets the multipart one, and the CSRF middleware adds its header as on any `PUT`. A file input's `accept` only helps the picker; the backend decides, and a 400's `detail` shows next to the section.
+- **Images** are plain `<img src="/api/images/{id}">`, through `OfferingImage` (`components/`), which shows `ImagePlaceholder` in the same frame when there's no image. An expert's photo goes through `ExpertPhoto` (`components/`), built on `OfferingImage`: round, cropped by the browser (`object-cover`), or the round placeholder.
 - **Confirmations:** an action with a consequence asks first, with `ConfirmDialog` (`components/`, shadcn `alert-dialog`): a title that names the thing, a text that states the consequence, **Cancel** and the action. Cancel changes nothing. Where the action itself cancels something, the buttons say what they do instead, **Keep appointment** and **Cancel appointment**, so that no **Cancel** means "don't cancel" ([spec 05](../specs/05-cancel-consultation-appointment-or-case.md#decisions), decision 2). A confirmation whose outcome the server may refuse as changed (a 409) stays open, shows what's current and asks again, as the cancellations' dialogs do.
 
 ## Errors

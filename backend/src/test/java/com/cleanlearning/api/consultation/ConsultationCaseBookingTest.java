@@ -327,8 +327,8 @@ class ConsultationCaseBookingTest {
         .isStrictlyEqualTo(
             """
             [
-              { "id": "%s", "displayName": "Expert 1", "bio": "%s" },
-              { "id": "%s", "displayName": "Expert 2", "bio": "%s" }
+              { "id": "%s", "displayName": "Expert 1", "bio": "%s", "photoId": null },
+              { "id": "%s", "displayName": "Expert 2", "bio": "%s", "photoId": null }
             ]
             """
                 .formatted(SeedData.EXPERT_1, EXPERT_1_BIO, SeedData.EXPERT_2, EXPERT_2_BIO));
@@ -370,7 +370,7 @@ class ConsultationCaseBookingTest {
             """
             {
               "id": "%s",
-              "expert": { "id": "%s", "displayName": "Expert 2", "bio": "%s" },
+              "expert": { "id": "%s", "displayName": "Expert 2", "bio": "%s", "photoId": null },
               "openCredits": 2,
               "totalCredits": 3,
               "upcomingAppointments": [%s],

@@ -2,12 +2,17 @@ package com.cleanlearning.adapters.database.consultation;
 
 import com.cleanlearning.adapters.database.consultation.entity.AppointmentEntity;
 import com.cleanlearning.adapters.database.consultation.entity.ConsultationCaseEntity;
+import com.cleanlearning.adapters.database.consultation.entity.NoteEntity;
 import com.cleanlearning.adapters.database.consultation.entity.StoredAppointmentStatus;
 import com.cleanlearning.domain.consultation.Appointment;
 import com.cleanlearning.domain.consultation.CancelledAppointment;
 import com.cleanlearning.domain.consultation.CaseCredits;
+import com.cleanlearning.domain.consultation.Note;
 import com.cleanlearning.domain.consultation.value.AppointmentId;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
+import com.cleanlearning.domain.consultation.value.NoteId;
+import com.cleanlearning.domain.consultation.value.NoteText;
+import com.cleanlearning.domain.consultation.value.NoteTitle;
 import com.cleanlearning.domain.consultation.value.PurchaseTerms;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import com.cleanlearning.domain.offering.value.SessionCount;
@@ -15,6 +20,7 @@ import com.cleanlearning.domain.offering.value.SessionDuration;
 import com.cleanlearning.domain.shared.value.Money;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 final class ConsultationCaseMapper {
 
@@ -56,5 +62,16 @@ final class ConsultationCaseMapper {
         entity.getStartsAt(),
         entity.getEndsAt(),
         Objects.requireNonNull(entity.getCreditRefunded(), "creditRefunded"));
+  }
+
+  static Note toNote(NoteEntity entity) {
+    return new Note(
+        new NoteId(entity.getId()),
+        new ConsultationCaseId(entity.getConsultationCaseId()),
+        new NoteTitle(entity.getTitle()),
+        new NoteText(entity.getText()),
+        entity.getVisibility(),
+        entity.getWrittenAt(),
+        Optional.ofNullable(entity.getEditedAt()));
   }
 }

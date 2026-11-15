@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { ImagePlaceholder } from '@/components/ImagePlaceholder'
+import { ExpertPhoto } from '@/components/ExpertPhoto'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import {
@@ -287,7 +287,10 @@ function BookingSteps({
                   value={eligibleExpert.id}
                   className="mt-1"
                 />
-                <ImagePlaceholder className="size-12 shrink-0 rounded-full [&_svg]:size-6" />
+                <ExpertPhoto
+                  photoId={eligibleExpert.photoId}
+                  className="size-12 [&_svg]:size-6"
+                />
                 <span className="space-y-1">
                   <span className="block font-medium">
                     {eligibleExpert.displayName}

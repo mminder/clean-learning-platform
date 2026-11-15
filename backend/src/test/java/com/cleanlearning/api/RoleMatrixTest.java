@@ -65,6 +65,12 @@ class RoleMatrixTest {
        "packages": [], "eligibleExpertIds": []}
       """;
 
+  /** A note, valid as far as Bean Validation and the value objects go. */
+  private static final String NOTE =
+      """
+      {"title": "Probe", "text": "Probe", "visibility": "PRIVATE"}\
+      """;
+
   // Every route gets a row here; everyRouteHasARow() fails for a route without one. @PreAuthorize
   // runs after Spring
   // MVC has read and validated the request, so a row with a body sends one that passes, and an
@@ -184,7 +190,10 @@ class RoleMatrixTest {
               Access.ADMIN), // unknown id: 404
           // unknown id: 404
           Route.withImage(
-              PUT, "/api/admin/consultation-offerings/" + UNKNOWN_ID + "/image", Access.ADMIN),
+              PUT,
+              "/api/admin/consultation-offerings/" + UNKNOWN_ID + "/image",
+              TestImages.png(100),
+              Access.ADMIN),
           // unknown id: 404
           Route.of(
               DELETE, "/api/admin/consultation-offerings/" + UNKNOWN_ID + "/image", Access.ADMIN),
@@ -199,6 +208,39 @@ class RoleMatrixTest {
               {"dates": ["2000-01-03"], "timeRanges": []}\
               """,
               Access.EXPERT),
+          Route.of(GET, "/api/expert/consultation-cases", Access.EXPERT),
+          Route.of(
+              GET,
+              "/api/expert/consultation-cases/" + UNKNOWN_ID,
+              Access.EXPERT), // unknown id: 404
+          // unknown case: 404
+          Route.withJson(
+              POST, "/api/expert/consultation-cases/" + UNKNOWN_ID + "/notes", NOTE, Access.EXPERT),
+          // unknown case: 404
+          Route.withJson(
+              PUT,
+              "/api/expert/consultation-cases/" + UNKNOWN_ID + "/notes/" + UNKNOWN_ID,
+              NOTE,
+              Access.EXPERT),
+          // unknown case: 404
+          Route.of(
+              DELETE,
+              "/api/expert/consultation-cases/" + UNKNOWN_ID + "/notes/" + UNKNOWN_ID,
+              Access.EXPERT),
+          Route.of(GET, "/api/expert/profile", Access.EXPERT),
+          // A display name of only a no-break space: Bean Validation lets it through, the value
+          // object answers 400 before anything is saved.
+          Route.withJson(
+              PUT,
+              "/api/expert/profile",
+              """
+              {"displayName": " ", "bio": "", "teamsLink": null}\
+              """,
+              Access.EXPERT),
+          // A GIF: the domain answers 400 before anything is saved.
+          Route.withImage(PUT, "/api/expert/profile/photo", TestImages.gif(100), Access.EXPERT),
+          // The caller has no photo, so nothing changes.
+          Route.of(DELETE, "/api/expert/profile/photo", Access.EXPERT),
           Route.of(GET, "/api/images/" + UNKNOWN_ID, Access.PUBLIC), // unknown id: 404
           Route.of(
               HEAD, "/api/images/" + UNKNOWN_ID, Access.PUBLIC), // the GET route answers HEAD, too
@@ -302,7 +344,7 @@ class RoleMatrixTest {
                   .content(json));
     }
 
-    static Route withImage(HttpMethod method, String path, Access access) {
+    static Route withImage(HttpMethod method, String path, byte[] file, Access access) {
       return new Route(
           method,
           path,
@@ -310,8 +352,7 @@ class RoleMatrixTest {
           () ->
               MockMvcRequestBuilders.multipart(method, path)
                   .file(
-                      new MockMultipartFile(
-                          "file", "image.png", MediaType.IMAGE_PNG_VALUE, TestImages.png(100))));
+                      new MockMultipartFile("file", "image.png", MediaType.IMAGE_PNG_VALUE, file)));
     }
 
     @Override

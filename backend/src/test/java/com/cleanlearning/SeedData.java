@@ -23,10 +23,13 @@ public final class SeedData {
       UUID.fromString("00000000-0000-0000-0000-000000001012");
 
   /**
-   * The script that deletes every appointment, every case and every availability (the seed has
-   * none), then every offering that isn't in the seed, with its packages, eligible experts and
-   * image. A test that buys, books, saves availability or writes offerings runs it afterwards:
-   * {@code @Sql(scripts = DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)}.
+   * The script that deletes every note, every appointment, every case and every availability (the
+   * seed has none), then every offering that isn't in the seed, with its packages and eligible
+   * experts, sets both seeded expert profiles back to the seed's display name and bio, without a
+   * Teams link and without a photo, and then deletes every image that neither an offering nor a
+   * profile refers to. A test that buys, books, writes notes, saves availability, writes offerings
+   * or saves an expert profile or its photo runs it afterwards: {@code @Sql(scripts =
+   * DELETE_TEST_DATA, executionPhase = AFTER_TEST_METHOD)}.
    */
   public static final String DELETE_TEST_DATA = "/com/cleanlearning/delete-test-data.sql";
 

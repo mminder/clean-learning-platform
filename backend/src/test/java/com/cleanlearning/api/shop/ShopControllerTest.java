@@ -116,12 +116,14 @@ class ShopControllerTest {
                   {
                     "id": "00000000-0000-0000-0000-000000000201",
                     "displayName": "Expert 1",
-                    "bio": "%s"
+                    "bio": "%s",
+                    "photoId": null
                   },
                   {
                     "id": "00000000-0000-0000-0000-000000000202",
                     "displayName": "Expert 2",
-                    "bio": "%s"
+                    "bio": "%s",
+                    "photoId": null
                   }
                 ]
               }

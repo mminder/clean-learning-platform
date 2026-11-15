@@ -3,11 +3,14 @@ import type { components } from '@/api/schema'
 type Role = components['schemas']['MeResponse']['roles'][number]
 
 /**
- * Where a user lands after login. UC-11 and UC-18 add the expert's and the admin's landing pages; until then, a user
- * with ADMIN lands on the consultation offerings, otherwise a user with CUSTOMER on My purchases, otherwise on the
- * shop (spec 02, decision 3; spec 03, decision 5).
+ * Where a user lands after login, by the first matching role (UC-01): a user with EXPERT on My cases, then one with
+ * ADMIN on the consultation offerings until the admin's Cases (UC-18) exists, then one with CUSTOMER on My purchases,
+ * otherwise the shop (spec 06, decision 1).
  */
 export function landingPath(roles: readonly Role[]): string {
+  if (roles.includes('EXPERT')) {
+    return '/expert/cases'
+  }
   if (roles.includes('ADMIN')) {
     return '/admin/consultations'
   }

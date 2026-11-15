@@ -48,7 +48,7 @@ interface OfferingRepository extends Repository<OfferingEntity, UUID> {
   @Query(
       """
       select new com.cleanlearning.adapters.database.offering.row.EligibleExpertRow(
-          p.userId, p.displayName, p.bio)
+          p.userId, p.displayName, p.bio, p.photoId)
       from EligibleExpertEntity e
       join ExpertProfileEntity p on p.userId = e.expertId
       where e.consultationOfferingId = :consultationOfferingId

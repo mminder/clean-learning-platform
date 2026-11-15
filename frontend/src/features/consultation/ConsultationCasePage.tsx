@@ -1,23 +1,26 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { cn } from 'cn'
-import { ImagePlaceholder } from '@/components/ImagePlaceholder'
+import { ExpertPhoto } from '@/components/ExpertPhoto'
 import { OfferingImage } from '@/components/OfferingImage'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { isBadRequest, isNotFound } from '@/lib/api-error'
-import { formatDateTime } from '@/lib/date'
+import { formatDateTime, formatTime } from '@/lib/date'
 import { formatMoney } from '@/lib/money'
-import { formatDateAndTimes } from './appointment-times'
 import { BookAppointmentDialog } from './BookAppointmentDialog'
 import {
   CancelAppointmentDialog,
   type AppointmentToCancel,
 } from './CancelAppointmentDialog'
 import { CancelCaseDialog } from './CancelCaseDialog'
+import { AppointmentItem, Appointments, Term, ZurichTime } from './CaseParts'
+import { JoinButton } from './JoinButton'
+import { msUntilLinkWindowReload } from './link-window-reload'
+import { NoteCard } from './NoteCard'
 import {
   useCustomerConsultationCase,
-  type CustomerAppointment,
+  type CustomerUpcomingAppointment,
 } from './queries'
 import { cancelledCaseRefundText } from './refund-texts'
 
@@ -28,8 +31,11 @@ import { cancelledCaseRefundText } from './refund-texts'
  * past appointments, in Zurich time, each upcoming one with **Cancel** while it can be cancelled (UC-07), but no
  * free-cancellation time (spec 05, decision 1). A cancelled appointment isn't listed (decision 3). A cancelled case
  * says when it was cancelled and its refund outcome in place of the credits, and has no actions and no hint (decision
- * 6). The server decides `canBook`, `canCancel` and each appointment's status and `canCancel`. Another customer's case
- * is "Case not found", like an unknown one.
+ * 6). Below the appointments, the expert's public notes under "Notes from your expert", hidden while there's none (spec
+ * 06, decision 6): the server sends no private note. Each upcoming appointment has **Join** inside its link window, or
+ * says when the link will be available (UC-10); the page reloads the case when the next window opens (decision 11). The
+ * server decides `canBook`, `canCancel`, each appointment's status and `canCancel`, and the link window. Another
+ * customer's case is "Case not found", like an unknown one.
  */
 export function ConsultationCasePage() {
   // The route /my/cases/:id always has an id.
@@ -42,6 +48,21 @@ export function ConsultationCasePage() {
     appointment?: AppointmentToCancel
   }>({ open: false })
   const [cancelCaseOpen, setCancelCaseOpen] = useState(false)
+  // Reloads the case when the next link window opens, so that Join appears without a reload by the customer. Each
+  // answer starts a new wait, also one equal to the last, which keeps its data but not its `dataUpdatedAt`.
+  const upcoming = consultationCase.data?.upcomingAppointments
+  const { dataUpdatedAt, refetch } = consultationCase
+  useEffect(() => {
+    if (upcoming === undefined) {
+      return
+    }
+    const wait = msUntilLinkWindowReload(upcoming, new Date())
+    if (wait === undefined) {
+      return
+    }
+    const timer = setTimeout(() => void refetch(), wait)
+    return () => clearTimeout(timer)
+  }, [upcoming, dataUpdatedAt, refetch])
 
   if (consultationCase.isPending) {
     return <p className="text-muted-foreground">Loading the case…</p>
@@ -82,6 +103,7 @@ export function ConsultationCasePage() {
     cancellation,
     canCancel,
     canBook,
+    notes,
   } = consultationCase.data
   const hasAppointment =
     upcomingAppointments.length > 0 || pastAppointments.length > 0
@@ -100,9 +122,7 @@ export function ConsultationCasePage() {
         {cancellation ? (
           <Term label="Status">
             Cancelled on {formatDateTime(cancellation.cancelledAt)}{' '}
-            <span className="font-normal text-muted-foreground">
-              (Zurich time)
-            </span>
+            <ZurichTime />
             <span className="block font-normal">
               {cancelledCaseRefundText(cancellation, purchaseTerms.pricePaid)}
             </span>
@@ -122,10 +142,7 @@ export function ConsultationCasePage() {
           before a session
         </Term>
         <Term label="Bought">
-          {formatDateTime(purchasedAt)}{' '}
-          <span className="font-normal text-muted-foreground">
-            (Zurich time)
-          </span>
+          {formatDateTime(purchasedAt)} <ZurichTime />
         </Term>
       </dl>
       {/* A cancelled case has no actions, but the booking dialog stays mounted: a tab that booked on it shows
@@ -155,7 +172,7 @@ export function ConsultationCasePage() {
         <section className="space-y-4">
           <h2 className="text-xl font-semibold">Your expert</h2>
           <div className="flex gap-4">
-            <ImagePlaceholder className="size-20 shrink-0 rounded-full" />
+            <ExpertPhoto photoId={expert.photoId} className="size-20" />
             <div className="space-y-1">
               <h3 className="font-medium">{expert.displayName}</h3>
               <p className="max-w-prose whitespace-pre-line text-muted-foreground">
@@ -168,8 +185,9 @@ export function ConsultationCasePage() {
       {upcomingAppointments.length > 0 && (
         <Appointments title="Upcoming appointments">
           {upcomingAppointments.map((appointment) => (
-            <AppointmentItem key={appointment.id} appointment={appointment}>
+            <AppointmentItem key={appointment.id} {...appointment}>
               {appointment.status === 'CONSUMED' && <Badge>Now</Badge>}
+              <CallLink appointment={appointment} />
               {appointment.canCancel && (
                 <Button
                   variant="outline"
@@ -195,11 +213,23 @@ export function ConsultationCasePage() {
       {pastAppointments.length > 0 && (
         <Appointments title="Past appointments">
           {pastAppointments.map((appointment) => (
-            <AppointmentItem key={appointment.id} appointment={appointment}>
+            <AppointmentItem key={appointment.id} {...appointment}>
               <Badge variant="secondary">Consumed</Badge>
             </AppointmentItem>
           ))}
         </Appointments>
+      )}
+      {notes.length > 0 && (
+        <section className="space-y-4">
+          <h2 className="text-xl font-semibold">
+            Notes from your expert <ZurichTime className="text-base" />
+          </h2>
+          <ul className="space-y-3">
+            {notes.map((note) => (
+              <NoteCard key={note.id} note={note} />
+            ))}
+          </ul>
+        </section>
       )}
       <CancelAppointmentDialog
         consultationCase={consultationCase.data}
@@ -228,49 +258,29 @@ function BackToMyPurchases() {
   )
 }
 
-function Term({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div>
-      <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="font-medium">{children}</dd>
-    </div>
-  )
-}
-
-/** A list of appointments, with "(Zurich time)" once, next to its heading. */
-function Appointments({
-  title,
-  children,
-}: {
-  title: string
-  children: ReactNode
-}) {
-  return (
-    <section className="space-y-4">
-      <h2 className="text-xl font-semibold">
-        {title}{' '}
-        <span className="text-base font-normal text-muted-foreground">
-          (Zurich time)
-        </span>
-      </h2>
-      <ul className="space-y-2">{children}</ul>
-    </section>
-  )
-}
-
-function AppointmentItem({
+/**
+ * UC-10 for the customer: **Join** inside the link window, otherwise when it opens, with or without a link at the
+ * expert; inside it without a link, that there's none yet (spec 06, decision 10).
+ */
+function CallLink({
   appointment,
-  children,
 }: {
-  appointment: CustomerAppointment
-  children: ReactNode
+  appointment: CustomerUpcomingAppointment
 }) {
-  return (
-    <li className="flex items-center gap-3">
-      <span className="font-medium">
-        {formatDateAndTimes(appointment.start, appointment.end)}
+  if (!appointment.linkWindowOpen) {
+    return (
+      <span className="text-muted-foreground">
+        The link will be available from{' '}
+        {formatTime(appointment.linkAvailableFrom)} (Zurich time).
       </span>
-      {children}
-    </li>
-  )
+    )
+  }
+  if (!appointment.teamsLink) {
+    return (
+      <span className="text-muted-foreground">
+        The meeting link has not been provided yet.
+      </span>
+    )
+  }
+  return <JoinButton teamsLink={appointment.teamsLink} />
 }
