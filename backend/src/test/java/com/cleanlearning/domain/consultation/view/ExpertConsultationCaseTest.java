@@ -16,6 +16,7 @@ import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import com.cleanlearning.domain.offering.value.OfferingName;
 import com.cleanlearning.domain.offering.value.SessionCount;
 import com.cleanlearning.domain.offering.value.SessionDuration;
+import com.cleanlearning.domain.user.value.TeamsLink;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -71,6 +72,15 @@ class ExpertConsultationCaseTest {
       List<CancelledAppointment> cancelled,
       List<Note> notes,
       Instant asOf) {
+    return consultationCase(booked, cancelled, notes, Optional.empty(), asOf);
+  }
+
+  private static ExpertConsultationCase consultationCase(
+      List<Appointment> booked,
+      List<CancelledAppointment> cancelled,
+      List<Note> notes,
+      Optional<TeamsLink> teamsLink,
+      Instant asOf) {
     return new ExpertConsultationCase(
         CASE,
         "Customer 1",
@@ -82,6 +92,7 @@ class ExpertConsultationCaseTest {
         new CaseCredits(new SessionCount(5), booked, cancelled),
         Optional.empty(),
         notes,
+        teamsLink,
         asOf);
   }
 
@@ -194,5 +205,24 @@ class ExpertConsultationCaseTest {
   @Test
   void aCaseWithoutNotesHasAnEmptyList() {
     assertThat(consultationCase(List.of(), List.of(), NOW).notes()).isEmpty();
+  }
+
+  /** UC-10, D-19: the expert's own link, at any time, which every upcoming appointment uses. */
+  @Test
+  void holdsTheExpertsOwnLinkAtAnyTime() {
+    TeamsLink link = new TeamsLink("https://example.com/meet/expert-2");
+
+    for (Instant asOf : List.of(NOW, TUESDAY.start(), TUESDAY.end())) {
+      assertThat(
+              consultationCase(List.of(TUESDAY), List.of(), List.of(), Optional.of(link), asOf)
+                  .teamsLink())
+          .contains(link);
+    }
+  }
+
+  /** Spec 06, decision 10: an expert without a link yet. */
+  @Test
+  void anExpertWithoutALinkHasNone() {
+    assertThat(consultationCase(List.of(TUESDAY), List.of(), NOW).teamsLink()).isEmpty();
   }
 }

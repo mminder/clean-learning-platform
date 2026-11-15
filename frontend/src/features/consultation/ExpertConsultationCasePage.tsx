@@ -11,6 +11,7 @@ import {
   useExpertConsultationCase,
   type ExpertNote,
 } from './expert-queries'
+import { JoinButton } from './JoinButton'
 import { NoteCard } from './NoteCard'
 import { NoteDialog } from './NoteDialog'
 
@@ -20,8 +21,9 @@ import { NoteDialog } from './NoteDialog'
  * appointments in Zurich time. A cancelled case says when it was cancelled in place of the credits, without its refund
  * outcome (spec 06, decision 4). The server decides the lists and each appointment's status: a running one is among the
  * upcoming ones with "Now" (decision 2), and the cancelled ones are a list of their own (decision 14). Another expert's
- * case is "Case not found", like an unknown one. Below them, the notes, newest first, each with its visibility, **Edit**
- * and **Delete**, and **Add note** (UC-15).
+ * case is "Case not found", like an unknown one. Each upcoming appointment has **Join** with the expert's own Teams
+ * link, at any time, or asks for one on **Profile** (UC-10, spec 06, decision 10). Below them, the notes, newest first,
+ * each with its visibility, **Edit** and **Delete**, and **Add note** (UC-15).
  */
 export function ExpertConsultationCasePage() {
   // The route /expert/cases/:id always has an id.
@@ -69,6 +71,7 @@ export function ExpertConsultationCasePage() {
     pastAppointments,
     cancelledAppointments,
     notes,
+    teamsLink,
   } = consultationCase.data
   return (
     <article className="space-y-8">
@@ -110,6 +113,17 @@ export function ExpertConsultationCasePage() {
           {upcomingAppointments.map((appointment) => (
             <AppointmentItem key={appointment.id} {...appointment}>
               {appointment.status === 'CONSUMED' && <Badge>Now</Badge>}
+              {teamsLink ? (
+                <JoinButton teamsLink={teamsLink} />
+              ) : (
+                <span className="text-muted-foreground">
+                  Add your Teams link in{' '}
+                  <Link to="/expert/profile" className="underline">
+                    your profile
+                  </Link>
+                  .
+                </span>
+              )}
             </AppointmentItem>
           ))}
         </Appointments>
@@ -277,7 +291,7 @@ function AppointmentItem({
   children: ReactNode
 }) {
   return (
-    <li className="flex items-center gap-3">
+    <li className="flex flex-wrap items-center gap-3">
       <span className="font-medium">{formatDateAndTimes(start, end)}</span>
       {children}
     </li>

@@ -1,6 +1,7 @@
 package com.cleanlearning.api.consultation.response;
 
 import com.cleanlearning.domain.consultation.view.ExpertConsultationCase;
+import com.cleanlearning.domain.user.value.TeamsLink;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -10,7 +11,8 @@ import org.jspecify.annotations.Nullable;
  * The case as its assigned expert sees it: the terms without the price paid, and {@code
  * cancelledAt} without the refund outcome (D-18); {@code cancelledAt} is {@code null} for an active
  * case. The server computes the lists and the statuses. The notes are every note, private and
- * public, newest first.
+ * public, newest first. {@code teamsLink} is the expert's own, for every upcoming appointment, or
+ * {@code null} without one (UC-10).
  */
 public record ExpertConsultationCaseResponse(
     UUID id,
@@ -27,7 +29,8 @@ public record ExpertConsultationCaseResponse(
     List<ExpertAppointmentResponse> upcomingAppointments,
     List<ExpertAppointmentResponse> pastAppointments,
     List<ExpertCancelledAppointmentResponse> cancelledAppointments,
-    List<ExpertNoteResponse> notes) {
+    List<ExpertNoteResponse> notes,
+    @Nullable String teamsLink) {
 
   public static ExpertConsultationCaseResponse from(ExpertConsultationCase consultationCase) {
     return new ExpertConsultationCaseResponse(
@@ -49,6 +52,7 @@ public record ExpertConsultationCaseResponse(
         consultationCase.cancelledAppointments().stream()
             .map(ExpertCancelledAppointmentResponse::from)
             .toList(),
-        consultationCase.notes().stream().map(ExpertNoteResponse::from).toList());
+        consultationCase.notes().stream().map(ExpertNoteResponse::from).toList(),
+        consultationCase.teamsLink().map(TeamsLink::value).orElse(null));
   }
 }

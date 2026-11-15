@@ -456,7 +456,8 @@ class ExpertConsultationCaseControllerTest {
               "cancelledAppointments": [
                 { "id": "%s", "start": "2026-11-12T09:00:00Z", "end": "2026-11-12T10:00:00Z", "creditRefunded": false }
               ],
-              "notes": []
+              "notes": [],
+              "teamsLink": null
             }
             """
                 .formatted(caseId, upcoming, consumed, late));

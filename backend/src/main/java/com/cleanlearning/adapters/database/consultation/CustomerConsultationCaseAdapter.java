@@ -21,6 +21,7 @@ import com.cleanlearning.domain.offering.value.SessionDuration;
 import com.cleanlearning.domain.shared.value.Money;
 import com.cleanlearning.domain.user.ExpertProfile;
 import com.cleanlearning.domain.user.value.DisplayName;
+import com.cleanlearning.domain.user.value.TeamsLink;
 import com.cleanlearning.domain.user.value.UserId;
 import java.time.Instant;
 import java.util.List;
@@ -93,6 +94,7 @@ class CustomerConsultationCaseAdapter
             new CancellationDeadline(row.cancellationDeadlineHours())),
         row.purchasedAt(),
         assignedExpert(row),
+        Optional.ofNullable(row.expertTeamsLink()).map(TeamsLink::new),
         ConsultationCaseMapper.toCaseCredits(row.sessionCount(), appointments),
         cancellation(row),
         notes,

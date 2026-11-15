@@ -7,6 +7,7 @@ import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import com.cleanlearning.domain.offering.value.OfferingName;
 import com.cleanlearning.domain.offering.value.SessionDuration;
+import com.cleanlearning.domain.user.value.TeamsLink;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
@@ -19,7 +20,8 @@ import java.util.Optional;
  * the session count in its credits, but not the price paid; of a cancellation only its time, not
  * the refund outcome (D-18). Unlike the customer, the expert sees the cancelled appointments
  * (D-12), and every note, private and public, newest first, in the order the adapter loads them
- * (UC-15). The customer's name and email are {@code String}s, as on {@code User}.
+ * (UC-15). The customer's name and email are {@code String}s, as on {@code User}. The Teams link is
+ * the expert's own, at any time: every upcoming appointment has it (UC-10, D-19).
  */
 public record ExpertConsultationCase(
     ConsultationCaseId id,
@@ -32,6 +34,7 @@ public record ExpertConsultationCase(
     CaseCredits credits,
     Optional<Instant> cancelledAt,
     List<Note> notes,
+    Optional<TeamsLink> teamsLink,
     Instant asOf) {
 
   /** Ties break by id as text, which is Postgres's order of a uuid. */
@@ -51,6 +54,7 @@ public record ExpertConsultationCase(
     Objects.requireNonNull(credits, "credits");
     Objects.requireNonNull(cancelledAt, "cancelledAt");
     notes = List.copyOf(notes);
+    Objects.requireNonNull(teamsLink, "teamsLink");
     Objects.requireNonNull(asOf, "asOf");
   }
 

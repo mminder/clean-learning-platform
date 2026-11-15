@@ -13,4 +13,5 @@ public record ExpertConsultationCaseRow(
     int sessionDurationMinutes,
     int cancellationDeadlineHours,
     Instant purchasedAt,
-    @Nullable Instant cancelledAt) {}
+    @Nullable Instant cancelledAt,
+    @Nullable String teamsLink) {}

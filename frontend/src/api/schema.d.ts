@@ -627,9 +627,13 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
+            linkAvailableFrom: string;
+            linkWindowOpen: boolean;
+            /** Format: date-time */
             start: string;
             /** @enum {string} */
             status: "BOOKED" | "CONSUMED";
+            teamsLink?: string | null;
         };
         DeadlinePassedAppointmentResponse: {
             /** Format: date-time */
@@ -687,6 +691,7 @@ export interface components {
             sessionCount: number;
             /** Format: int32 */
             sessionDurationMinutes: number;
+            teamsLink?: string | null;
             /** Format: int32 */
             totalCredits: number;
             upcomingAppointments: components["schemas"]["ExpertAppointmentResponse"][];

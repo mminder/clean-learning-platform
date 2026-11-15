@@ -2,6 +2,7 @@ package com.cleanlearning.domain.consultation.view;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.tuple;
 
 import com.cleanlearning.domain.consultation.Appointment;
 import com.cleanlearning.domain.consultation.CancelledAppointment;
@@ -23,6 +24,7 @@ import com.cleanlearning.domain.offering.value.SessionDuration;
 import com.cleanlearning.domain.shared.value.Money;
 import com.cleanlearning.domain.user.ExpertProfile;
 import com.cleanlearning.domain.user.value.DisplayName;
+import com.cleanlearning.domain.user.value.TeamsLink;
 import com.cleanlearning.domain.user.value.UserId;
 import java.time.Instant;
 import java.util.List;
@@ -102,6 +104,7 @@ class CustomerConsultationCaseTest {
             new CancellationDeadline(24)),
         Instant.parse("2026-11-09T14:03:12.345Z"),
         expert,
+        Optional.empty(),
         credits(sessionCount, appointments, forfeitedCredits),
         cancellation,
         notes,
@@ -280,6 +283,8 @@ class CustomerConsultationCaseTest {
   @Test
   void anUpcomingAppointmentCarriesItsCancellationPreview() {
     Instant freeUntil = Instant.parse("2026-11-16T09:00:00Z");
+    // Tue 17 Nov 2026, 09:00 in Zurich: one hour before the start
+    Instant linkFrom = Instant.parse("2026-11-17T08:00:00Z");
 
     assertThat(
             withAppointments(List.of(TUESDAY), Instant.parse("2026-11-15T11:00:00Z"))
@@ -289,17 +294,67 @@ class CustomerConsultationCaseTest {
                 CustomerAppointment.of(TUESDAY, Instant.parse("2026-11-15T11:00:00Z")),
                 true,
                 freeUntil,
-                true));
+                true,
+                linkFrom,
+                false,
+                Optional.empty()));
     // at the deadline: late
     assertThat(withAppointments(List.of(TUESDAY), freeUntil).upcomingAppointments())
         .containsExactly(
             new CustomerUpcomingAppointment(
-                CustomerAppointment.of(TUESDAY, freeUntil), true, freeUntil, false));
-    // running: consumed, and it can't be cancelled
+                CustomerAppointment.of(TUESDAY, freeUntil),
+                true,
+                freeUntil,
+                false,
+                linkFrom,
+                false,
+                Optional.empty()));
+    // running: consumed, and it can't be cancelled; the expert has no link
     assertThat(withAppointments(List.of(TUESDAY), TUESDAY.start()).upcomingAppointments())
         .containsExactly(
             new CustomerUpcomingAppointment(
-                CustomerAppointment.of(TUESDAY, TUESDAY.start()), false, freeUntil, false));
+                CustomerAppointment.of(TUESDAY, TUESDAY.start()),
+                false,
+                freeUntil,
+                false,
+                linkFrom,
+                true,
+                Optional.empty()));
+  }
+
+  /**
+   * UC-10, D-19: each upcoming appointment has the assigned expert's Teams link inside its own link
+   * window only, so at 10:30 on Tuesday the running one has it and Wednesday's doesn't.
+   */
+  @Test
+  void anUpcomingAppointmentHasTheExpertsLinkInsideItsWindowOnly() {
+    TeamsLink link = new TeamsLink("https://example.com/meet/expert-2");
+    CustomerConsultationCase consultationCase =
+        new CustomerConsultationCase(
+            CASE,
+            new OfferingName("Career Coaching"),
+            Optional.empty(),
+            new PurchaseTerms(
+                Money.chf("450.00"),
+                new SessionCount(3),
+                new SessionDuration(60),
+                new CancellationDeadline(24)),
+            Instant.parse("2026-11-09T14:03:12.345Z"),
+            Optional.of(EXPERT_2),
+            Optional.of(link),
+            credits(3, List.of(MONDAY, TUESDAY, WEDNESDAY), 0),
+            Optional.empty(),
+            List.of(),
+            Instant.parse("2026-11-17T09:30:00Z"));
+
+    assertThat(consultationCase.upcomingAppointments())
+        .extracting(
+            upcoming -> upcoming.appointment().id(),
+            CustomerUpcomingAppointment::linkWindowOpen,
+            CustomerUpcomingAppointment::teamsLink)
+        .containsExactly(
+            tuple(TUESDAY.id(), true, Optional.of(link)),
+            tuple(WEDNESDAY.id(), false, Optional.empty()));
   }
 
   @Test
@@ -316,6 +371,7 @@ class CustomerConsultationCaseTest {
                 new CancellationDeadline(72)),
             Instant.parse("2026-11-09T14:03:12.345Z"),
             Optional.of(EXPERT_2),
+            Optional.empty(),
             credits(3, List.of(TUESDAY), 0),
             Optional.empty(),
             List.of(),
@@ -345,6 +401,7 @@ class CustomerConsultationCaseTest {
                     new SessionDuration(60),
                     new CancellationDeadline(24)),
                 Instant.parse("2026-11-09T14:03:12.345Z"),
+                Optional.empty(),
                 Optional.empty(),
                 credits(2, List.of(), 0),
                 Optional.empty(),

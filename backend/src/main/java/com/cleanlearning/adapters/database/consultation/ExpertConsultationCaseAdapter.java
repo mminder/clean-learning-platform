@@ -13,6 +13,7 @@ import com.cleanlearning.domain.consultation.view.ExpertConsultationCaseSummary;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
 import com.cleanlearning.domain.offering.value.OfferingName;
 import com.cleanlearning.domain.offering.value.SessionDuration;
+import com.cleanlearning.domain.user.value.TeamsLink;
 import com.cleanlearning.domain.user.value.UserId;
 import java.time.Instant;
 import java.util.List;
@@ -80,6 +81,7 @@ class ExpertConsultationCaseAdapter
         ConsultationCaseMapper.toCaseCredits(row.sessionCount(), appointments),
         Optional.ofNullable(row.cancelledAt()),
         notes,
+        Optional.ofNullable(row.teamsLink()).map(TeamsLink::new),
         asOf);
   }
 

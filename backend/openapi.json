@@ -2269,6 +2269,13 @@
             "type" : "string",
             "format" : "uuid"
           },
+          "linkAvailableFrom" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "linkWindowOpen" : {
+            "type" : "boolean"
+          },
           "start" : {
             "type" : "string",
             "format" : "date-time"
@@ -2276,9 +2283,12 @@
           "status" : {
             "type" : "string",
             "enum" : [ "BOOKED", "CONSUMED" ]
+          },
+          "teamsLink" : {
+            "type" : [ "string", "null" ]
           }
         },
-        "required" : [ "canCancel", "creditRefundedIfCancelledNow", "end", "freeCancellationUntil", "id", "start", "status" ]
+        "required" : [ "canCancel", "creditRefundedIfCancelledNow", "end", "freeCancellationUntil", "id", "linkAvailableFrom", "linkWindowOpen", "start", "status" ]
       },
       "DeadlinePassedAppointmentResponse" : {
         "type" : "object",
@@ -2418,6 +2428,9 @@
           "sessionDurationMinutes" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "teamsLink" : {
+            "type" : [ "string", "null" ]
           },
           "totalCredits" : {
             "type" : "integer",

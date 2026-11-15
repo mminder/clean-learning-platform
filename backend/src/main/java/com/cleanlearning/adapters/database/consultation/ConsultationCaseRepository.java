@@ -21,14 +21,16 @@ interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, 
 
   /**
    * In every status of the offering: an archived offering's cases keep working. Scoped to the
-   * customer in SQL, so another customer's case isn't found.
+   * customer in SQL, so another customer's case isn't found. The assigned expert's Teams link is
+   * read for the link window alone: the domain hands it to an upcoming appointment only inside it
+   * (D-19).
    */
   @Query(
       """
       select new com.cleanlearning.adapters.database.consultation.row.CustomerConsultationCaseRow(
           c.id, o.name, o.imageId, c.pricePaid, c.sessionCount, c.sessionDurationMinutes,
-          c.cancellationDeadlineHours, c.purchasedAt, p.userId, p.displayName, p.bio, p.photoId, c.status,
-          c.cancelledAt, c.refundEligible)
+          c.cancellationDeadlineHours, c.purchasedAt, p.userId, p.displayName, p.bio, p.photoId,
+          p.teamsLink, c.status, c.cancelledAt, c.refundEligible)
       from ConsultationCaseEntity c
       join OfferingEntity o on o.id = c.consultationOfferingId
       left join ExpertProfileEntity p on p.userId = c.assignedExpertId
@@ -66,16 +68,17 @@ interface ConsultationCaseRepository extends Repository<ConsultationCaseEntity, 
   /**
    * In every status of the offering and of the case. Scoped to the assigned expert in SQL, so
    * another expert's case and a case without an expert aren't found. No price paid and no refund
-   * outcome (D-18).
+   * outcome (D-18). The Teams link is the expert's own (D-19).
    */
   @Query(
       """
       select new com.cleanlearning.adapters.database.consultation.row.ExpertConsultationCaseRow(
           c.id, u.name, u.email, o.name, c.sessionCount, c.sessionDurationMinutes,
-          c.cancellationDeadlineHours, c.purchasedAt, c.cancelledAt)
+          c.cancellationDeadlineHours, c.purchasedAt, c.cancelledAt, p.teamsLink)
       from ConsultationCaseEntity c
       join OfferingEntity o on o.id = c.consultationOfferingId
       join UserEntity u on u.id = c.customerId
+      left join ExpertProfileEntity p on p.userId = c.assignedExpertId
       where c.id = :id and c.assignedExpertId = :expertId
       """)
   Optional<ExpertConsultationCaseRow> findExpertCase(UUID id, UUID expertId);
