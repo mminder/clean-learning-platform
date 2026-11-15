@@ -1,8 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { client } from '@/api/client'
 import type { components } from '@/api/schema'
 import { ApiError, isNotFound } from '@/lib/api-error'
 import { problemOf } from '@/lib/problem'
+import { expertConsultationCasesKey, useReloadCases } from './case-keys'
 
 export type ExpertConsultationCaseSummary =
   components['schemas']['ExpertConsultationCaseSummaryResponse']
@@ -10,9 +11,6 @@ export type ExpertConsultationCaseSummary =
 export type ExpertNote = components['schemas']['ExpertNoteResponse']
 
 export type NoteRequest = components['schemas']['NoteRequest']
-
-// The list's key is the prefix of the detail keys, as the customer's is.
-const expertConsultationCasesKey = ['expert', 'consultation-cases']
 
 /** The cases the current user is the assigned expert of, in the order of My cases, each with its group (UC-11). */
 export function useExpertConsultationCases() {
@@ -55,21 +53,8 @@ export function useExpertConsultationCase(id: string) {
   })
 }
 
-/**
- * After a note's save or delete, and after a 404, which comes from a note deleted meanwhile (spec 06, decision 7), the
- * cases reload: the expert's, and the customer's, since an expert who is the case's customer has both pages. A
- * mutation stays pending until the queries on the screen have reloaded.
- */
-function useReloadCases() {
-  const queryClient = useQueryClient()
-  return () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: expertConsultationCasesKey }),
-      queryClient.invalidateQueries({
-        queryKey: ['customer', 'consultation-cases'],
-      }),
-    ])
-}
+// After a note's save or delete, and after a 404, which comes from a note deleted meanwhile (spec 06, decision 7), the
+// cases of both audiences reload.
 
 /** Writes a note on the case (UC-15 steps 1–3), and answers it. */
 export function useAddNote(caseId: string) {

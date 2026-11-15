@@ -1,11 +1,11 @@
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { isBadRequest, isNotFound } from '@/lib/api-error'
 import { formatDateTime } from '@/lib/date'
-import { formatDateAndTimes } from './appointment-times'
+import { AppointmentItem, Appointments, Term, ZurichTime } from './CaseParts'
 import {
   useDeleteNote,
   useExpertConsultationCase,
@@ -166,6 +166,12 @@ function Notes({ caseId, notes }: { caseId: string; notes: ExpertNote[] }) {
     note?: ExpertNote
   }>({ open: false })
   const [deleteError, setDeleteError] = useState<string>()
+  const pending = deleteNote.isPending
+
+  function openDialog(note?: ExpertNote) {
+    setDeleteError(undefined)
+    setDialog({ open: true, note })
+  }
 
   async function remove(noteId: string) {
     setDeleteError(undefined)
@@ -184,12 +190,11 @@ function Notes({ caseId, notes }: { caseId: string; notes: ExpertNote[] }) {
     <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-semibold">
-          Notes{' '}
-          <span className="text-base font-normal text-muted-foreground">
-            (Zurich time)
-          </span>
+          Notes <ZurichTime className="text-base" />
         </h2>
-        <Button onClick={() => setDialog({ open: true })}>Add note</Button>
+        <Button disabled={pending} onClick={() => openDialog()}>
+          Add note
+        </Button>
       </div>
       {deleteError !== undefined && (
         <p role="alert" className="text-destructive">
@@ -208,7 +213,8 @@ function Notes({ caseId, notes }: { caseId: string; notes: ExpertNote[] }) {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setDialog({ open: true, note })}
+                disabled={pending}
+                onClick={() => openDialog(note)}
               >
                 Edit
               </Button>
@@ -219,7 +225,7 @@ function Notes({ caseId, notes }: { caseId: string; notes: ExpertNote[] }) {
                 destructive
                 onConfirm={() => void remove(note.id)}
               >
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" disabled={pending}>
                   Delete
                 </Button>
               </ConfirmDialog>
@@ -242,58 +248,5 @@ function BackToMyCases() {
     <Link to="/expert/cases" className="inline-block text-sm underline">
       Back to my cases
     </Link>
-  )
-}
-
-function ZurichTime() {
-  return (
-    <span className="font-normal text-muted-foreground">(Zurich time)</span>
-  )
-}
-
-function Term({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div>
-      <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="font-medium">{children}</dd>
-    </div>
-  )
-}
-
-/** A list of appointments, with "(Zurich time)" once, next to its heading. */
-function Appointments({
-  title,
-  children,
-}: {
-  title: string
-  children: ReactNode
-}) {
-  return (
-    <section className="space-y-4">
-      <h2 className="text-xl font-semibold">
-        {title}{' '}
-        <span className="text-base font-normal text-muted-foreground">
-          (Zurich time)
-        </span>
-      </h2>
-      <ul className="space-y-2">{children}</ul>
-    </section>
-  )
-}
-
-function AppointmentItem({
-  start,
-  end,
-  children,
-}: {
-  start: string
-  end: string
-  children: ReactNode
-}) {
-  return (
-    <li className="flex flex-wrap items-center gap-3">
-      <span className="font-medium">{formatDateAndTimes(start, end)}</span>
-      {children}
-    </li>
   )
 }

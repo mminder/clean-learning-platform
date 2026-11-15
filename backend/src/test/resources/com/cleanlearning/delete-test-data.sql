@@ -2,9 +2,8 @@
 -- poc seed, with its packages and eligible experts, sets the seeded expert profiles back to the seed, and deletes every
 -- image that nothing refers to any more, so a test's data doesn't leak into other tests. Tests that buy, book, write
 -- notes, save availability, write offerings or save an expert profile or its photo run it after each test method
--- (SeedData.DELETE_TEST_DATA). The seed stays: it has no cases,
--- no notes, no appointments and no availability (spec 04, decision 8). The expert profiles are the only seed rows
--- tests change (spec 06, decision 16).
+-- (SeedData.DELETE_TEST_DATA). The seed stays: it has no cases, no notes, no appointments and no availability
+-- (spec 04, decision 8). The expert profiles are the only seed rows tests change (spec 06, decision 16).
 
 -- Notes and appointments first: they refer to the cases.
 delete from note;

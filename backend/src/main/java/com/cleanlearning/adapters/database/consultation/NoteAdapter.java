@@ -59,6 +59,9 @@ class NoteAdapter implements CheckAssignedExpertPort, LoadNotePort, SaveNotePort
   @Override
   public void update(Note note) {
     NoteEntity entity = entityManager.find(NoteEntity.class, note.id().value());
+    if (entity == null) {
+      throw new IllegalStateException("Note " + note.id().value() + " doesn't exist.");
+    }
     entity.setTitle(note.title().value());
     entity.setText(note.text().value());
     entity.setVisibility(note.visibility());

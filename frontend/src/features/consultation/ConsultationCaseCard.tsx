@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { formatDate } from '@/lib/date'
-import { formatDateAndTimes } from './appointment-times'
+import { CaseCardState } from './CaseParts'
 import type { CustomerConsultationCaseSummary } from './queries'
 
 /**
@@ -22,7 +22,6 @@ export function ConsultationCaseCard({
 }: {
   consultationCase: CustomerConsultationCaseSummary
 }) {
-  const next = consultationCase.nextAppointment
   return (
     // The title's link stretches over the whole card, so a click anywhere opens the case.
     <Card className="relative w-full overflow-hidden pt-0 transition-shadow focus-within:ring-2 focus-within:ring-ring hover:shadow-md">
@@ -46,22 +45,7 @@ export function ConsultationCaseCard({
         </CardDescription>
       </CardHeader>
       <CardFooter className="mt-auto flex-col items-start gap-1 text-sm">
-        {consultationCase.cancelledAt ? (
-          <p className="font-medium">Cancelled</p>
-        ) : (
-          <>
-            {next && (
-              <p className="font-medium">
-                {next.status === 'CONSUMED' ? 'Now' : 'Next'}:{' '}
-                {formatDateAndTimes(next.start, next.end)}
-              </p>
-            )}
-            <p className="font-medium">
-              {consultationCase.openCredits} of {consultationCase.totalCredits}{' '}
-              credits open
-            </p>
-          </>
-        )}
+        <CaseCardState consultationCase={consultationCase} />
         <p className="text-muted-foreground">
           Bought {formatDate(consultationCase.purchasedAt)}
         </p>

@@ -307,7 +307,7 @@ No new shadcn component: the note's dialog uses `dialog`, `textarea` and `radio-
 | Part | Content | Task |
 |---|---|---|
 | Heading | a link back to **My cases**; the customer's name as the title; the email as a `mailto:` link; the offering's name | 02 |
-| Terms | "3 sessions", "60 minutes per session", "Free cancellation up to 24 h before a session", "Bought 9 Nov 2026, 15:00 (Zurich time)", worded as on the customer's case; no price | 02 |
+| Terms | "3 sessions", "60 minutes per session", "Free cancellation up to 24 h before a session", "Bought 9 Nov 2026, 15:00 (Zurich time)"; no price | 02 |
 | Credits | "2 of 3 credits open"; a cancelled case says instead "Cancelled on 15 Nov 2026, 12:00 (Zurich time)", without a refund outcome | 02 |
 | Upcoming appointments | soonest first; a running one says "Now" | 02 |
 | | each with **Join**, or "Add your Teams link in your profile." with a link to **Profile** | 07 |

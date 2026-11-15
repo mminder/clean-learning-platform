@@ -33,7 +33,8 @@ const NOTE_GONE = 'This note no longer exists.'
  * case reloads (spec 06, decision 7).
  *
  * The page renders it once and keeps the note it was opened for. The form unmounts when the dialog closes, so each
- * opening starts from the note's saved values.
+ * opening starts from the note's saved values. It doesn't close while a save runs, nor on an outside click, so a save
+ * can't close a dialog reopened on another note, and a click beside it doesn't discard a typed note.
  */
 export function NoteDialog({
   caseId,
@@ -46,14 +47,23 @@ export function NoteDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
+  const [saving, setSaving] = useState(false)
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    // While a save runs, Escape, the X and Cancel don't close the dialog, and an outside click never does.
+    <Dialog
+      open={open}
+      onOpenChange={(next) => (saving ? undefined : onOpenChange(next))}
+    >
       {/* The form has no description; a note that's gone states it with role="alert". */}
-      <DialogContent aria-describedby={undefined}>
+      <DialogContent
+        aria-describedby={undefined}
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <NoteForm
           key={note?.id ?? 'new'}
           caseId={caseId}
           note={note}
+          onSavingChange={setSaving}
           onSaved={() => onOpenChange(false)}
         />
       </DialogContent>
@@ -64,10 +74,12 @@ export function NoteDialog({
 function NoteForm({
   caseId,
   note,
+  onSavingChange,
   onSaved,
 }: {
   caseId: string
   note: ExpertNote | undefined
+  onSavingChange: (saving: boolean) => void
   onSaved: () => void
 }) {
   const addNote = useAddNote(caseId)
@@ -90,6 +102,7 @@ function NoteForm({
 
   async function save(values: NoteRequest) {
     setFormError(undefined)
+    onSavingChange(true)
     try {
       if (note === undefined) {
         await addNote.mutateAsync(values)
@@ -103,6 +116,8 @@ function NoteForm({
         setFormError(showSaveError(error, setError))
       }
       return
+    } finally {
+      onSavingChange(false)
     }
     onSaved()
   }
@@ -172,7 +187,7 @@ function NoteForm({
       </div>
       <DialogFooter>
         <DialogClose asChild>
-          <Button type="button" variant="outline">
+          <Button type="button" variant="outline" disabled={isSubmitting}>
             Cancel
           </Button>
         </DialogClose>

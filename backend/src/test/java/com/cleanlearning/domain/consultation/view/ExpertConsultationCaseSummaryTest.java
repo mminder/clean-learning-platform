@@ -98,6 +98,24 @@ class ExpertConsultationCaseSummaryTest {
   }
 
   @Test
+  void aCancelledCaseIsPastAndHasNoNextAppointment() {
+    ConsultationCaseId id = new ConsultationCaseId(UUID.randomUUID());
+    ExpertConsultationCaseSummary summary =
+        new ExpertConsultationCaseSummary(
+            new CaseInList(
+                id,
+                Instant.parse("2026-11-09T13:03:12.345Z"),
+                Optional.of(NOW),
+                new CaseCredits(new SessionCount(3), List.of(), List.of())),
+            "Customer 1",
+            new OfferingName("Career Coaching"),
+            NOW);
+
+    assertThat(summary.group()).isEqualTo(PurchaseGroup.PAST);
+    assertThat(summary.nextAppointment()).isEmpty();
+  }
+
+  @Test
   void aCaseWithAPastAppointmentAndOpenCreditsHasNoNextAppointmentAndNeedsBooking() {
     ExpertConsultationCaseSummary summary = summary(3, END, START);
 

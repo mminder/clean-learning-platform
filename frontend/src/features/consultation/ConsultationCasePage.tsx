@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { cn } from 'cn'
 import { ExpertPhoto } from '@/components/ExpertPhoto'
@@ -8,19 +8,18 @@ import { Button } from '@/components/ui/button'
 import { isBadRequest, isNotFound } from '@/lib/api-error'
 import { formatDateTime, formatTime } from '@/lib/date'
 import { formatMoney } from '@/lib/money'
-import { formatDateAndTimes } from './appointment-times'
 import { BookAppointmentDialog } from './BookAppointmentDialog'
 import {
   CancelAppointmentDialog,
   type AppointmentToCancel,
 } from './CancelAppointmentDialog'
 import { CancelCaseDialog } from './CancelCaseDialog'
+import { AppointmentItem, Appointments, Term, ZurichTime } from './CaseParts'
 import { JoinButton } from './JoinButton'
 import { msUntilLinkWindowReload } from './link-window-reload'
 import { NoteCard } from './NoteCard'
 import {
   useCustomerConsultationCase,
-  type CustomerAppointment,
   type CustomerUpcomingAppointment,
 } from './queries'
 import { cancelledCaseRefundText } from './refund-texts'
@@ -123,9 +122,7 @@ export function ConsultationCasePage() {
         {cancellation ? (
           <Term label="Status">
             Cancelled on {formatDateTime(cancellation.cancelledAt)}{' '}
-            <span className="font-normal text-muted-foreground">
-              (Zurich time)
-            </span>
+            <ZurichTime />
             <span className="block font-normal">
               {cancelledCaseRefundText(cancellation, purchaseTerms.pricePaid)}
             </span>
@@ -145,10 +142,7 @@ export function ConsultationCasePage() {
           before a session
         </Term>
         <Term label="Bought">
-          {formatDateTime(purchasedAt)}{' '}
-          <span className="font-normal text-muted-foreground">
-            (Zurich time)
-          </span>
+          {formatDateTime(purchasedAt)} <ZurichTime />
         </Term>
       </dl>
       {/* A cancelled case has no actions, but the booking dialog stays mounted: a tab that booked on it shows
@@ -191,7 +185,7 @@ export function ConsultationCasePage() {
       {upcomingAppointments.length > 0 && (
         <Appointments title="Upcoming appointments">
           {upcomingAppointments.map((appointment) => (
-            <AppointmentItem key={appointment.id} appointment={appointment}>
+            <AppointmentItem key={appointment.id} {...appointment}>
               {appointment.status === 'CONSUMED' && <Badge>Now</Badge>}
               <CallLink appointment={appointment} />
               {appointment.canCancel && (
@@ -219,7 +213,7 @@ export function ConsultationCasePage() {
       {pastAppointments.length > 0 && (
         <Appointments title="Past appointments">
           {pastAppointments.map((appointment) => (
-            <AppointmentItem key={appointment.id} appointment={appointment}>
+            <AppointmentItem key={appointment.id} {...appointment}>
               <Badge variant="secondary">Consumed</Badge>
             </AppointmentItem>
           ))}
@@ -228,10 +222,7 @@ export function ConsultationCasePage() {
       {notes.length > 0 && (
         <section className="space-y-4">
           <h2 className="text-xl font-semibold">
-            Notes from your expert{' '}
-            <span className="text-base font-normal text-muted-foreground">
-              (Zurich time)
-            </span>
+            Notes from your expert <ZurichTime className="text-base" />
           </h2>
           <ul className="space-y-3">
             {notes.map((note) => (
@@ -292,51 +283,4 @@ function CallLink({
     )
   }
   return <JoinButton teamsLink={appointment.teamsLink} />
-}
-
-function Term({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div>
-      <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="font-medium">{children}</dd>
-    </div>
-  )
-}
-
-/** A list of appointments, with "(Zurich time)" once, next to its heading. */
-function Appointments({
-  title,
-  children,
-}: {
-  title: string
-  children: ReactNode
-}) {
-  return (
-    <section className="space-y-4">
-      <h2 className="text-xl font-semibold">
-        {title}{' '}
-        <span className="text-base font-normal text-muted-foreground">
-          (Zurich time)
-        </span>
-      </h2>
-      <ul className="space-y-2">{children}</ul>
-    </section>
-  )
-}
-
-function AppointmentItem({
-  appointment,
-  children,
-}: {
-  appointment: CustomerAppointment
-  children: ReactNode
-}) {
-  return (
-    <li className="flex flex-wrap items-center gap-3">
-      <span className="font-medium">
-        {formatDateAndTimes(appointment.start, appointment.end)}
-      </span>
-      {children}
-    </li>
-  )
 }
