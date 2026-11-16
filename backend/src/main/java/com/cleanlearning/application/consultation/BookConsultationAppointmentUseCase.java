@@ -3,10 +3,11 @@ package com.cleanlearning.application.consultation;
 import com.cleanlearning.application.availability.port.LoadAvailabilityPort;
 import com.cleanlearning.application.consultation.port.LoadBusyTimesPort;
 import com.cleanlearning.application.consultation.port.LoadCustomerBusyTimesPort;
-import com.cleanlearning.application.consultation.port.LockCaseForBookingPort;
+import com.cleanlearning.application.consultation.port.LoadEligibleExpertsPort;
+import com.cleanlearning.application.consultation.port.LockConsultationCasePort;
 import com.cleanlearning.application.consultation.port.SaveBookingPort;
 import com.cleanlearning.application.user.port.LockExpertPort;
-import com.cleanlearning.domain.consultation.CaseForBooking;
+import com.cleanlearning.domain.consultation.ConsultationCase;
 import com.cleanlearning.domain.consultation.SlotFinder;
 import com.cleanlearning.domain.consultation.outcome.Booking;
 import com.cleanlearning.domain.consultation.value.BusyTime;
@@ -15,6 +16,7 @@ import com.cleanlearning.domain.consultation.view.CustomerAppointment;
 import com.cleanlearning.domain.shared.BusinessTimeZone;
 import com.cleanlearning.domain.shared.NotFoundException;
 import com.cleanlearning.domain.user.CurrentUser;
+import com.cleanlearning.domain.user.ExpertProfile;
 import com.cleanlearning.domain.user.value.UserId;
 import java.time.Clock;
 import java.time.Instant;
@@ -34,7 +36,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class BookConsultationAppointmentUseCase {
 
-  private final LockCaseForBookingPort lockCase;
+  private final LockConsultationCasePort lockCase;
+
+  private final LoadEligibleExpertsPort loadEligibleExperts;
 
   private final LockExpertPort lockExpert;
 
@@ -49,7 +53,8 @@ public class BookConsultationAppointmentUseCase {
   private final Clock clock;
 
   BookConsultationAppointmentUseCase(
-      LockCaseForBookingPort lockCase,
+      LockConsultationCasePort lockCase,
+      LoadEligibleExpertsPort loadEligibleExperts,
       LockExpertPort lockExpert,
       LoadAvailabilityPort loadAvailability,
       LoadBusyTimesPort loadBusyTimes,
@@ -57,6 +62,7 @@ public class BookConsultationAppointmentUseCase {
       SaveBookingPort saveBooking,
       Clock clock) {
     this.lockCase = lockCase;
+    this.loadEligibleExperts = loadEligibleExperts;
     this.lockExpert = lockExpert;
     this.loadAvailability = loadAvailability;
     this.loadBusyTimes = loadBusyTimes;
@@ -67,7 +73,7 @@ public class BookConsultationAppointmentUseCase {
 
   @Transactional
   public CustomerAppointment invoke(CurrentUser user, Command command) {
-    CaseForBooking consultationCase =
+    ConsultationCase consultationCase =
         lockCase
             .lock(command.consultationCaseId(), user.id())
             .orElseThrow(() ->
@@ -78,7 +84,9 @@ public class BookConsultationAppointmentUseCase {
     // names.
     consultationCase.requireActive();
     consultationCase.requireOpenCredit();
-    UserId expertId = consultationCase.expertFor(command.expertId());
+    // The offering's, read now and not locked.
+    List<ExpertProfile> eligibleExperts = loadEligibleExperts.load(consultationCase.offeringId());
+    UserId expertId = consultationCase.expertFor(command.expertId(), eligibleExperts);
     // The expert after the case (D-27).
     lockExpert.lock(expertId);
     // The time after waiting for the locks. The customer's own appointments are busy time too.
@@ -90,7 +98,8 @@ public class BookConsultationAppointmentUseCase {
                 loadCustomerBusyTimes.loadCustomerBusyTimes(user.id(), now).stream())
             .toList();
     SlotFinder slotFinder = new SlotFinder(loadAvailability.load(expertId, today), busyTimes);
-    Booking booking = consultationCase.book(expertId, command.start(), slotFinder, now);
+    Booking booking =
+        consultationCase.book(expertId, command.start(), eligibleExperts, slotFinder, now);
     saveBooking.save(booking);
     return CustomerAppointment.of(booking.appointment(), now);
   }

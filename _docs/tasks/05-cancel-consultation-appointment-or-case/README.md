@@ -24,7 +24,7 @@ This plan holds the decisions that several tasks rely on. The tasks link here in
 
 | Task | Touches | Shared with another task |
 |---|---|---|
-| 01 | `V9`; `Appointment`, `CaseForBooking`, `CustomerConsultationCase`, `CustomerConsultationCaseSummary` (forfeited credits), new `CaseForCancellation`, `AppointmentCancellation`, `CustomerUpcomingAppointment`; the adapter, repository and entities; the controller; `ConsultationCasePage`, `CancelAppointmentDialog`, `cancellation-failure.ts`, `queries.ts`; `openapi.json` | – |
+| 01 | `V9`; `Appointment`, `ConsultationCase` (forfeited credits and the cancellation's rules), `CustomerConsultationCase`, `CustomerConsultationCaseSummary` (forfeited credits), new `AppointmentCancellation`, `CustomerUpcomingAppointment`; the adapter, repository and entities; the controller; `ConsultationCasePage`, `CancelAppointmentDialog`, `cancellation-failure.ts`, `queries.ts`; `openapi.json` | – |
 | 02 | new: `RefundEligibility`, `NonRefundableReason`, their tests | – |
 | 04 | the list route: `CustomerConsultationCaseSummary`, its row, query and response; `ConsultationCaseCard`; `openapi.json` | – |
 | 05 | `ConsultationCaseConcurrencyTest` | – |
@@ -38,17 +38,17 @@ Only 01, 03 and 04 change `openapi.json` and `schema.d.ts`, one after the other.
 | Package | Classes | Task |
 |---|---|---|
 | `domain.consultation` | `Appointment` gains the cancellation's rules; `openCredits` takes the forfeited credits | 01 |
-| `domain.consultation` | `CaseForCancellation` (the case as a cancellation needs it; holds UC-07's and UC-08's rules), `AppointmentCancellation` (what cancelling an appointment writes), `CustomerUpcomingAppointment` (an upcoming appointment as its customer sees it, with its cancellation preview); `CaseForBooking`, `CustomerConsultationCase` and `CustomerConsultationCaseSummary` count forfeited credits | 01 |
+| `domain.consultation` | `ConsultationCase`, the case's write model from increment 04, gains UC-07's and UC-08's rules: the booking and both cancellations lock the case and decide with the one model ([D-40](../../decisions.md#architecture)); `AppointmentCancellation` (what cancelling an appointment writes), `CustomerUpcomingAppointment` (an upcoming appointment as its customer sees it, with its cancellation preview); `ConsultationCase`, `CustomerConsultationCase` and `CustomerConsultationCaseSummary` count forfeited credits | 01 |
 | `domain.consultation` | `RefundEligibility` (UC-08's rule and its first reason) | 02 |
 | `domain.consultation.value` | `NonRefundableReason` (`SESSION_TOOK_PLACE`, `CREDIT_FORFEITED`, `DEADLINE_PASSED`, in UC-08's order) | 02 |
-| `domain.consultation` | `CaseCancellation` (what cancelling a case writes); `CaseForCancellation.cancel`; `CaseForBooking` gains the status; `CustomerConsultationCase` gains the cancellation, `canCancel()` and `refundIfCancelledNow()` | 03 |
+| `domain.consultation` | `CaseCancellation` (what cancelling a case writes); `ConsultationCase` gains the status, `requireActive()` and `cancel`; `CustomerConsultationCase` gains the cancellation, `canCancel()` and `refundIfCancelledNow()` | 03 |
 | `domain.consultation.value` | `CaseStatus` (`ACTIVE`, `CANCELLED`, both stored), `CancellationOutcome` (a cancelled case's `cancelledAt` and `refundEligible`) | 03 |
 | `domain.consultation` | `CustomerConsultationCaseSummary` gains `cancelledAt`; cancelled cases are Past | 04 |
 | `application.consultation` | `CancelConsultationAppointmentUseCase` with its `Command` | 01 |
 | `application.consultation` | `CancelConsultationCaseUseCase` with its `Command` | 03 |
-| `application.consultation.port` | `LockCaseForCancellationPort` (`lockForCancellation(ConsultationCaseId, UserId customerId)`: not `lock`, which `LockCaseForBookingPort` already declares with the same parameters on the same adapter), `SaveAppointmentCancellationPort` (`save(AppointmentCancellation)`) | 01 |
+| `application.consultation.port` | `SaveAppointmentCancellationPort` (`save(AppointmentCancellation)`); the case is locked with the booking's `LockConsultationCasePort`, so the cancellation has no lock port of its own | 01 |
 | `application.consultation.port` | `SaveCaseCancellationPort` (`save(CaseCancellation)`) | 03 |
-| `adapters.database.consultation` | `ConsultationCaseAdapter` implements the new ports; `entity`: `StoredAppointmentStatus` gains `CANCELLED`, `AppointmentEntity` maps `creditRefunded` | 01 |
+| `adapters.database.consultation` | `ConsultationCancellationAdapter` implements the new save ports; `ConsultationCaseAdapter` loads every appointment of the case, booked and cancelled; `entity`: `StoredAppointmentStatus` gains `CANCELLED`, `AppointmentEntity` maps `creditRefunded` | 01 |
 | `adapters.database.consultation` | `entity`: `ConsultationCaseEntity` maps `status`, `cancelledAt` and `refundEligible` | 03 |
 | `api.consultation` | `CustomerConsultationCaseController` gains the appointment's cancel route; `request`: `CancelConsultationAppointmentRequest`; `response`: `CustomerUpcomingAppointmentResponse` | 01 |
 | `api.consultation` | the case's cancel route; `request`: `CancelConsultationCaseRequest`; `response`: `CancellationOutcomeResponse`, `RefundEligibilityResponse`, `DeadlinePassedAppointmentResponse` | 03 |
@@ -140,8 +140,8 @@ consultation_case  + status          text not null, check (status in ('ACTIVE', 
 
 01 for the forfeited credits, 03 for completion. One rule each, shared by every view, as [increment 04's plan](../04-book-consultation-appointment/README.md#the-case-as-its-customer-sees-it) asks.
 
-- **`Appointment.openCredits(SessionCount sessionCount, int bookedAppointments, int forfeitedCredits)`** replaces the two-argument form: `total − BOOKED − forfeited` ([glossary](../../glossary.md#consultation)). `CaseForBooking`, `CustomerConsultationCase` and `CustomerConsultationCaseSummary` each gain `int forfeitedCredits`, which the adapter counts in SQL (`status = 'CANCELLED' and credit_refunded = false`), and count with it. Nothing else changes in the credits: a booked appointment uses a credit, consumed or not.
-- **Completed** (03, spec decision 13): no open credits and no booked appointment that hasn't ended, `openCredits() == 0 && Appointment.upcoming(…, asOf).isEmpty()`. It's the Past group's condition for an active case, so `CustomerConsultationCase`, `CustomerConsultationCaseSummary` and `CaseForCancellation` all decide it through one static method on `Appointment` (`isCompleted(sessionCount, bookedAppointments, forfeitedCredits, asOf)` or similar), not three copies.
+- **`Appointment.openCredits(SessionCount sessionCount, int bookedAppointments, int forfeitedCredits)`** replaces the two-argument form: `total − BOOKED − forfeited` ([glossary](../../glossary.md#consultation)). `CustomerConsultationCase` and `CustomerConsultationCaseSummary` each gain `int forfeitedCredits`, which the adapter counts in SQL (`status = 'CANCELLED' and credit_refunded = false`), and count with it; `ConsultationCase` counts them from the cancelled appointments it holds ([below](#cancelling-an-appointment)). Nothing else changes in the credits: a booked appointment uses a credit, consumed or not.
+- **Completed** (03, spec decision 13): no open credits and no booked appointment that hasn't ended, `openCredits() == 0 && Appointment.upcoming(…, asOf).isEmpty()`. It's the Past group's condition for an active case, so `CustomerConsultationCase`, `CustomerConsultationCaseSummary` and `ConsultationCase` all decide it through one static method on `Appointment` (`isCompleted(sessionCount, bookedAppointments, forfeitedCredits, asOf)` or similar), not three copies.
 - **The Past order's key** (01, spec decision 8): a completed case's last appointment's start, or its purchase time when it has no booked appointment, because late cancellations forfeited every credit. Until 01, `lastAppointmentStart()` assumed an appointment; 01 makes it the fallback, and 04 puts a cancelled case's `cancelledAt` first.
 
 ### Cancelling an appointment
@@ -156,7 +156,7 @@ consultation_case  + status          text not null, check (status in ('ACTIVE', 
   | `isCancellableAt(Instant asOf)` | `BOOKED` at `asOf`: the start is after `asOf`. A running appointment is consumed and can't be cancelled |
   | `isCreditRefundedIfCancelledAt(CancellationDeadline, Instant asOf)` | `asOf` is before `freeCancellationUntil`: at the deadline it's late |
 
-- **`CaseForCancellation`** (01): the case's id, its purchase terms, its booked appointments (`List<Appointment>`), and its cancelled ones as `List<AppointmentCancellation>` (their ids and whether the credit was refunded). `forfeitedCredits()` counts the cancelled ones without a refund. Its rules, with the codes as constants next to them:
+- **`ConsultationCase`** (01) holds the case's appointments, no longer only the number of the booked ones: its booked appointments (`List<Appointment>`), and its cancelled ones as `List<AppointmentCancellation>` (their ids and whether the credit was refunded). `forfeitedCredits()` counts the cancelled ones without a refund. Its new rules, with the codes as constants next to them:
 
   | Method | Throws, in this order | `detail` |
   |---|---|---|
@@ -167,7 +167,7 @@ consultation_case  + status          text not null, check (status in ('ACTIVE', 
 
   It returns the `AppointmentCancellation`: the appointment's id, and whether its credit is refunded. From the dialog, only "refunded" can turn into "late", as time moves on and the purchase terms never change; a request that confirms "late" for a cancellation in time is refused with the same code, since the server never does what the customer didn't confirm (spec decision 4).
 - **`CancelConsultationAppointmentUseCase.invoke(CurrentUser, CancelConsultationAppointmentUseCase.Command)`**, the command holding the case's id, the appointment's id and `creditRefunded`:
-  1. **Lock the case** with `LockCaseForCancellationPort.lockForCancellation(id, customerId)`: `PESSIMISTIC_WRITE` through the query scoped to the customer that the booking uses (`lockCustomerCaseEntity`), then, under the lock, every appointment of the case, booked and cancelled. Empty is a `NotFoundException` (404).
+  1. **Lock the case** with `LockConsultationCasePort.lock(id, customerId)`, the port the booking locks with: `PESSIMISTIC_WRITE` through the query scoped to the customer (`lockCustomerCaseEntity`), then, under the lock, every appointment of the case, booked and cancelled. Empty is a `NotFoundException` (404).
   2. **The time** after waiting for the lock: `clock.instant()`.
   3. **The domain decides**: `cancelAppointment(appointmentId, creditRefunded, now)`.
   4. **Write** with `SaveAppointmentCancellationPort.save(cancellation)`: the managed `AppointmentEntity` gets `CANCELLED` and `creditRefunded`.
@@ -186,13 +186,13 @@ consultation_case  + status          text not null, check (status in ('ACTIVE', 
 - **The record** holds the reason (empty when refund-eligible) and, only with `DEADLINE_PASSED`, the appointment and its free-cancellation time; the constructor checks that they come together. `isRefundEligible()` is "no reason".
 - **Refunded credits don't count**: an appointment cancelled in time isn't in the booked ones and isn't forfeited.
 - **It uses only what `Appointment` and `CancellationDeadline` have today** (`statusAt`, `start`, `freeUntil`), so 02 runs in parallel with 01. 03 switched it to 01's `Appointment` methods (`isCancellableAt`, `isCreditRefundedIfCancelledAt`, `freeCancellationUntil`); the rule stayed the same, so a refund-eligible case cancels no appointment late.
-- **One rule decides the preview and the cancellation**: the case detail's `refundIfCancelledNow` and `CaseForCancellation.cancel` both call `RefundEligibility.at` (03).
+- **One rule decides the preview and the cancellation**: the case detail's `refundIfCancelledNow` and `ConsultationCase.cancel` both call `RefundEligibility.at` (03).
 
 ### Cancelling a case
 
 03, following UC-08 and spec decisions 4, 5, 6, 7 and 13.
 
-- **`CaseForCancellation`** gains the case's `CaseStatus`. Its new rules:
+- **`ConsultationCase`** gains the case's `CaseStatus`. Its new rules:
 
   | Method | Throws, in this order | `detail` |
   |---|---|---|
@@ -202,8 +202,8 @@ consultation_case  + status          text not null, check (status in ('ACTIVE', 
   | | `REFUND_ELIGIBILITY_CHANGED`: whether it's refund-eligible at `now` isn't what was confirmed | Whether the purchase price would be refunded has changed. Please confirm again. |
 
   `cancel` returns the `CaseCancellation`: the case's id, its `CancellationOutcome` (`cancelledAt = now`, `refundEligible`), and an `AppointmentCancellation` for every booked appointment that is cancellable at `now`, each with its credit refunded as `isCreditRefundedIfCancelledAt(deadline, now)` decides (spec decision 7). A running appointment isn't cancelled: it's consumed.
-- **`CancelConsultationCaseUseCase.invoke(CurrentUser, CancelConsultationCaseUseCase.Command)`**, the command holding the case's id and `refundEligible`: lock the case with `LockCaseForCancellationPort` (404), take the time, `cancel(refundEligible, now)`, write with `SaveCaseCancellationPort.save(cancellation)` (the managed case entity gets `CANCELLED`, `cancelledAt` and `refundEligible`; each appointment entity `CANCELLED` and `creditRefunded`), and answer the case, as the appointment's cancellation does.
-- **A cancelled case can't be booked**: `CaseForBooking` gains the `CaseStatus`, and `requireActive()` throws `CASE_CANCELLED` ("This case was cancelled.", one constant, on `CaseForCancellation`, which `CaseForBooking` uses). `book` checks it first, before the credits; the booking use case calls it first under the case lock, and `ListBookableSlotsUseCase` before `expertFor`. The eligible experts route doesn't check it: it shows the offering's experts and books nothing.
+- **`CancelConsultationCaseUseCase.invoke(CurrentUser, CancelConsultationCaseUseCase.Command)`**, the command holding the case's id and `refundEligible`: lock the case with `LockConsultationCasePort` (404), take the time, `cancel(refundEligible, now)`, write with `SaveCaseCancellationPort.save(cancellation)` (the managed case entity gets `CANCELLED`, `cancelledAt` and `refundEligible`; each appointment entity `CANCELLED` and `creditRefunded`), and answer the case, as the appointment's cancellation does.
+- **A cancelled case can't be booked**: `ConsultationCase.requireActive()` throws `CASE_CANCELLED` ("This case was cancelled."); `cancel` calls it too, so the code and its detail are written once. `book` checks it first, before the credits; the booking use case calls it first under the case lock, and `ListBookableSlotsUseCase` before `expertFor`. The eligible experts route doesn't check it: it shows the offering's experts and books nothing.
 - **Under the case lock** a cancellation sees every booking that came before it, and a booking that comes after sees `CANCELLED` ([D-27](../../decisions.md#architecture), spec decision 10). Task 05 proves it.
 
 ### The case as its customer sees it
@@ -213,11 +213,11 @@ consultation_case  + status          text not null, check (status in ('ACTIVE', 
 - **`CustomerConsultationCase.upcomingAppointments()`** (01) returns `CustomerUpcomingAppointment`s: the `CustomerAppointment` (from `Appointment.sortedUpcoming`, which selects and sorts as `Appointment.upcoming` does but keeps the `Appointment`s; `CustomerUpcomingAppointment.of(appointment, deadline, asOf)` builds each), `canCancel` (`isCancellableAt(asOf)`; a cancelled case has no such appointment, since its cancellation cancelled every one that hadn't started), `freeCancellationUntil` and `creditRefundedIfCancelledNow` from `Appointment`'s rules with the case's deadline. `pastAppointments()` doesn't change.
 - **`CustomerConsultationCase`** (03) gains `Optional<CancellationOutcome> cancellation`, empty for an active case; the adapter maps it from the case's row. `canBook()`: active and an open credit. `canCancel()`: active and not completed. `refundIfCancelledNow()`: `Optional<RefundEligibility>`, present exactly when `canCancel()`, from `RefundEligibility.at` with the case's booked appointments, forfeited credits and deadline at `asOf`.
 - **`CustomerConsultationCaseSummary`** (04) gains `Optional<Instant> cancelledAt`. `group()`: `PAST` for a cancelled case, whatever its appointments; otherwise as before. `MY_PURCHASES_ORDER`'s Past key: `cancelledAt` for a cancelled case, otherwise as [above](#credits-and-completion), newest first (spec decision 8).
-- **The adapter** (01) counts each case's forfeited credits in SQL: one count (`countForfeitedCredits`) for the detail and the booking; one grouped query for the list, scoped to the customer through the case (`ForfeitedCreditsRow(UUID consultationCaseId, long count)` in `row`). The lists of appointments stay `BOOKED`-only. The cancellation's case (`LockCaseForCancellationPort`) reads all of the case's appointments, booked and cancelled, and `CaseForCancellation.forfeitedCredits()` counts them from its cancelled ones.
+- **The adapter** (01) counts each case's forfeited credits in SQL: one count (`countForfeitedCredits`) for the detail; one grouped query for the list, scoped to the customer through the case (`ForfeitedCreditsRow(UUID consultationCaseId, long count)` in `row`). The lists of appointments stay `BOOKED`-only. The write model's case (`LoadConsultationCasePort`, `LockConsultationCasePort`) reads all of the case's appointments, booked and cancelled, for a booking as for a cancellation, and `ConsultationCase.forfeitedCredits()` counts them from its cancelled ones.
 
 ### Ownership
 
-- **Scoped queries**, as in increments 03 and 04: `LockCaseForCancellationPort` locks only a case of the customer (`lockCustomerCaseEntity`). Another customer's case is empty, like an unknown id: 404, and nothing is locked or changed ([security.md](../../architecture/security.md#ownership-in-use-cases)).
+- **Scoped queries**, as in increments 03 and 04: `LockConsultationCasePort` locks only a case of the customer (`lockCustomerCaseEntity`). Another customer's case is empty, like an unknown id: 404, and nothing is locked or changed ([security.md](../../architecture/security.md#ownership-in-use-cases)).
 - **The appointment under its case**: `cancelAppointment` looks the id up among the locked case's own appointments, so an appointment of another case, the customer's own or anyone's, answers 404 under this case's path.
 
 ## Frontend
@@ -297,7 +297,7 @@ No new route, page or shadcn component: the dialogs use `alert-dialog`, which `C
 | Ownership | Customer 2 cancels Customer 1's appointment and Customer 1's case: 404, and both stay as they were (01, 03). Customer 1's appointment of another of their cases, under this case's path: 404 (01). |
 | REST | Per route, the happy path (01, 03). Besides: a cancelled appointment's time is offered again, it's no longer listed, and the credits count it (01); each 409 of the routes, the late cancellation and its forfeited credit (01, 03); a cancelled case's slots and booking answer `CASE_CANCELLED` (03); the list's credits after a late cancellation (01) and a cancelled case under Past (04). |
 | Concurrency | One test (05): a case cancelled while a booking on it runs, deterministic as `ConsultationCaseConcurrencyTest`, failing without either case lock (spec decision 10). |
-| Domain | `Appointment`'s cancellation rules: just before, at and after the deadline, a deadline of 0 hours, both days of the summer-time changes, a running appointment (01). `openCredits` with forfeited credits, and the Past key without an appointment (01). `CaseForCancellation.cancelAppointment`: each outcome and each code, in order (01). `RefundEligibility`: each reason alone, together and in order, the soonest appointment, at the deadline, a refunded credit, a running appointment, no appointments (02). `CaseForCancellation.cancel`: each code in order, the appointments it cancels with their credits, a running one left as it is (03). `CaseForBooking`: `CASE_CANCELLED` before the credits (03). `CustomerConsultationCase`: `canCancel`, `canBook`, completed at an appointment's end, `refundIfCancelledNow` present exactly with `canCancel` (03). `CustomerConsultationCaseSummary`: a cancelled case is Past, the Past order with both keys and the fallback (04). |
+| Domain | `Appointment`'s cancellation rules: just before, at and after the deadline, a deadline of 0 hours, both days of the summer-time changes, a running appointment (01). `openCredits` with forfeited credits, and the Past key without an appointment (01). `ConsultationCase.cancelAppointment`: each outcome and each code, in order (01). `RefundEligibility`: each reason alone, together and in order, the soonest appointment, at the deadline, a refunded credit, a running appointment, no appointments (02). `ConsultationCase.cancel`: each code in order, the appointments it cancels with their credits, a running one left as it is (03). `ConsultationCase.book`: `CASE_CANCELLED` before the credits (03). `CustomerConsultationCase`: `canCancel`, `canBook`, completed at an appointment's end, `refundIfCancelledNow` present exactly with `canCancel` (03). `CustomerConsultationCaseSummary`: a cancelled case is Past, the Past order with both keys and the fallback (04). |
 | Frontend | Vitest for logic only ([D-29](../../decisions.md#architecture)): `cancellationFailure` (01, 03), `bookingFailure`'s new kind (03), the refund texts (03). The dialogs and pages are checked by hand with Playwright. |
 
 ## Commands

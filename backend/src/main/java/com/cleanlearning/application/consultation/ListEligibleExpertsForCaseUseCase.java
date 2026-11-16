@@ -1,7 +1,8 @@
 package com.cleanlearning.application.consultation;
 
-import com.cleanlearning.application.consultation.port.LoadCaseForBookingPort;
-import com.cleanlearning.domain.consultation.CaseForBooking;
+import com.cleanlearning.application.consultation.port.LoadConsultationCasePort;
+import com.cleanlearning.application.consultation.port.LoadEligibleExpertsPort;
+import com.cleanlearning.domain.consultation.ConsultationCase;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.shared.NotFoundException;
 import com.cleanlearning.domain.user.CurrentUser;
@@ -14,18 +15,22 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ListEligibleExpertsForCaseUseCase {
 
-  private final LoadCaseForBookingPort loadCase;
+  private final LoadConsultationCasePort loadCase;
 
-  ListEligibleExpertsForCaseUseCase(LoadCaseForBookingPort loadCase) {
+  private final LoadEligibleExpertsPort loadEligibleExperts;
+
+  ListEligibleExpertsForCaseUseCase(
+      LoadConsultationCasePort loadCase, LoadEligibleExpertsPort loadEligibleExperts) {
     this.loadCase = loadCase;
+    this.loadEligibleExperts = loadEligibleExperts;
   }
 
   @Transactional(readOnly = true)
   public List<ExpertProfile> invoke(CurrentUser user, ConsultationCaseId id) {
-    CaseForBooking consultationCase =
+    ConsultationCase consultationCase =
         loadCase
             .load(id, user.id())
             .orElseThrow(() -> new NotFoundException("Case " + id.value() + " not found."));
-    return consultationCase.eligibleExperts();
+    return loadEligibleExperts.load(consultationCase.offeringId());
   }
 }

@@ -5,16 +5,14 @@ import com.cleanlearning.adapters.database.consultation.entity.ConsultationCaseE
 import com.cleanlearning.adapters.database.consultation.entity.StoredAppointmentStatus;
 import com.cleanlearning.adapters.database.offering.row.EligibleExpertRow;
 import com.cleanlearning.application.consultation.port.LoadBusyTimesPort;
-import com.cleanlearning.application.consultation.port.LoadCaseForBookingPort;
 import com.cleanlearning.application.consultation.port.LoadCustomerBusyTimesPort;
-import com.cleanlearning.application.consultation.port.LockCaseForBookingPort;
+import com.cleanlearning.application.consultation.port.LoadEligibleExpertsPort;
 import com.cleanlearning.application.consultation.port.SaveBookingPort;
 import com.cleanlearning.domain.consultation.Appointment;
-import com.cleanlearning.domain.consultation.CaseForBooking;
 import com.cleanlearning.domain.consultation.outcome.Booking;
 import com.cleanlearning.domain.consultation.value.BusyTime;
-import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.image.value.ImageId;
+import com.cleanlearning.domain.offering.value.OfferingId;
 import com.cleanlearning.domain.user.ExpertProfile;
 import com.cleanlearning.domain.user.value.DisplayName;
 import com.cleanlearning.domain.user.value.UserId;
@@ -28,8 +26,7 @@ import org.springframework.stereotype.Component;
 /** The busy times read only {@code BOOKED} appointments, so a cancelled one frees its time. */
 @Component
 class ConsultationBookingAdapter
-    implements LoadCaseForBookingPort,
-        LockCaseForBookingPort,
+    implements LoadEligibleExpertsPort,
         LoadBusyTimesPort,
         LoadCustomerBusyTimesPort,
         SaveBookingPort {
@@ -43,19 +40,12 @@ class ConsultationBookingAdapter
     this.entityManager = entityManager;
   }
 
-  @Override
-  public Optional<CaseForBooking> load(ConsultationCaseId id, UserId customerId) {
-    return repository
-        .findCustomerCaseEntity(id.value(), customerId.value())
-        .map(this::toCaseForBooking);
-  }
-
   /** The offering isn't locked: eligibility is read when the booking runs. */
   @Override
-  public Optional<CaseForBooking> lock(ConsultationCaseId id, UserId customerId) {
-    return repository
-        .lockCustomerCaseEntity(id.value(), customerId.value())
-        .map(this::toCaseForBooking);
+  public List<ExpertProfile> load(OfferingId offeringId) {
+    return repository.findEligibleExperts(offeringId.value()).stream()
+        .map(ConsultationBookingAdapter::toEligibleExpert)
+        .toList();
   }
 
   @Override
@@ -91,19 +81,6 @@ class ConsultationBookingAdapter
               "The booked case");
       consultationCase.setAssignedExpertId(booking.expertId().value());
     }
-  }
-
-  private CaseForBooking toCaseForBooking(ConsultationCaseEntity entity) {
-    return new CaseForBooking(
-        new ConsultationCaseId(entity.getId()),
-        entity.getStatus(),
-        ConsultationCaseMapper.toPurchaseTerms(entity),
-        Optional.ofNullable(entity.getAssignedExpertId()).map(UserId::new),
-        ConsultationCaseMapper.toCaseCredits(
-            entity.getSessionCount(), repository.findAppointments(entity.getId())),
-        repository.findEligibleExperts(entity.getConsultationOfferingId()).stream()
-            .map(ConsultationBookingAdapter::toEligibleExpert)
-            .toList());
   }
 
   private static ExpertProfile toEligibleExpert(EligibleExpertRow row) {

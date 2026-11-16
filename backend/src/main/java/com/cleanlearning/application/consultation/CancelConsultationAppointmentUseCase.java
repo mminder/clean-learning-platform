@@ -1,9 +1,9 @@
 package com.cleanlearning.application.consultation;
 
 import com.cleanlearning.application.consultation.port.LoadCustomerConsultationCasePort;
-import com.cleanlearning.application.consultation.port.LockCaseForCancellationPort;
+import com.cleanlearning.application.consultation.port.LockConsultationCasePort;
 import com.cleanlearning.application.consultation.port.SaveAppointmentCancellationPort;
-import com.cleanlearning.domain.consultation.CaseForCancellation;
+import com.cleanlearning.domain.consultation.ConsultationCase;
 import com.cleanlearning.domain.consultation.outcome.AppointmentCancellation;
 import com.cleanlearning.domain.consultation.value.AppointmentId;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
@@ -23,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class CancelConsultationAppointmentUseCase {
 
-  private final LockCaseForCancellationPort lockCase;
+  private final LockConsultationCasePort lockCase;
 
   private final SaveAppointmentCancellationPort saveCancellation;
 
@@ -32,7 +32,7 @@ public class CancelConsultationAppointmentUseCase {
   private final Clock clock;
 
   CancelConsultationAppointmentUseCase(
-      LockCaseForCancellationPort lockCase,
+      LockConsultationCasePort lockCase,
       SaveAppointmentCancellationPort saveCancellation,
       LoadCustomerConsultationCasePort loadCase,
       Clock clock) {
@@ -44,7 +44,7 @@ public class CancelConsultationAppointmentUseCase {
 
   @Transactional
   public CustomerConsultationCase invoke(CurrentUser user, Command command) {
-    CaseForCancellation consultationCase =
+    ConsultationCase consultationCase =
         lockCase
             .lock(command.consultationCaseId(), user.id())
             .orElseThrow(() ->
