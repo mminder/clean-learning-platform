@@ -1,7 +1,6 @@
 package com.cleanlearning.domain.consultation;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
@@ -14,15 +13,18 @@ import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.consultation.value.NonRefundableReason;
 import com.cleanlearning.domain.consultation.value.PurchaseTerms;
 import com.cleanlearning.domain.offering.value.CancellationDeadline;
+import com.cleanlearning.domain.offering.value.OfferingId;
 import com.cleanlearning.domain.offering.value.SessionCount;
 import com.cleanlearning.domain.offering.value.SessionDuration;
 import com.cleanlearning.domain.shared.BusinessRuleException;
 import com.cleanlearning.domain.shared.BusinessTimeZone;
 import com.cleanlearning.domain.shared.NotFoundException;
 import com.cleanlearning.domain.shared.value.Money;
+import com.cleanlearning.domain.user.value.UserId;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -34,9 +36,14 @@ import org.junit.jupiter.api.Test;
  * Coaching's terms; the appointment is on Tue 17 Nov 2026, 10:00–11:00, free to cancel until Mon 16
  * Nov, 10:00, all in Zurich.
  */
-class CaseForCancellationTest {
+class ConsultationCaseCancelTest {
 
   private static final ConsultationCaseId CASE = new ConsultationCaseId(UUID.randomUUID());
+
+  private static final OfferingId OFFERING = new OfferingId(UUID.randomUUID());
+
+  /** A case with an appointment has an expert; a cancellation doesn't ask who. */
+  private static final UserId EXPERT = new UserId(UUID.randomUUID());
 
   private static final PurchaseTerms THREE_SESSIONS =
       new PurchaseTerms(
@@ -99,22 +106,27 @@ class CaseForCancellationTest {
     return LocalDateTime.parse(localDateTime).atZone(BusinessTimeZone.ZONE).toInstant();
   }
 
-  private static CaseForCancellation withTuesday() {
+  private static ConsultationCase withTuesday() {
     return active(THREE_SESSIONS, List.of(TUESDAY), List.of(CANCELLED_IN_TIME, CANCELLED_LATE));
   }
 
-  private static CaseForCancellation active(
+  private static ConsultationCase active(
       PurchaseTerms terms, List<Appointment> booked, List<CancelledAppointment> cancelled) {
     return consultationCase(CaseStatus.ACTIVE, terms, booked, cancelled);
   }
 
-  private static CaseForCancellation consultationCase(
+  private static ConsultationCase consultationCase(
       CaseStatus status,
       PurchaseTerms terms,
       List<Appointment> booked,
       List<CancelledAppointment> cancelled) {
-    return new CaseForCancellation(
-        CASE, status, terms, new CaseCredits(terms.sessionCount(), booked, cancelled));
+    return new ConsultationCase(
+        CASE,
+        OFFERING,
+        status,
+        terms,
+        Optional.of(EXPERT),
+        new CaseCredits(terms.sessionCount(), booked, cancelled));
   }
 
   private static CaseCancellation cancellation(
@@ -164,12 +176,12 @@ class CaseForCancellationTest {
     for (CancelledAppointment cancelled : List.of(CANCELLED_IN_TIME, CANCELLED_LATE)) {
       assertRefused(
           () -> withTuesday().cancelAppointment(cancelled.id(), true, zurich("2026-11-15T12:00")),
-          CaseForCancellation.APPOINTMENT_CANCELLED,
+          ConsultationCase.APPOINTMENT_CANCELLED,
           APPOINTMENT_CANCELLED);
       // before the started and the deadline checks
       assertRefused(
           () -> withTuesday().cancelAppointment(cancelled.id(), true, zurich("2026-11-18T12:00")),
-          CaseForCancellation.APPOINTMENT_CANCELLED,
+          ConsultationCase.APPOINTMENT_CANCELLED,
           APPOINTMENT_CANCELLED);
     }
   }
@@ -180,17 +192,17 @@ class CaseForCancellationTest {
       assertRefused(
           () ->
               withTuesday().cancelAppointment(TUESDAY.id(), confirmed, zurich("2026-11-17T10:00")),
-          CaseForCancellation.APPOINTMENT_STARTED,
+          ConsultationCase.APPOINTMENT_STARTED,
           APPOINTMENT_STARTED);
       assertRefused(
           () ->
               withTuesday().cancelAppointment(TUESDAY.id(), confirmed, zurich("2026-11-17T10:30")),
-          CaseForCancellation.APPOINTMENT_STARTED,
+          ConsultationCase.APPOINTMENT_STARTED,
           APPOINTMENT_STARTED);
       assertRefused(
           () ->
               withTuesday().cancelAppointment(TUESDAY.id(), confirmed, zurich("2026-11-18T12:00")),
-          CaseForCancellation.APPOINTMENT_STARTED,
+          ConsultationCase.APPOINTMENT_STARTED,
           APPOINTMENT_STARTED);
     }
   }
@@ -203,11 +215,11 @@ class CaseForCancellationTest {
   void aRefundConfirmedAfterTheDeadlineIsRefused() {
     assertRefused(
         () -> withTuesday().cancelAppointment(TUESDAY.id(), true, zurich("2026-11-16T10:01")),
-        CaseForCancellation.DEADLINE_PASSED,
+        ConsultationCase.DEADLINE_PASSED,
         DEADLINE_PASSED);
     assertRefused(
         () -> withTuesday().cancelAppointment(TUESDAY.id(), true, zurich("2026-11-16T10:00")),
-        CaseForCancellation.DEADLINE_PASSED,
+        ConsultationCase.DEADLINE_PASSED,
         DEADLINE_PASSED);
   }
 
@@ -219,19 +231,8 @@ class CaseForCancellationTest {
   void aLateCancellationConfirmedInTimeIsRefused() {
     assertRefused(
         () -> withTuesday().cancelAppointment(TUESDAY.id(), false, zurich("2026-11-15T12:00")),
-        CaseForCancellation.DEADLINE_PASSED,
+        ConsultationCase.DEADLINE_PASSED,
         DEADLINE_PASSED);
-  }
-
-  @Test
-  void theCreditsCountFromThePurchaseTermsSessionCount() {
-    assertThatIllegalArgumentException()
-        .isThrownBy(() ->
-            new CaseForCancellation(
-                CASE,
-                CaseStatus.ACTIVE,
-                THREE_SESSIONS,
-                new CaseCredits(ONE_SESSION.sessionCount(), List.of(), List.of())));
   }
 
   @Test
@@ -327,14 +328,14 @@ class CaseForCancellationTest {
               consultationCase(
                       CaseStatus.CANCELLED, THREE_SESSIONS, List.of(), List.of(CANCELLED_IN_TIME))
                   .cancel(confirmed, SUNDAY_NOON),
-          CaseForCancellation.CASE_CANCELLED,
+          ConsultationCase.CASE_CANCELLED,
           CASE_CANCELLED);
       // before the completed and the outcome checks
       assertRefused(
           () ->
               consultationCase(CaseStatus.CANCELLED, ONE_SESSION, List.of(TUESDAY), List.of())
                   .cancel(confirmed, zurich("2026-11-18T12:00")),
-          CaseForCancellation.CASE_CANCELLED,
+          ConsultationCase.CASE_CANCELLED,
           CASE_CANCELLED);
     }
   }
@@ -348,14 +349,14 @@ class CaseForCancellationTest {
     for (boolean confirmed : List.of(true, false)) {
       assertRefused(
           () -> active(ONE_SESSION, List.of(TUESDAY), List.of()).cancel(confirmed, TUESDAY.end()),
-          CaseForCancellation.CASE_COMPLETED,
+          ConsultationCase.CASE_COMPLETED,
           CASE_COMPLETED);
       // every credit forfeited
       assertRefused(
           () ->
               active(ONE_SESSION, List.of(), List.of(CANCELLED_LATE))
                   .cancel(confirmed, SUNDAY_NOON),
-          CaseForCancellation.CASE_COMPLETED,
+          ConsultationCase.CASE_COMPLETED,
           CASE_COMPLETED);
     }
     // an open credit left: not completed
@@ -372,7 +373,7 @@ class CaseForCancellationTest {
     for (String now : List.of("2026-11-16T10:01", "2026-11-16T10:00")) {
       assertRefused(
           () -> active(THREE_SESSIONS, List.of(TUESDAY), List.of()).cancel(true, zurich(now)),
-          CaseForCancellation.REFUND_ELIGIBILITY_CHANGED,
+          ConsultationCase.REFUND_ELIGIBILITY_CHANGED,
           REFUND_ELIGIBILITY_CHANGED);
     }
   }
@@ -385,11 +386,11 @@ class CaseForCancellationTest {
   void aCancellationWithoutRefundConfirmedForARefundEligibleCaseIsRefused() {
     assertRefused(
         () -> active(THREE_SESSIONS, List.of(TUESDAY), List.of()).cancel(false, SUNDAY_NOON),
-        CaseForCancellation.REFUND_ELIGIBILITY_CHANGED,
+        ConsultationCase.REFUND_ELIGIBILITY_CHANGED,
         REFUND_ELIGIBILITY_CHANGED);
     assertRefused(
         () -> active(THREE_SESSIONS, List.of(), List.of()).cancel(false, SUNDAY_NOON),
-        CaseForCancellation.REFUND_ELIGIBILITY_CHANGED,
+        ConsultationCase.REFUND_ELIGIBILITY_CHANGED,
         REFUND_ELIGIBILITY_CHANGED);
   }
 }

@@ -45,7 +45,7 @@ The spec's scenarios use Mon 9 Nov 2026, 15:00 (Zurich) as now; the tests write 
 ## Out of scope
 
 - Loading the availability and the busy time, the routes and the dialog: [03](03-book-appointment.md).
-- The free-cancellation time of a slot: `CaseForBooking` adds it in 03.
+- The free-cancellation time of a slot: `ConsultationCase` adds it in 03.
 - Busy time from training runs: with the trainings (spec decision 14).
 
 ## Notes

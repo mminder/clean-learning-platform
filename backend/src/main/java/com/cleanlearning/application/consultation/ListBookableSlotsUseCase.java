@@ -2,9 +2,10 @@ package com.cleanlearning.application.consultation;
 
 import com.cleanlearning.application.availability.port.LoadAvailabilityPort;
 import com.cleanlearning.application.consultation.port.LoadBusyTimesPort;
-import com.cleanlearning.application.consultation.port.LoadCaseForBookingPort;
+import com.cleanlearning.application.consultation.port.LoadConsultationCasePort;
 import com.cleanlearning.application.consultation.port.LoadCustomerBusyTimesPort;
-import com.cleanlearning.domain.consultation.CaseForBooking;
+import com.cleanlearning.application.consultation.port.LoadEligibleExpertsPort;
+import com.cleanlearning.domain.consultation.ConsultationCase;
 import com.cleanlearning.domain.consultation.SlotFinder;
 import com.cleanlearning.domain.consultation.value.BookableSlot;
 import com.cleanlearning.domain.consultation.value.BusyTime;
@@ -25,7 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ListBookableSlotsUseCase {
 
-  private final LoadCaseForBookingPort loadCase;
+  private final LoadConsultationCasePort loadCase;
+
+  private final LoadEligibleExpertsPort loadEligibleExperts;
 
   private final LoadAvailabilityPort loadAvailability;
 
@@ -36,12 +39,14 @@ public class ListBookableSlotsUseCase {
   private final Clock clock;
 
   ListBookableSlotsUseCase(
-      LoadCaseForBookingPort loadCase,
+      LoadConsultationCasePort loadCase,
+      LoadEligibleExpertsPort loadEligibleExperts,
       LoadAvailabilityPort loadAvailability,
       LoadBusyTimesPort loadBusyTimes,
       LoadCustomerBusyTimesPort loadCustomerBusyTimes,
       Clock clock) {
     this.loadCase = loadCase;
+    this.loadEligibleExperts = loadEligibleExperts;
     this.loadAvailability = loadAvailability;
     this.loadBusyTimes = loadBusyTimes;
     this.loadCustomerBusyTimes = loadCustomerBusyTimes;
@@ -50,12 +55,14 @@ public class ListBookableSlotsUseCase {
 
   @Transactional(readOnly = true)
   public List<BookableSlot> invoke(CurrentUser user, ConsultationCaseId id, UserId expertId) {
-    CaseForBooking consultationCase =
+    ConsultationCase consultationCase =
         loadCase
             .load(id, user.id())
             .orElseThrow(() -> new NotFoundException("Case " + id.value() + " not found."));
     consultationCase.requireActive();
-    UserId expert = consultationCase.expertFor(expertId);
+    UserId expert =
+        consultationCase.expertFor(
+            expertId, loadEligibleExperts.load(consultationCase.offeringId()));
     Instant now = clock.instant();
     LocalDate today = LocalDate.ofInstant(now, BusinessTimeZone.ZONE);
     List<BusyTime> busyTimes =

@@ -37,10 +37,10 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
 /**
  * The booking's two locks (D-27): two bookings with one expert at once can't both take the expert's
  * slot, and two bookings of one case at once can't both take its last credit. A booking locks the
- * case ({@code LockCaseForBookingPort}), then the expert's user row ({@code LockExpertPort}), so
- * they run one after the other. And the case's lock of a cancellation ({@code
- * LockCaseForCancellationPort}): a case cancelled while a booking on it runs never keeps a future
- * booked appointment (spec 05, decision 10).
+ * case ({@code LockConsultationCasePort}), then the expert's user row ({@code LockExpertPort}), so
+ * they run one after the other. And a cancellation takes the same lock of the case: a case
+ * cancelled while a booking on it runs never keeps a future booked appointment (spec 05, decision
+ * 10).
  *
  * <p>As in {@code ConsultationOfferingConcurrencyTest}, a test makes its race certain rather than
  * likely: it holds the contended row lock itself while the requests start, waits until Postgres
