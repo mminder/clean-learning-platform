@@ -39,7 +39,7 @@ Only 02 changes `openapi.json` and `schema.d.ts`; 04's routes already declare th
 | `api.consultation` | `CustomerConsultationCaseController` (`/api/customer/consultation-cases`) | 01, 02 |
 | `api.consultation.request` | `PurchaseConsultationPackageRequest` | 01 |
 | `api.consultation.response` | `CustomerConsultationCaseResponse` (detail), `PurchaseTermsResponse`, `CustomerConsultationCaseSummaryResponse` (list item, 02) | 01, 02 |
-| `application.consultation` | `PurchaseConsultationPackageUseCase` with `PurchaseConsultationPackageCommand`, `GetCustomerConsultationCaseUseCase`, `ListCustomerConsultationCasesUseCase` (02) | 01, 02 |
+| `application.consultation` | `PurchaseConsultationPackageUseCase` with its `Command`, `GetCustomerConsultationCaseUseCase`, `ListCustomerConsultationCasesUseCase` (02) | 01, 02 |
 | `application.consultation.port` | `LockConsultationOfferingForPurchasePort`, `SaveConsultationCasePort` (`create`), `LoadCustomerConsultationCasePort`, `LoadCustomerConsultationCasesPort` (02) | 01, 02 |
 | `application.offering.port` | `CheckOfferingPurchasesPort` (`hasPurchases`) | 04 |
 | `domain.consultation` | `ConsultationOfferingForPurchase` (the offering as a purchase needs it; holds UC-03's rules), `ConsultationCase` (a new case, as the purchase creates it), `CustomerConsultationCase` (the case as its customer sees it; computes the credits), `CustomerConsultationCaseSummary` (02) | 01, 02 |
@@ -134,7 +134,7 @@ indexes            (customer_id), (consultation_offering_id)
 
 ### Purchase
 
-`PurchaseConsultationPackageUseCase.invoke(CurrentUser, PurchaseConsultationPackageCommand)`:
+`PurchaseConsultationPackageUseCase.invoke(CurrentUser, PurchaseConsultationPackageUseCase.Command)`:
 
 1. **Lock** the offering with `LockConsultationOfferingForPurchasePort.lock(offeringId)`: `PESSIMISTIC_WRITE` on its `offering` row, as `ConsultationOfferingAdapter.lock` does, then its consultation fields and packages. An unknown id, or an offering that isn't a consultation, is a `NotFoundException` (404). The lock order stays offering → case → expert → run ([D-27](../../decisions.md#architecture)).
 2. **The domain decides**: `ConsultationOfferingForPurchase.purchase(customerId, packageId, confirmedPrice, confirmedSessionCount, now)` returns the new `ConsultationCase`, or throws:

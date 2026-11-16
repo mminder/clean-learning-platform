@@ -25,7 +25,7 @@ com.cleanlearning
 │  ├─ offering                admin catalog endpoints
 │  ├─ user                    /api/me, poc login, (MVP) user mgmt
 │  └─ image
-├─ application                use cases + commands, outgoing ports (in port/)
+├─ application                use cases (with their commands), outgoing ports (in port/)
 │  ├─ consultation            e.g. BookConsultationAppointmentUseCase; port: LoadCaseForBookingPort
 │  ├─ training
 │  ├─ offering
@@ -76,7 +76,7 @@ Enforced by ArchUnit.
   └──────► domain    adapters.database ────┘
 ```
 
-`application` is two layers: the use cases (and their commands) at the top of `application.<feature>`, and the ports in `application.<feature>.port`. Controllers reach only the use cases, adapters only the ports.
+`application` is two layers: the use cases at the top of `application.<feature>`, and the ports in `application.<feature>.port`. Controllers reach only the use cases, adapters only the ports.
 
 | Package | May depend on | Must not depend on |
 |---|---|---|
@@ -91,19 +91,19 @@ Features aren't isolated from each other (D-23). A use case may use domain class
 
 ## Use cases
 
-- One use case = one class `<Verb><Noun>UseCase` at the top of `application.<feature>`, annotated `@Service`. Its command `record` sits next to it.
-- **One public method, named `invoke`** (ArchUnit checks the name and that it is the only one). It takes the `CurrentUser` (if the use case needs it) and a command `record`, and returns a result `record`.
+- One use case = one class `<Verb><Noun>UseCase` at the top of `application.<feature>`, annotated `@Service`. Its command is a `record` named `Command`, nested in it as its last member, so the top of the package lists only use cases (D-37), which ArchUnit checks by requiring a top-level class there to end in `UseCase`. Two use cases never share a command.
+- **One public method, named `invoke`** (ArchUnit checks the name and that it is the only one). It takes the `CurrentUser` (if the use case needs it) and its `Command` record, and returns a result `record`.
 - `@Transactional` sits on the use-case method. Read-only use cases use `@Transactional(readOnly = true)`.
 - **Flow only:** load through ports, call domain logic, save through ports. Business decisions (is it bookable, refund-eligible, …) live in the domain.
 - There are **no incoming port interfaces**. Controllers call the use case directly.
-- Controllers don't contain logic. They map HTTP to the command, call the use case, and map the result to the response DTO.
+- Controllers don't contain logic. They turn path variables into typed ids, call the request's `to…Command(...)`, call the use case, and map the result with the response's `from(...)`.
 
 ```java
 @Service
 public class BookConsultationAppointmentUseCase {
     // ports and the Clock injected via constructor
     @Transactional
-    public CustomerAppointment invoke(CurrentUser user, BookConsultationAppointmentCommand command) {
+    public CustomerAppointment invoke(CurrentUser user, Command command) {
         CaseForBooking consultationCase = lockCase.lock(command.consultationCaseId(), user.id()) // scoped: 404 if not theirs
                 .orElseThrow(() -> new NotFoundException(...));
         consultationCase.requireOpenCredit();
@@ -117,6 +117,8 @@ public class BookConsultationAppointmentUseCase {
         saveBooking.save(booking);
         return CustomerAppointment.of(booking.appointment(), now);
     }
+
+    public record Command(ConsultationCaseId consultationCaseId, UserId expertId, Instant start) {}
 }
 ```
 
@@ -236,13 +238,13 @@ ConsultationOfferingResponse publishConsultationOffering(@PathVariable UUID id) 
 - Route prefixes by audience (D-26): `/api/shop`, `/api/customer`, `/api/expert`, `/api/admin`, plus `/api/me`, `/api/images`, `/api/poc` (`poc` profile only).
 - **Every controller says who may call it** with `@PreAuthorize` at class level, matching its prefix, such as `hasRole('ADMIN')` under `/api/admin`; ArchUnit fails for a route without one. `SecurityConfig` checks the same role per prefix first, so a caller without it is turned away before Spring MVC reads the body ([security](security.md#how-the-check-works)).
 - **Response DTOs per audience:** customer, expert and admin case responses are different records. This makes "admin never sees notes" a property of the API's shape.
-- **Controllers and DTOs.** `api.<feature>` holds the controllers. Its `response` sub-package holds the `*Response` records, each with a public static `from(...)` that maps the domain object; its `request` sub-package holds the `*Request` records. A response that several features return, such as `MoneyResponse`, lives in `api.response`. ArchUnit checks both packages.
+- **Controllers and DTOs.** `api.<feature>` holds the controllers. Its `response` sub-package holds the `*Response` records, each with a public static `from(...)` that maps the domain object; its `request` sub-package holds the `*Request` records, A request body whose use case takes a `Command` maps itself to it with a public instance method `toCommand(...)` (one `to<Verb>Command(...)` per use case when two share the request), the counterpart of `from(...)`. A response that several features return, such as `MoneyResponse`, lives in `api.response`. ArchUnit checks both packages.
 - Request and response records have names that are unique across `api`, because the OpenAPI schema name is the simple class name (a test checks this).
 - **Controller method names** are the `operationId`s in `openapi.json`, so each names its route uniquely: `listConsultationOfferings`, `getConsultationOffering`, `createConsultationOffering`, `editConsultationOffering`.
 - **Uploads** are `multipart/form-data` with one part, `file` (`@RequestPart MultipartFile`, `consumes` multipart, so another body answers 415). The multipart limit is 2 MB per file (`spring.servlet.multipart` in `application.yml`; Spring's default is 1 MB), and a file over it answers 400 like a file of another type (`ApiExceptionHandler`), not Spring's 413. The domain checks the size again, because MockMvc never meets the servlet container's limit.
 - **Images** are served by `GET /api/images/{id}` as a `Resource` (so `openapi.json` says `binary`) with `Cache-Control: public, max-age=31536000, immutable`. A header set by the controller keeps Spring Security's `no-cache` headers off the response.
 - **A `POST` that creates** answers 201 with the new resource, plus `@ResponseStatus(HttpStatus.CREATED)` on the method, so springdoc lists 201 instead of 200. When the resource has a route of its own, the answer also has its relative `Location` (`ResponseEntity.created`), as a purchase's case has. The booking's appointment has no route of its own, it's part of its case, so `POST /api/customer/consultation-cases/{id}/appointments` answers 201 without a `Location` ([spec 04](../specs/04-book-consultation-appointment.md#decisions), decision 17).
-- **Request records** carry Bean Validation annotations that repeat the use case's rules, so a 400 names every invalid field ([errors](#errors)); numbers are boxed (`Integer`) with `@NotNull`, so a missing number is a 400, not a silent 0. A decimal in a whole-number field is a 400 as well, without `errors` (`spring.jackson.deserialization.accept-float-as-int: false` in `application.yml`), not cut off. The controller maps the request to the use case's command, building the value objects.
+- **Request records** carry Bean Validation annotations that repeat the use case's rules, so a 400 names every invalid field ([errors](#errors)); numbers are boxed (`Integer`) with `@NotNull`, so a missing number is a 400, not a silent 0. A decimal in a whole-number field is a 400 as well, without `errors` (`spring.jackson.deserialization.accept-float-as-int: false` in `application.yml`), not cut off. The request maps itself to the use case's command with `toCommand(...)`, building the value objects, so the mapping sits next to the annotations that repeat its rules. A command that needs ids from the URL gets them as typed ids, `request.toCommand(new ConsultationCaseId(id))`; the controller passes the `CurrentUser` to `invoke` separately. A request that two use cases share has one method per use case, such as `toAddCommand(caseId)` and `toEditCommand(caseId, noteId)`.
 - JSON with camelCase. Instants are ISO-8601 with offset; local dates and times are ISO-8601 without offset. Money is `{ "amount": "450.00", "currency": "CHF" }`.
 - The API is code-first. springdoc generates `backend/openapi.json`, which is committed. A test fails if the committed file differs from the generated one (D-29).
 

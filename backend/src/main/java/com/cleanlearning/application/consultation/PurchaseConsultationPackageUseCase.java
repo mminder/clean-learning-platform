@@ -6,10 +6,15 @@ import com.cleanlearning.application.consultation.port.SaveConsultationCasePort;
 import com.cleanlearning.domain.consultation.ConsultationOfferingForPurchase;
 import com.cleanlearning.domain.consultation.outcome.NewConsultationCase;
 import com.cleanlearning.domain.consultation.view.CustomerConsultationCase;
+import com.cleanlearning.domain.offering.value.ConsultationPackageId;
+import com.cleanlearning.domain.offering.value.OfferingId;
+import com.cleanlearning.domain.offering.value.SessionCount;
 import com.cleanlearning.domain.shared.NotFoundException;
+import com.cleanlearning.domain.shared.value.Money;
 import com.cleanlearning.domain.user.CurrentUser;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Objects;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,8 +44,7 @@ public class PurchaseConsultationPackageUseCase {
    * Locks the offering first (D-27), so an unpublish waits for the purchase or the purchase for it.
    */
   @Transactional
-  public CustomerConsultationCase invoke(
-      CurrentUser user, PurchaseConsultationPackageCommand command) {
+  public CustomerConsultationCase invoke(CurrentUser user, Command command) {
     ConsultationOfferingForPurchase offering =
         lockOffering
             .lock(command.offeringId())
@@ -56,5 +60,19 @@ public class PurchaseConsultationPackageUseCase {
         .orElseThrow(() ->
             new IllegalStateException(
                 "Case " + consultationCase.id().value() + " was created but isn't found."));
+  }
+
+  public record Command(
+      OfferingId offeringId,
+      ConsultationPackageId packageId,
+      Money price,
+      SessionCount sessionCount) {
+
+    public Command {
+      Objects.requireNonNull(offeringId, "offeringId");
+      Objects.requireNonNull(packageId, "packageId");
+      Objects.requireNonNull(price, "price");
+      Objects.requireNonNull(sessionCount, "sessionCount");
+    }
   }
 }

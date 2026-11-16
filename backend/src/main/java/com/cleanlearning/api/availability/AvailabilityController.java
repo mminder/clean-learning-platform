@@ -4,12 +4,9 @@ import com.cleanlearning.api.ProblemResponses;
 import com.cleanlearning.api.availability.request.AvailabilityRequest;
 import com.cleanlearning.api.availability.response.AvailabilityResponse;
 import com.cleanlearning.application.availability.GetAvailabilityUseCase;
-import com.cleanlearning.application.availability.SaveAvailabilityCommand;
 import com.cleanlearning.application.availability.SaveAvailabilityUseCase;
-import com.cleanlearning.domain.availability.value.TimeRange;
 import com.cleanlearning.domain.user.CurrentUser;
 import jakarta.validation.Valid;
-import java.util.HashSet;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -51,14 +48,6 @@ class AvailabilityController {
   AvailabilityResponse saveAvailability(
       @AuthenticationPrincipal CurrentUser currentUser,
       @Valid @RequestBody AvailabilityRequest request) {
-    return AvailabilityResponse.from(saveAvailability.invoke(currentUser, toCommand(request)));
-  }
-
-  private static SaveAvailabilityCommand toCommand(AvailabilityRequest request) {
-    return new SaveAvailabilityCommand(
-        new HashSet<>(request.dates()),
-        request.timeRanges().stream()
-            .map(range -> new TimeRange(range.start(), range.end()))
-            .toList());
+    return AvailabilityResponse.from(saveAvailability.invoke(currentUser, request.toCommand()));
   }
 }

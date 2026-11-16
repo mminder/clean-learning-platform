@@ -38,7 +38,7 @@ Only 01, 03 and 04 change `openapi.json` and `schema.d.ts`, one after the other.
 | `domain.shared` | `BusinessTimeZone`: `ZONE`, `Europe/Zurich`. `ClockConfig`, today's date and the slot rule use it | 01 |
 | `domain.availability` | `Availability`: an expert's dates and time ranges, with UC-13's rules | 01 |
 | `domain.availability.value` | `TimeRange`: a start before an end, Zurich wall-clock times | 01 |
-| `application.availability` | `GetAvailabilityUseCase`, `SaveAvailabilityUseCase` with `SaveAvailabilityCommand` | 01 |
+| `application.availability` | `GetAvailabilityUseCase`, `SaveAvailabilityUseCase` with its `Command` | 01 |
 | `application.availability.port` | `LoadAvailabilityPort` (`load(UserId expertId, LocalDate from)`), `ReplaceAvailabilityPort` (`replaceFrom(UserId expertId, LocalDate from, Availability)`) | 01 |
 | `application.user.port` | `LockExpertPort` (`lock(UserId)`) | 01 |
 | `adapters.database.availability` | `AvailabilityAdapter` and its repository; `entity`: `AvailabilityDateEntity`, `AvailabilityTimeRangeEntity` | 01 |
@@ -49,7 +49,7 @@ Only 01, 03 and 04 change `openapi.json` and `schema.d.ts`, one after the other.
 | `domain.consultation` | `CaseForBooking` (the case as booking needs it; holds UC-06's rules), `Booking` (a new appointment, and whether it assigns the case's expert), `Appointment` (a stored appointment), `CustomerAppointment` (an appointment as its customer sees it, with its status), `AssignedExpert`; `CustomerConsultationCase` gains the expert, the appointments and `canBook()` | 03 |
 | `domain.consultation.value` | `AppointmentId`, `AppointmentStatus` (`BOOKED`, `CONSUMED`), `BookableSlot` (start, end, free-cancellation time) | 03 |
 | `domain.offering.value` | `CancellationDeadline.freeUntil(Instant start)` | 03 |
-| `application.consultation` | `ListEligibleExpertsForCaseUseCase`, `ListBookableSlotsUseCase`, `BookConsultationAppointmentUseCase` with `BookConsultationAppointmentCommand` | 03 |
+| `application.consultation` | `ListEligibleExpertsForCaseUseCase`, `ListBookableSlotsUseCase`, `BookConsultationAppointmentUseCase` with its `Command` | 03 |
 | `application.consultation.port` | `LoadCaseForBookingPort`, `LockCaseForBookingPort`, `LoadBusyTimesPort` (`load(UserId expertId, Instant from)`), `SaveBookingPort` (`save(Booking)`); `LoadCustomerConsultationCasePort.load` takes `asOf` | 03 |
 | `adapters.database.consultation` | `ConsultationCaseAdapter` implements the new ports; `entity`: `AppointmentEntity`, and `ConsultationCaseEntity` maps `assignedExpertId` | 03 |
 | `api.consultation` | `CustomerConsultationCaseController` gains three routes; `request`: `BookConsultationAppointmentRequest`; `response`: `BookableSlotResponse`, `CustomerAppointmentResponse`, `AssignedExpertResponse` | 03 |
@@ -176,12 +176,12 @@ indexes                  (consultation_case_id)
 
 - **`Availability(SortedSet<LocalDate> dates, List<TimeRange> timeRanges)`** copies its inputs, sorts the ranges by start, and throws `IllegalArgumentException` if two ranges overlap or touch (spec decision 9). `requireNoDateBefore(LocalDate today)` throws `IllegalArgumentException` for a date before today. `TimeRange(LocalTime start, LocalTime end)` throws unless start is before end.
 - **`GetAvailabilityUseCase.invoke(CurrentUser)`**: `LoadAvailabilityPort.load(expertId, today)`: the dates from today on and every range. Without a saved availability, both are empty.
-- **`SaveAvailabilityUseCase.invoke(CurrentUser, SaveAvailabilityCommand)`**:
+- **`SaveAvailabilityUseCase.invoke(CurrentUser, SaveAvailabilityUseCase.Command)`**:
   1. **Lock** the expert with `LockExpertPort.lock(user.id())`: `PESSIMISTIC_WRITE` on the `app_user` row, as the purchase locks the offering ([D-27](../../decisions.md#architecture), spec decision 13). The current user always exists; a missing row is an `IllegalStateException`.
   2. **The domain decides**: `new Availability(dates, timeRanges)`, then `requireNoDateBefore(today)`.
   3. **Write** with `ReplaceAvailabilityPort.replaceFrom(expertId, today, availability)`: delete the expert's dates from today on and all their ranges with bulk JPQL `delete` statements, then persist the new rows. A bulk delete runs at once, while Hibernate flushes inserts before deletes: deleting entities and persisting rows with the same keys in one flush would fail with a duplicate key. Dates before today stay as they are.
   4. **Answer** the saved availability.
-- **The controller** maps the request to `SaveAvailabilityCommand(Set<LocalDate> dates, List<TimeRange> timeRanges)`. The value objects stay the authority: a range the constraint let through and `TimeRange` rejects is a 400.
+- **The request** maps itself, with `toCommand()`, to `SaveAvailabilityUseCase.Command(Set<LocalDate> dates, List<TimeRange> timeRanges)`. The value objects stay the authority: a range the constraint let through and `TimeRange` rejects is a 400.
 
 ### Bookable slots
 
@@ -215,7 +215,7 @@ indexes                  (consultation_case_id)
   Open credits are the session count minus the booked appointments (spec decision 15). `book` checks every rule itself, so it's right on its own; it returns a `Booking`: a new `Appointment` (a new id, the case, `start`, `start` + the session duration) and whether it assigns the expert (the case had none).
 - **`ListEligibleExpertsForCaseUseCase.invoke(CurrentUser, ConsultationCaseId)`**: `LoadCaseForBookingPort.load(id, customerId)`, 404 if empty, then its eligible experts.
 - **`ListBookableSlotsUseCase.invoke(CurrentUser, ConsultationCaseId, UserId expertId)`**: load the case (404), `expertFor(expertId)`, `LoadAvailabilityPort.load(expert, today)`, `LoadBusyTimesPort.load(expert, now)` and `LoadCustomerBusyTimesPort.loadCustomerBusyTimes(customer, now)`, then `bookableSlots(new SlotFinder(availability, both busy times), now)`. No lock: it only shows.
-- **`BookConsultationAppointmentUseCase.invoke(CurrentUser, BookConsultationAppointmentCommand)`**:
+- **`BookConsultationAppointmentUseCase.invoke(CurrentUser, BookConsultationAppointmentUseCase.Command)`**:
   1. **Lock the case** with `LockCaseForBookingPort.lock(id, customerId)`: a query scoped to the customer with `@Lock(PESSIMISTIC_WRITE)`, so only the customer's own case is locked; then the rest of `CaseForBooking`. Empty is a `NotFoundException` (404).
   2. **Choose the expert to lock**: `requireOpenCredit()`, then `expertFor(command.expertId())`. Credits come first, so a second booking on a case's last credit is `NO_OPEN_CREDITS` whichever expert it names.
   3. **Lock the expert** with `LockExpertPort.lock(expertId)`, after the case (D-27: case → expert).

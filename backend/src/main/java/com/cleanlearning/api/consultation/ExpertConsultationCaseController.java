@@ -5,17 +5,13 @@ import com.cleanlearning.api.consultation.request.NoteRequest;
 import com.cleanlearning.api.consultation.response.ExpertConsultationCaseResponse;
 import com.cleanlearning.api.consultation.response.ExpertConsultationCaseSummaryResponse;
 import com.cleanlearning.api.consultation.response.ExpertNoteResponse;
-import com.cleanlearning.application.consultation.AddNoteCommand;
 import com.cleanlearning.application.consultation.AddNoteUseCase;
 import com.cleanlearning.application.consultation.DeleteNoteUseCase;
-import com.cleanlearning.application.consultation.EditNoteCommand;
 import com.cleanlearning.application.consultation.EditNoteUseCase;
 import com.cleanlearning.application.consultation.GetExpertConsultationCaseUseCase;
 import com.cleanlearning.application.consultation.ListExpertConsultationCasesUseCase;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.consultation.value.NoteId;
-import com.cleanlearning.domain.consultation.value.NoteText;
-import com.cleanlearning.domain.consultation.value.NoteTitle;
 import com.cleanlearning.domain.user.CurrentUser;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -98,13 +94,7 @@ class ExpertConsultationCaseController {
       @PathVariable UUID id,
       @Valid @RequestBody NoteRequest request) {
     return ExpertNoteResponse.from(
-        addNote.invoke(
-            currentUser,
-            new AddNoteCommand(
-                new ConsultationCaseId(id),
-                new NoteTitle(request.title()),
-                new NoteText(request.text()),
-                request.visibility())));
+        addNote.invoke(currentUser, request.toAddCommand(new ConsultationCaseId(id))));
   }
 
   /** A note of another case, of another expert's case, or one that's gone answers 404. */
@@ -120,13 +110,7 @@ class ExpertConsultationCaseController {
       @Valid @RequestBody NoteRequest request) {
     return ExpertNoteResponse.from(
         editNote.invoke(
-            currentUser,
-            new EditNoteCommand(
-                new ConsultationCaseId(id),
-                new NoteId(noteId),
-                new NoteTitle(request.title()),
-                new NoteText(request.text()),
-                request.visibility())));
+            currentUser, request.toEditCommand(new ConsultationCaseId(id), new NoteId(noteId))));
   }
 
   /** A note of another case, of another expert's case, or one that's gone answers 404. */

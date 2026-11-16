@@ -153,6 +153,16 @@ class LayerRulesTest {
           .haveSimpleNameEndingWith("UseCase");
 
   @ArchTest
+  static final ArchRule onlyUseCasesLiveAtTheTopOfTheirFeature =
+      classes()
+          .that()
+          .resideInAPackage(USE_CASES)
+          .and()
+          .areTopLevelClasses()
+          .should()
+          .haveSimpleNameEndingWith("UseCase");
+
+  @ArchTest
   static final ArchRule useCasesLiveAtTheTopOfTheirFeature =
       classes()
           .that()

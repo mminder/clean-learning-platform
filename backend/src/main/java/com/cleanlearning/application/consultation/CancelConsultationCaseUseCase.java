@@ -5,11 +5,13 @@ import com.cleanlearning.application.consultation.port.LockCaseForCancellationPo
 import com.cleanlearning.application.consultation.port.SaveCaseCancellationPort;
 import com.cleanlearning.domain.consultation.CaseForCancellation;
 import com.cleanlearning.domain.consultation.outcome.CaseCancellation;
+import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.consultation.view.CustomerConsultationCase;
 import com.cleanlearning.domain.shared.NotFoundException;
 import com.cleanlearning.domain.user.CurrentUser;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Objects;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,7 +42,7 @@ public class CancelConsultationCaseUseCase {
   }
 
   @Transactional
-  public CustomerConsultationCase invoke(CurrentUser user, CancelConsultationCaseCommand command) {
+  public CustomerConsultationCase invoke(CurrentUser user, Command command) {
     CaseForCancellation consultationCase =
         lockCase
             .lock(command.consultationCaseId(), user.id())
@@ -55,5 +57,12 @@ public class CancelConsultationCaseUseCase {
     return loadCase
         .load(command.consultationCaseId(), user.id(), now)
         .orElseThrow(() -> new IllegalStateException("The locked case is gone."));
+  }
+
+  public record Command(ConsultationCaseId consultationCaseId, boolean refundEligible) {
+
+    public Command {
+      Objects.requireNonNull(consultationCaseId, "consultationCaseId");
+    }
   }
 }
