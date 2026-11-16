@@ -46,11 +46,11 @@ This plan holds the decisions that several tasks rely on. The tasks link here in
 | `domain.shared` | `LinkWindow` (when a call's link is shown to a customer) | 07 |
 | `application.consultation` | `ListExpertConsultationCasesUseCase` | 01 |
 | `application.consultation` | `GetExpertConsultationCaseUseCase` | 02 |
-| `application.consultation` | `AddNoteUseCase` with `AddNoteCommand`, `EditNoteUseCase` with `EditNoteCommand`, `DeleteNoteUseCase` | 03 |
+| `application.consultation` | `AddNoteUseCase` with its `Command`, `EditNoteUseCase` with its `Command`, `DeleteNoteUseCase` | 03 |
 | `application.consultation.port` | `LoadExpertConsultationCasesPort` (`loadAll(UserId expertId, Instant asOf)`) | 01 |
 | `application.consultation.port` | `LoadExpertConsultationCasePort` (`load(ConsultationCaseId, UserId expertId, Instant asOf)`) | 02 |
 | `application.consultation.port` | `CheckAssignedExpertPort` (`isAssignedExpert(ConsultationCaseId, UserId expertId)`), `LoadNotePort` (`load(NoteId, ConsultationCaseId, UserId expertId)`), `SaveNotePort` (`add(Note)`, `update(Note)`), `DeleteNotePort` (`delete(NoteId, ConsultationCaseId, UserId expertId)`, which answers whether it deleted one) | 03 |
-| `application.user` | `GetExpertProfileUseCase`, `SaveExpertProfileUseCase` with `SaveExpertProfileCommand` | 05 |
+| `application.user` | `GetExpertProfileUseCase`, `SaveExpertProfileUseCase` with its `Command` | 05 |
 | `application.user` | `UploadExpertPhotoUseCase`, `RemoveExpertPhotoUseCase` | 06 |
 | `application.user.port` | `LoadOwnExpertProfilePort` (`load(UserId expertId)`), `SaveOwnExpertProfilePort` (`save(OwnExpertProfile)`) | 05 |
 | `adapters.database.consultation` | `ExpertConsultationCaseAdapter`; `row`: `ExpertConsultationCaseSummaryRow` (01), `ExpertConsultationCaseRow` (02) | 01, 02 |
@@ -221,8 +221,8 @@ expert_profile  + teams_link text, null without a link, check (teams_link ~ '^ht
   | `edit(title, text, visibility, now)` | the same id, case and `writtenAt`; `editedAt = now`. Every save is an edit, also one that changes only the visibility, or nothing |
   | `isPublic()` | `visibility == PUBLIC` |
 
-- **`AddNoteUseCase.invoke(CurrentUser, AddNoteCommand)`**: `CheckAssignedExpertPort.isAssignedExpert(caseId, user.id())`, otherwise `NotFoundException` ("Case <id> not found."); `Note.write(…, clock.instant())`; `SaveNotePort.add`; answer the note.
-- **`EditNoteUseCase.invoke(CurrentUser, EditNoteCommand)`**: `LoadNotePort.load(noteId, caseId, user.id())`, otherwise `NotFoundException` ("Note <id> not found."); `edit(…, clock.instant())`; `SaveNotePort.update`; answer the note.
+- **`AddNoteUseCase.invoke(CurrentUser, AddNoteUseCase.Command)`**: `CheckAssignedExpertPort.isAssignedExpert(caseId, user.id())`, otherwise `NotFoundException` ("Case <id> not found."); `Note.write(…, clock.instant())`; `SaveNotePort.add`; answer the note.
+- **`EditNoteUseCase.invoke(CurrentUser, EditNoteUseCase.Command)`**: `LoadNotePort.load(noteId, caseId, user.id())`, otherwise `NotFoundException` ("Note <id> not found."); `edit(…, clock.instant())`; `SaveNotePort.update`; answer the note.
 - **`DeleteNoteUseCase.invoke(CurrentUser, ConsultationCaseId, NoteId)`**: `DeleteNotePort.delete(noteId, caseId, user.id())`; `NotFoundException` when it deleted none.
 - **No lock and no version** (spec decision 7): the last save wins, and a note that's gone is a 404.
 - **In any status of the case** (UC-15): no use case reads the case's status.
@@ -243,7 +243,7 @@ expert_profile  + teams_link text, null without a link, check (teams_link ~ '^ht
   | `changePhoto(ImageId)` | points at the new image | 06 |
   | `removePhoto()` | no photo | 06 |
 
-- **`SaveExpertProfileUseCase.invoke(CurrentUser, SaveExpertProfileCommand)`**: lock the expert with `LockExpertPort.lock(user.id())`, load, `edit`, `SaveOwnExpertProfilePort.save`, answer the profile. The controller builds the `DisplayName` and the `TeamsLink`; a `teamsLink` of `null` or `""` is no link.
+- **`SaveExpertProfileUseCase.invoke(CurrentUser, SaveExpertProfileUseCase.Command)`**: lock the expert with `LockExpertPort.lock(user.id())`, load, `edit`, `SaveOwnExpertProfilePort.save`, answer the profile. The request's `toCommand()` builds the `DisplayName` and the `TeamsLink`; a `teamsLink` of `null` or `""` is no link.
 - **`UploadExpertPhotoUseCase.invoke(CurrentUser, byte[] file)`** and **`RemoveExpertPhotoUseCase.invoke(CurrentUser)`** (06) follow `UploadConsultationOfferingImageUseCase` and `RemoveConsultationOfferingImageUseCase`: lock the expert, load the profile, `Image.upload(file)`, save the image, point the profile at it, delete the old image, in one transaction.
 - **Every profile write locks the expert's user row first** (spec decision 13, [D-27](../../decisions.md#architecture)), the lock that saving availability takes. No concurrency test.
 - **A missing profile is a programming error** (spec decision 12): `LoadOwnExpertProfilePort.load` throws `IllegalStateException`, a 500. Every user with `EXPERT` has a seeded profile.

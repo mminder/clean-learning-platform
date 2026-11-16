@@ -5,15 +5,11 @@ import com.cleanlearning.api.user.request.ExpertProfileRequest;
 import com.cleanlearning.api.user.response.ExpertProfileResponse;
 import com.cleanlearning.application.user.GetExpertProfileUseCase;
 import com.cleanlearning.application.user.RemoveExpertPhotoUseCase;
-import com.cleanlearning.application.user.SaveExpertProfileCommand;
 import com.cleanlearning.application.user.SaveExpertProfileUseCase;
 import com.cleanlearning.application.user.UploadExpertPhotoUseCase;
 import com.cleanlearning.domain.user.CurrentUser;
-import com.cleanlearning.domain.user.value.DisplayName;
-import com.cleanlearning.domain.user.value.TeamsLink;
 import jakarta.validation.Valid;
 import java.io.IOException;
-import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -68,7 +64,7 @@ class ExpertProfileController {
   ExpertProfileResponse saveExpertProfile(
       @AuthenticationPrincipal CurrentUser currentUser,
       @Valid @RequestBody ExpertProfileRequest request) {
-    return ExpertProfileResponse.from(saveExpertProfile.invoke(currentUser, toCommand(request)));
+    return ExpertProfileResponse.from(saveExpertProfile.invoke(currentUser, request.toCommand()));
   }
 
   /** A file over 2 MB stops at the multipart limit and answers 400, like a file of another type. */
@@ -86,15 +82,5 @@ class ExpertProfileController {
   @ResponseStatus(HttpStatus.OK)
   ExpertProfileResponse removeExpertPhoto(@AuthenticationPrincipal CurrentUser currentUser) {
     return ExpertProfileResponse.from(removeExpertPhoto.invoke(currentUser));
-  }
-
-  /** A {@code teamsLink} of {@code null} or {@code ""} is no link. */
-  private static SaveExpertProfileCommand toCommand(ExpertProfileRequest request) {
-    return new SaveExpertProfileCommand(
-        new DisplayName(request.displayName()),
-        request.bio(),
-        Optional.ofNullable(request.teamsLink())
-            .filter(link -> !link.isEmpty())
-            .map(TeamsLink::new));
   }
 }

@@ -3,10 +3,13 @@ package com.cleanlearning.application.availability;
 import com.cleanlearning.application.availability.port.ReplaceAvailabilityPort;
 import com.cleanlearning.application.user.port.LockExpertPort;
 import com.cleanlearning.domain.availability.Availability;
+import com.cleanlearning.domain.availability.value.TimeRange;
 import com.cleanlearning.domain.shared.BusinessTimeZone;
 import com.cleanlearning.domain.user.CurrentUser;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Set;
 import java.util.TreeSet;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +35,7 @@ public class SaveAvailabilityUseCase {
    * after the other. Dates before today stay.
    */
   @Transactional
-  public Availability invoke(CurrentUser user, SaveAvailabilityCommand command) {
+  public Availability invoke(CurrentUser user, Command command) {
     lockExpert.lock(user.id());
     LocalDate today = LocalDate.ofInstant(clock.instant(), BusinessTimeZone.ZONE);
     Availability availability =
@@ -40,5 +43,13 @@ public class SaveAvailabilityUseCase {
     availability.requireNoDateBefore(today);
     replaceAvailability.replaceFrom(user.id(), today, availability);
     return availability;
+  }
+
+  public record Command(Set<LocalDate> dates, List<TimeRange> timeRanges) {
+
+    public Command {
+      dates = Set.copyOf(dates);
+      timeRanges = List.copyOf(timeRanges);
+    }
   }
 }

@@ -1,6 +1,11 @@
 package com.cleanlearning.api.consultation.request;
 
 import com.cleanlearning.api.offering.request.ConsultationPackageRequest;
+import com.cleanlearning.application.consultation.PurchaseConsultationPackageUseCase;
+import com.cleanlearning.domain.offering.value.ConsultationPackageId;
+import com.cleanlearning.domain.offering.value.OfferingId;
+import com.cleanlearning.domain.offering.value.SessionCount;
+import com.cleanlearning.domain.shared.value.Money;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
@@ -15,4 +20,13 @@ public record PurchaseConsultationPackageRequest(
             regexp = ConsultationPackageRequest.PRICE_PATTERN,
             message = ConsultationPackageRequest.PRICE_MESSAGE)
         String price,
-    @NotNull @Positive Integer sessionCount) {}
+    @NotNull @Positive Integer sessionCount) {
+
+  public PurchaseConsultationPackageUseCase.Command toCommand() {
+    return new PurchaseConsultationPackageUseCase.Command(
+        new OfferingId(offeringId),
+        new ConsultationPackageId(packageId),
+        Money.chf(price),
+        new SessionCount(sessionCount));
+  }
+}

@@ -44,8 +44,8 @@ Only 01, 03 and 04 change `openapi.json` and `schema.d.ts`, one after the other.
 | `domain.consultation` | `CaseCancellation` (what cancelling a case writes); `CaseForCancellation.cancel`; `CaseForBooking` gains the status; `CustomerConsultationCase` gains the cancellation, `canCancel()` and `refundIfCancelledNow()` | 03 |
 | `domain.consultation.value` | `CaseStatus` (`ACTIVE`, `CANCELLED`, both stored), `CancellationOutcome` (a cancelled case's `cancelledAt` and `refundEligible`) | 03 |
 | `domain.consultation` | `CustomerConsultationCaseSummary` gains `cancelledAt`; cancelled cases are Past | 04 |
-| `application.consultation` | `CancelConsultationAppointmentUseCase` with `CancelConsultationAppointmentCommand` | 01 |
-| `application.consultation` | `CancelConsultationCaseUseCase` with `CancelConsultationCaseCommand` | 03 |
+| `application.consultation` | `CancelConsultationAppointmentUseCase` with its `Command` | 01 |
+| `application.consultation` | `CancelConsultationCaseUseCase` with its `Command` | 03 |
 | `application.consultation.port` | `LockCaseForCancellationPort` (`lockForCancellation(ConsultationCaseId, UserId customerId)`: not `lock`, which `LockCaseForBookingPort` already declares with the same parameters on the same adapter), `SaveAppointmentCancellationPort` (`save(AppointmentCancellation)`) | 01 |
 | `application.consultation.port` | `SaveCaseCancellationPort` (`save(CaseCancellation)`) | 03 |
 | `adapters.database.consultation` | `ConsultationCaseAdapter` implements the new ports; `entity`: `StoredAppointmentStatus` gains `CANCELLED`, `AppointmentEntity` maps `creditRefunded` | 01 |
@@ -166,7 +166,7 @@ consultation_case  + status          text not null, check (status in ('ACTIVE', 
   | | `DEADLINE_PASSED`: whether the credit is refunded at `now` isn't what was confirmed | The free cancellation deadline has just passed. Please confirm again. |
 
   It returns the `AppointmentCancellation`: the appointment's id, and whether its credit is refunded. From the dialog, only "refunded" can turn into "late", as time moves on and the purchase terms never change; a request that confirms "late" for a cancellation in time is refused with the same code, since the server never does what the customer didn't confirm (spec decision 4).
-- **`CancelConsultationAppointmentUseCase.invoke(CurrentUser, CancelConsultationAppointmentCommand)`**, the command holding the case's id, the appointment's id and `creditRefunded`:
+- **`CancelConsultationAppointmentUseCase.invoke(CurrentUser, CancelConsultationAppointmentUseCase.Command)`**, the command holding the case's id, the appointment's id and `creditRefunded`:
   1. **Lock the case** with `LockCaseForCancellationPort.lockForCancellation(id, customerId)`: `PESSIMISTIC_WRITE` through the query scoped to the customer that the booking uses (`lockCustomerCaseEntity`), then, under the lock, every appointment of the case, booked and cancelled. Empty is a `NotFoundException` (404).
   2. **The time** after waiting for the lock: `clock.instant()`.
   3. **The domain decides**: `cancelAppointment(appointmentId, creditRefunded, now)`.
@@ -202,7 +202,7 @@ consultation_case  + status          text not null, check (status in ('ACTIVE', 
   | | `REFUND_ELIGIBILITY_CHANGED`: whether it's refund-eligible at `now` isn't what was confirmed | Whether the purchase price would be refunded has changed. Please confirm again. |
 
   `cancel` returns the `CaseCancellation`: the case's id, its `CancellationOutcome` (`cancelledAt = now`, `refundEligible`), and an `AppointmentCancellation` for every booked appointment that is cancellable at `now`, each with its credit refunded as `isCreditRefundedIfCancelledAt(deadline, now)` decides (spec decision 7). A running appointment isn't cancelled: it's consumed.
-- **`CancelConsultationCaseUseCase.invoke(CurrentUser, CancelConsultationCaseCommand)`**, the command holding the case's id and `refundEligible`: lock the case with `LockCaseForCancellationPort` (404), take the time, `cancel(refundEligible, now)`, write with `SaveCaseCancellationPort.save(cancellation)` (the managed case entity gets `CANCELLED`, `cancelledAt` and `refundEligible`; each appointment entity `CANCELLED` and `creditRefunded`), and answer the case, as the appointment's cancellation does.
+- **`CancelConsultationCaseUseCase.invoke(CurrentUser, CancelConsultationCaseUseCase.Command)`**, the command holding the case's id and `refundEligible`: lock the case with `LockCaseForCancellationPort` (404), take the time, `cancel(refundEligible, now)`, write with `SaveCaseCancellationPort.save(cancellation)` (the managed case entity gets `CANCELLED`, `cancelledAt` and `refundEligible`; each appointment entity `CANCELLED` and `creditRefunded`), and answer the case, as the appointment's cancellation does.
 - **A cancelled case can't be booked**: `CaseForBooking` gains the `CaseStatus`, and `requireActive()` throws `CASE_CANCELLED` ("This case was cancelled.", one constant, on `CaseForCancellation`, which `CaseForBooking` uses). `book` checks it first, before the credits; the booking use case calls it first under the case lock, and `ListBookableSlotsUseCase` before `expertFor`. The eligible experts route doesn't check it: it shows the offering's experts and books nothing.
 - **Under the case lock** a cancellation sees every booking that came before it, and a booking that comes after sees `CANCELLED` ([D-27](../../decisions.md#architecture), spec decision 10). Task 05 proves it.
 

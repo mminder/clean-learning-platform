@@ -43,7 +43,7 @@ They build one form on one aggregate, so they touch the same controller, use cas
 | `application.user` | `ListPocUsersUseCase`, `LogInPocUserUseCase`, `GetCurrentUserUseCase`, `ListExpertsUseCase` | 01, 05 |
 | `application.user.port` | `LoadUsersPort`, `LoadUserPort`, `LoadExpertsPort` | 01, 05 |
 | `application.offering` | `ListConsultationOfferingsUseCase`, `GetConsultationOfferingUseCase`, `CreateConsultationOfferingUseCase`, `EditConsultationOfferingUseCase`, `PublishConsultationOfferingUseCase`, `UnpublishConsultationOfferingUseCase`, `ArchiveConsultationOfferingUseCase`, `DeleteConsultationOfferingUseCase`, `UploadConsultationOfferingImageUseCase`, `RemoveConsultationOfferingImageUseCase` | 02–07 |
-| `application.offering` (commands) | `ConsultationOfferingCommand`: what the form saves, for create and edit; it gains the packages (04) and the eligible expert ids (05) | 03–05 |
+| `application.offering` (commands) | `CreateConsultationOfferingUseCase.Command` and `EditConsultationOfferingUseCase.Command`: what the form saves; they gain the packages (04) and the eligible expert ids (05) | 03–05 |
 | `application.offering.port` | `LoadConsultationOfferingSummariesPort`, `LoadConsultationOfferingPort`, `LockConsultationOfferingPort`, `SaveConsultationOfferingPort` (`create`, `update`), `DeleteConsultationOfferingPort` | 02, 03, 06 |
 | `application.image` | `GetImageUseCase` | 07 |
 | `application.image.port` | `ImageStorePort` (`save`, `load`, `delete`) | 07 |

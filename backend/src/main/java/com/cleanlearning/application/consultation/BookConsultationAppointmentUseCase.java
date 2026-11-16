@@ -10,6 +10,7 @@ import com.cleanlearning.domain.consultation.CaseForBooking;
 import com.cleanlearning.domain.consultation.SlotFinder;
 import com.cleanlearning.domain.consultation.outcome.Booking;
 import com.cleanlearning.domain.consultation.value.BusyTime;
+import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.consultation.view.CustomerAppointment;
 import com.cleanlearning.domain.shared.BusinessTimeZone;
 import com.cleanlearning.domain.shared.NotFoundException;
@@ -19,6 +20,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,7 +66,7 @@ public class BookConsultationAppointmentUseCase {
   }
 
   @Transactional
-  public CustomerAppointment invoke(CurrentUser user, BookConsultationAppointmentCommand command) {
+  public CustomerAppointment invoke(CurrentUser user, Command command) {
     CaseForBooking consultationCase =
         lockCase
             .lock(command.consultationCaseId(), user.id())
@@ -91,5 +93,14 @@ public class BookConsultationAppointmentUseCase {
     Booking booking = consultationCase.book(expertId, command.start(), slotFinder, now);
     saveBooking.save(booking);
     return CustomerAppointment.of(booking.appointment(), now);
+  }
+
+  public record Command(ConsultationCaseId consultationCaseId, UserId expertId, Instant start) {
+
+    public Command {
+      Objects.requireNonNull(consultationCaseId, "consultationCaseId");
+      Objects.requireNonNull(expertId, "expertId");
+      Objects.requireNonNull(start, "start");
+    }
   }
 }

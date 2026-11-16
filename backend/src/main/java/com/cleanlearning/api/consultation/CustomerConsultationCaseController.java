@@ -10,25 +10,17 @@ import com.cleanlearning.api.consultation.response.CustomerAppointmentResponse;
 import com.cleanlearning.api.consultation.response.CustomerConsultationCaseResponse;
 import com.cleanlearning.api.consultation.response.CustomerConsultationCaseSummaryResponse;
 import com.cleanlearning.api.response.EligibleExpertResponse;
-import com.cleanlearning.application.consultation.BookConsultationAppointmentCommand;
 import com.cleanlearning.application.consultation.BookConsultationAppointmentUseCase;
-import com.cleanlearning.application.consultation.CancelConsultationAppointmentCommand;
 import com.cleanlearning.application.consultation.CancelConsultationAppointmentUseCase;
-import com.cleanlearning.application.consultation.CancelConsultationCaseCommand;
 import com.cleanlearning.application.consultation.CancelConsultationCaseUseCase;
 import com.cleanlearning.application.consultation.GetCustomerConsultationCaseUseCase;
 import com.cleanlearning.application.consultation.ListBookableSlotsUseCase;
 import com.cleanlearning.application.consultation.ListCustomerConsultationCasesUseCase;
 import com.cleanlearning.application.consultation.ListEligibleExpertsForCaseUseCase;
-import com.cleanlearning.application.consultation.PurchaseConsultationPackageCommand;
 import com.cleanlearning.application.consultation.PurchaseConsultationPackageUseCase;
 import com.cleanlearning.domain.consultation.value.AppointmentId;
 import com.cleanlearning.domain.consultation.value.ConsultationCaseId;
 import com.cleanlearning.domain.consultation.view.CustomerConsultationCase;
-import com.cleanlearning.domain.offering.value.ConsultationPackageId;
-import com.cleanlearning.domain.offering.value.OfferingId;
-import com.cleanlearning.domain.offering.value.SessionCount;
-import com.cleanlearning.domain.shared.value.Money;
 import com.cleanlearning.domain.user.CurrentUser;
 import com.cleanlearning.domain.user.value.UserId;
 import io.swagger.v3.oas.annotations.headers.Header;
@@ -124,7 +116,7 @@ class CustomerConsultationCaseController {
       @AuthenticationPrincipal CurrentUser currentUser,
       @Valid @RequestBody PurchaseConsultationPackageRequest request) {
     CustomerConsultationCase consultationCase =
-        purchaseConsultationPackage.invoke(currentUser, toCommand(request));
+        purchaseConsultationPackage.invoke(currentUser, request.toCommand());
     return ResponseEntity.created(URI.create(PATH + "/" + consultationCase.id().value()))
         .body(CustomerConsultationCaseResponse.from(consultationCase));
   }
@@ -179,9 +171,7 @@ class CustomerConsultationCaseController {
       @Valid @RequestBody BookConsultationAppointmentRequest request) {
     return CustomerAppointmentResponse.from(
         bookConsultationAppointment.invoke(
-            currentUser,
-            new BookConsultationAppointmentCommand(
-                new ConsultationCaseId(id), new UserId(request.expertId()), request.start())));
+            currentUser, request.toCommand(new ConsultationCaseId(id))));
   }
 
   /**
@@ -202,10 +192,7 @@ class CustomerConsultationCaseController {
     return CustomerConsultationCaseResponse.from(
         cancelConsultationAppointment.invoke(
             currentUser,
-            new CancelConsultationAppointmentCommand(
-                new ConsultationCaseId(id),
-                new AppointmentId(appointmentId),
-                request.creditRefunded())));
+            request.toCommand(new ConsultationCaseId(id), new AppointmentId(appointmentId))));
   }
 
   @PostMapping("/{id}/cancel")
@@ -219,18 +206,6 @@ class CustomerConsultationCaseController {
       @PathVariable UUID id,
       @Valid @RequestBody CancelConsultationCaseRequest request) {
     return CustomerConsultationCaseResponse.from(
-        cancelConsultationCase.invoke(
-            currentUser,
-            new CancelConsultationCaseCommand(
-                new ConsultationCaseId(id), request.refundEligible())));
-  }
-
-  private static PurchaseConsultationPackageCommand toCommand(
-      PurchaseConsultationPackageRequest request) {
-    return new PurchaseConsultationPackageCommand(
-        new OfferingId(request.offeringId()),
-        new ConsultationPackageId(request.packageId()),
-        Money.chf(request.price()),
-        new SessionCount(request.sessionCount()));
+        cancelConsultationCase.invoke(currentUser, request.toCommand(new ConsultationCaseId(id))));
   }
 }
