@@ -280,7 +280,8 @@ frontend/src
                       CaseGroups (01, from MyPurchasesPage), MyCasesPage, ExpertConsultationCaseCard (01);
                       ExpertConsultationCasePage (02); NoteCard, NoteDialog (03);
                       ConsultationCasePage: "Notes from your expert" (04), the expert's photo (06), Join (07);
-                      JoinButton, on both case details, and link-window-reload.ts (07)
+                      JoinButton, on both case details, and link-window-reload.ts (07);
+                      CaseParts: Term, Appointments, AppointmentItem, ZurichTime, CaseCardState, shared by both case pages and cards (review)
 ```
 
 No new shadcn component: the note's dialog uses `dialog`, `textarea` and `radio-group`, which exist.

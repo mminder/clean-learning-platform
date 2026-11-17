@@ -63,6 +63,8 @@ A user can hold several roles. The header shows a section for each of them, and 
 - A time range of the availability that ends at midnight, so that 23:30–24:00 can be offered; today a range can't end at midnight ([UC-13](uc-13-manage-availability.md))
 - 24-hour time inputs on the availability page whatever the browser's language; today they follow the browser, for example 12-hour in English (US) ([UC-13](uc-13-manage-availability.md))
 - A hint without "first" on a case whose appointments were all cancelled and that has open credits left; today it says "Book your first session" again, as on a new case ([UC-05](uc-05-view-my-purchases.md))
+- The date in "The link will be available from …" when the link window opens the day before, for an appointment that starts before 01:00; today it shows only the time ([UC-10](uc-10-join-call.md))
+- **Join** that goes away when the appointment ends on a case detail that stays open; today it stays until the case reloads ([UC-10](uc-10-join-call.md))
 
 ## Template
 
