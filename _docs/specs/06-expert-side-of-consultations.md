@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | In progress |
+| Status | Done |
 | Use cases | [UC-11](../use-cases/uc-11-view-my-consultation-cases.md), all steps; [UC-15](../use-cases/uc-15-take-consultation-notes.md), all steps; [UC-14](../use-cases/uc-14-manage-expert-profile.md), all steps; [UC-10](../use-cases/uc-10-join-call.md), for consultation appointments; [UC-05](../use-cases/uc-05-view-my-purchases.md), the expert's photo, **Join** and the public notes on the case detail; [UC-06](../use-cases/uc-06-book-consultation-appointment.md) and [UC-02](../use-cases/uc-02-browse-shop.md), the expert's photo in the expert picker and on the offering detail; [UC-01](../use-cases/uc-01-login.md), the expert's landing page |
 | Tasks | [tasks/06-expert-side-of-consultations](../tasks/06-expert-side-of-consultations/README.md) |
 
@@ -310,16 +310,16 @@ cd frontend && npm run dev
 "Day 2" is the date two days from today. You need a JPEG or PNG under 2 MB to use as a photo.
 
 1. Open `http://localhost:5173`, log in as Expert 2: **My cases** opens and says "No cases yet. …". The header shows **My cases**, **Availability** and **Profile**.
-2. Open **Profile**: the seeded name and bio, the placeholder, no Teams link. Set the Teams link to `http://example.com`: a message next to it, nothing saved. Set it to `https://example.com/meet/expert-2`, change the bio and save. Upload the photo.
+2. Open **Profile**: the seeded name and bio, the placeholder, no Teams link. Set the Teams link to `http://example.com`: a message next to it, nothing saved. Set it to `https://example.com/meet/expert-2`, change the bio and save. Upload a text file as the photo: "An image is a JPEG, PNG or WebP file.", and the placeholder stays. Upload the photo.
 3. Open **Availability**, select day 2, set 09:00–12:00, and save.
 4. Log out and open Career Coaching in the shop: Expert 2 has the photo and the new bio.
 5. Log in as Customer 1, buy Career Coaching, and book Expert 2 on day 2, 10:00–11:00: the expert picker shows the photo. The case shows it, and the appointment says "The link will be available from 09:00 (Zurich time)."
-6. In a private window, log in as Expert 2: **My cases** shows Customer 1's case under **Upcoming**, with day 2, 10:00–11:00 and 2 of 3 credits open. Open it: Customer 1's name and email, the terms without the price, and the appointment with **Join**, which opens the link in a new tab.
-7. Add the private note "First session" with two lines of text, and a public note "Homework". Edit "Homework": "edited …".
+6. In a private window, log in as Expert 2: **My cases** shows Customer 1's case under **Upcoming**, with day 2, 10:00–11:00 and 2 of 3 credits open. Open it: Customer 1's name and email, the terms without the price, and the appointment with **Join**, which opens the link in a new tab. Clear the Teams link on **Profile** and save: the appointment says "Add your Teams link in your profile." without **Join**. Set the link again.
+7. Save a note with an empty title and text: "must not be blank" next to both, nothing saved. Add the private note "First session" with two lines of text, and a public note "Homework". Edit "Homework": "edited …".
 8. As Customer 1, reload the case: "Notes from your expert" shows "Homework" only.
-9. As Expert 2, make "First session" public and delete "Homework". As Customer 1, reload: "First session" only.
-10. As Customer 1, cancel the appointment in time. As Expert 2, reload **My cases**: the case is under **Needs booking**, and its detail shows the appointment as "Cancelled, credit refunded".
-11. In the private window, log out, log in as Expert 1, and paste the URL of the case from step 6: "Case not found".
+9. As Expert 2, open the case in a second tab and start editing "Homework". In the first tab, make "First session" public and delete "Homework". Save in the second tab: "This note no longer exists.", and its notes reload without "Homework". As Customer 1, reload: "First session" only.
+10. As Customer 1, cancel the appointment in time. As Expert 2, reload **My cases**: the case is under **Needs booking**, and its detail shows the appointment as "Cancelled, credit refunded". As Customer 1, cancel the case. As Expert 2, reload **My cases**: the case is under **Past**, which is collapsed, with "Cancelled" on its card, and its detail says "Cancelled on <date, time>".
+11. In the private window, log out, log in as Expert 1, and paste the URL of the case from step 6: "Case not found". As Customer 1, open `/expert/cases` and `/expert/profile`: "Page not found".
 12. In the private window, log out, log in as Expert 2 again, and remove the photo on **Profile**. Open Career Coaching in the shop: the placeholder is back.
 
 The customer's **Join** inside the window and a running appointment need an appointment within the hour, which the 24 hours' notice doesn't allow, so tests with a fixed `Clock` cover them instead of the demo.
