@@ -1,8 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { client } from '@/api/client'
+import { client, dataOrThrow } from '@/api/client'
 import type { components } from '@/api/schema'
-import { ApiError } from '@/lib/api-error'
-import { problemOf } from '@/lib/problem'
 
 export type AvailabilityRequest = components['schemas']['AvailabilityRequest']
 
@@ -14,17 +12,11 @@ const availabilityKey = ['expert', 'availability']
 export function useAvailability() {
   return useQuery({
     queryKey: availabilityKey,
-    queryFn: async () => {
-      const { data, response } = await client.GET('/api/expert/availability')
-      // not `error`: a 401 has an empty body, and openapi-fetch then returns `error: undefined`
-      if (data === undefined) {
-        throw new ApiError(
-          `Loading the availability failed: ${response.status}`,
-          response.status,
-        )
-      }
-      return data
-    },
+    queryFn: async () =>
+      dataOrThrow(
+        await client.GET('/api/expert/availability'),
+        'Loading the availability',
+      ),
   })
 }
 
@@ -35,20 +27,11 @@ export function useAvailability() {
 export function useSaveAvailability() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (availability: AvailabilityRequest) => {
-      const { data, error, response } = await client.PUT(
-        '/api/expert/availability',
-        { body: availability },
-      )
-      if (data === undefined) {
-        throw new ApiError(
-          `Saving the availability failed: ${response.status}`,
-          response.status,
-          problemOf(response.status, error),
-        )
-      }
-      return data
-    },
+    mutationFn: async (availability: AvailabilityRequest) =>
+      dataOrThrow(
+        await client.PUT('/api/expert/availability', { body: availability }),
+        'Saving the availability',
+      ),
     onSuccess: (saved) => queryClient.setQueryData(availabilityKey, saved),
   })
 }

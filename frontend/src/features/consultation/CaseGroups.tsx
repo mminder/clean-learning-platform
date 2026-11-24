@@ -1,8 +1,11 @@
 import type { ReactNode } from 'react'
-import type { CustomerConsultationCaseSummary } from './queries'
+import type { components } from '@/api/schema'
+
+type CaseSummary =
+  components['schemas']['CustomerConsultationCaseSummaryResponse']
 
 /** The server's `PurchaseGroup`, the same on both lists. */
-type Group = CustomerConsultationCaseSummary['group']
+type Group = CaseSummary['group']
 
 /**
  * The groups of My purchases and My cases: Upcoming, Needs booking and Past, collapsed (spec 04, decision 6; spec 06,

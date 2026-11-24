@@ -3,16 +3,21 @@ import { Link, useParams } from 'react-router'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  AppointmentItem,
+  Appointments,
+  Term,
+  ZurichTime,
+} from '@/features/consultation/CaseParts'
+import { JoinButton } from '@/features/consultation/JoinButton'
+import { NoteCard } from '@/features/consultation/NoteCard'
 import { isBadRequest, isNotFound } from '@/lib/api-error'
 import { formatDateTime } from '@/lib/date'
-import { AppointmentItem, Appointments, Term, ZurichTime } from './CaseParts'
 import {
   useDeleteNote,
   useExpertConsultationCase,
   type ExpertNote,
-} from './expert-queries'
-import { JoinButton } from './JoinButton'
-import { NoteCard } from './NoteCard'
+} from './queries'
 import { NoteDialog } from './NoteDialog'
 
 /**

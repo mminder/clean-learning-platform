@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { client } from './client'
+import { ApiError } from '@/lib/api-error'
+import { client, dataOrThrow, okOrThrow } from './client'
 
 // openapi-fetch needs an absolute URL outside the browser.
 const baseUrl = 'http://localhost'
@@ -82,3 +83,96 @@ describe('client', () => {
     expect(fetch.mock.calls[0][0].headers.has('X-XSRF-TOKEN')).toBe(false)
   })
 })
+
+describe('dataOrThrow and okOrThrow', () => {
+  const problem = { title: 'Conflict', status: 409, code: 'CHANGED' }
+
+  function answer(status: number, body?: object) {
+    return client.GET('/api/me', {
+      baseUrl,
+      fetch: async () =>
+        new Response(body ? JSON.stringify(body) : null, {
+          status,
+          headers: { 'Content-Type': 'application/problem+json' },
+        }),
+    })
+  }
+
+  it('dataOrThrow returns the body of a 2xx answer', async () => {
+    const result = await answer(200, { id: 'u1' })
+
+    expect(dataOrThrow(result, 'Loading the user')).toEqual({ id: 'u1' })
+  })
+
+  it('dataOrThrow throws an ApiError with the status, message and problem of a 409', async () => {
+    const result = await answer(409, problem)
+
+    const thrown = catchError(() => dataOrThrow(result, 'Loading the user'))
+
+    expect(thrown).toBeInstanceOf(ApiError)
+    expect(thrown).toMatchObject({
+      message: 'Loading the user failed: 409',
+      status: 409,
+      problem,
+    })
+  })
+
+  it('dataOrThrow throws for a 401 with an empty body and no problem', async () => {
+    const result = await client.GET('/api/me', {
+      baseUrl,
+      fetch: async () =>
+        new Response(null, { status: 401, headers: { 'Content-Length': '0' } }),
+    })
+
+    const thrown = catchError(() => dataOrThrow(result, 'Loading the user'))
+
+    expect(thrown).toBeInstanceOf(ApiError)
+    expect(thrown).toMatchObject({
+      message: 'Loading the user failed: 401',
+      status: 401,
+      problem: undefined,
+    })
+  })
+
+  it('dataOrThrow leaves the problem of a 500 undefined', async () => {
+    const result = await answer(500, problem)
+
+    const thrown = catchError(() => dataOrThrow(result, 'Loading the user'))
+
+    expect(thrown).toMatchObject({ status: 500, problem: undefined })
+  })
+
+  it('okOrThrow returns for a 2xx answer', async () => {
+    expect(okOrThrow(await answer(204), 'Deleting the user')).toBeUndefined()
+  })
+
+  it('okOrThrow throws an ApiError with the status, message and problem of a 409', async () => {
+    const result = await answer(409, problem)
+
+    const thrown = catchError(() => okOrThrow(result, 'Deleting the user'))
+
+    expect(thrown).toBeInstanceOf(ApiError)
+    expect(thrown).toMatchObject({
+      message: 'Deleting the user failed: 409',
+      status: 409,
+      problem,
+    })
+  })
+
+  it('okOrThrow leaves the problem of a 500 undefined', async () => {
+    const result = await answer(500, problem)
+
+    const thrown = catchError(() => okOrThrow(result, 'Deleting the user'))
+
+    expect(thrown).toMatchObject({ status: 500, problem: undefined })
+  })
+})
+
+function catchError(fn: () => unknown): unknown {
+  try {
+    fn()
+  } catch (error) {
+    return error
+  }
+  return undefined
+}

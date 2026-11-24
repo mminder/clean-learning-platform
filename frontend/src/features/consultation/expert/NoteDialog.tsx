@@ -22,7 +22,7 @@ import {
   useEditNote,
   type ExpertNote,
   type NoteRequest,
-} from './expert-queries'
+} from './queries'
 
 const NOTE_GONE = 'This note no longer exists.'
 

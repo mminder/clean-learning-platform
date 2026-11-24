@@ -5,6 +5,14 @@ import { ExpertPhoto } from '@/components/ExpertPhoto'
 import { OfferingImage } from '@/components/OfferingImage'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  AppointmentItem,
+  Appointments,
+  Term,
+  ZurichTime,
+} from '@/features/consultation/CaseParts'
+import { JoinButton } from '@/features/consultation/JoinButton'
+import { NoteCard } from '@/features/consultation/NoteCard'
 import { isBadRequest, isNotFound } from '@/lib/api-error'
 import { formatDateTime, formatTime } from '@/lib/date'
 import { formatMoney } from '@/lib/money'
@@ -14,10 +22,7 @@ import {
   type AppointmentToCancel,
 } from './CancelAppointmentDialog'
 import { CancelCaseDialog } from './CancelCaseDialog'
-import { AppointmentItem, Appointments, Term, ZurichTime } from './CaseParts'
-import { JoinButton } from './JoinButton'
 import { msUntilLinkWindowReload } from './link-window-reload'
-import { NoteCard } from './NoteCard'
 import {
   useCustomerConsultationCase,
   type CustomerUpcomingAppointment,

@@ -10,7 +10,8 @@ type ExpertConsultationCase =
 
 // openapi-fetch can't build a relative URL outside the browser, so the page gets a client that answers from here.
 const api = vi.hoisted(() => ({ answer: undefined as unknown }))
-vi.mock('@/api/client', () => ({
+vi.mock('@/api/client', async (importActual) => ({
+  ...(await importActual<typeof import('@/api/client')>()),
   client: {
     GET: vi.fn(async () => ({ data: api.answer, response: { status: 200 } })),
   },

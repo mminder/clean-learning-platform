@@ -1,9 +1,11 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { client } from '@/api/client'
+import { client, dataOrThrow } from '@/api/client'
 import type { components } from '@/api/schema'
-import { ApiError, isConflict } from '@/lib/api-error'
-import { problemOf } from '@/lib/problem'
-import { customerConsultationCasesKey, useReloadCases } from './case-keys'
+import {
+  customerConsultationCasesKey,
+  useReloadCases,
+} from '@/features/consultation/case-keys'
+import { isConflict } from '@/lib/api-error'
 
 export type PurchaseConsultationPackageRequest =
   components['schemas']['PurchaseConsultationPackageRequest']
@@ -48,19 +50,11 @@ export function customerConsultationCaseKey(id: string) {
 export function useCustomerConsultationCases() {
   return useQuery({
     queryKey: customerConsultationCasesKey,
-    queryFn: async () => {
-      const { data, response } = await client.GET(
-        '/api/customer/consultation-cases',
-      )
-      // not `error`: a 401 has an empty body, and openapi-fetch then returns `error: undefined`
-      if (data === undefined) {
-        throw new ApiError(
-          `Loading the cases failed: ${response.status}`,
-          response.status,
-        )
-      }
-      return data
-    },
+    queryFn: async () =>
+      dataOrThrow(
+        await client.GET('/api/customer/consultation-cases'),
+        'Loading the cases',
+      ),
   })
 }
 
@@ -68,20 +62,13 @@ export function useCustomerConsultationCases() {
 export function useCustomerConsultationCase(id: string) {
   return useQuery({
     queryKey: customerConsultationCaseKey(id),
-    queryFn: async () => {
-      const { data, response } = await client.GET(
-        '/api/customer/consultation-cases/{id}',
-        { params: { path: { id } } },
-      )
-      // not `error`: a 401 has an empty body, and openapi-fetch then returns `error: undefined`
-      if (data === undefined) {
-        throw new ApiError(
-          `Loading the case failed: ${response.status}`,
-          response.status,
-        )
-      }
-      return data
-    },
+    queryFn: async () =>
+      dataOrThrow(
+        await client.GET('/api/customer/consultation-cases/{id}', {
+          params: { path: { id } },
+        }),
+        'Loading the case',
+      ),
   })
 }
 
@@ -92,20 +79,13 @@ export function useCustomerConsultationCase(id: string) {
 export function usePurchaseConsultationPackage() {
   const reloadCases = useReloadCases()
   return useMutation({
-    mutationFn: async (purchase: PurchaseConsultationPackageRequest) => {
-      const { data, error, response } = await client.POST(
-        '/api/customer/consultation-cases',
-        { body: purchase },
-      )
-      if (data === undefined) {
-        throw new ApiError(
-          `Buying the package failed: ${response.status}`,
-          response.status,
-          problemOf(response.status, error),
-        )
-      }
-      return data
-    },
+    mutationFn: async (purchase: PurchaseConsultationPackageRequest) =>
+      dataOrThrow(
+        await client.POST('/api/customer/consultation-cases', {
+          body: purchase,
+        }),
+        'Buying the package',
+      ),
     onSuccess: reloadCases,
   })
 }
@@ -117,20 +97,14 @@ export function usePurchaseConsultationPackage() {
 export function useEligibleExperts(caseId: string, enabled: boolean) {
   return useQuery({
     queryKey: [...customerConsultationCaseKey(caseId), 'eligible-experts'],
-    queryFn: async () => {
-      const { data, response } = await client.GET(
-        '/api/customer/consultation-cases/{id}/eligible-experts',
-        { params: { path: { id: caseId } } },
-      )
-      // not `error`: a 401 has an empty body, and openapi-fetch then returns `error: undefined`
-      if (data === undefined) {
-        throw new ApiError(
-          `Loading the experts failed: ${response.status}`,
-          response.status,
-        )
-      }
-      return data
-    },
+    queryFn: async () =>
+      dataOrThrow(
+        await client.GET(
+          '/api/customer/consultation-cases/{id}/eligible-experts',
+          { params: { path: { id: caseId } } },
+        ),
+        'Loading the experts',
+      ),
     enabled,
   })
 }
@@ -144,18 +118,12 @@ export function bookableSlotsKey(caseId: string, expertId: string) {
  * `EXPERT_NOT_ELIGIBLE`) comes with its problem, as a booking's does.
  */
 export async function fetchBookableSlots(caseId: string, expertId: string) {
-  const { data, error, response } = await client.GET(
-    '/api/customer/consultation-cases/{id}/bookable-slots',
-    { params: { path: { id: caseId }, query: { expertId } } },
+  return dataOrThrow(
+    await client.GET('/api/customer/consultation-cases/{id}/bookable-slots', {
+      params: { path: { id: caseId }, query: { expertId } },
+    }),
+    'Loading the times',
   )
-  if (data === undefined) {
-    throw new ApiError(
-      `Loading the times failed: ${response.status}`,
-      response.status,
-      problemOf(response.status, error),
-    )
-  }
-  return data
 }
 
 /** The bookable slots with the expert, once the expert is known. */
@@ -175,20 +143,14 @@ export function useBookableSlots(caseId: string, expertId: string | undefined) {
 export function useBookConsultationAppointment(caseId: string) {
   const reloadCases = useReloadCases()
   return useMutation({
-    mutationFn: async (booking: BookConsultationAppointmentRequest) => {
-      const { data, error, response } = await client.POST(
-        '/api/customer/consultation-cases/{id}/appointments',
-        { params: { path: { id: caseId } }, body: booking },
-      )
-      if (data === undefined) {
-        throw new ApiError(
-          `Booking the appointment failed: ${response.status}`,
-          response.status,
-          problemOf(response.status, error),
-        )
-      }
-      return data
-    },
+    mutationFn: async (booking: BookConsultationAppointmentRequest) =>
+      dataOrThrow(
+        await client.POST(
+          '/api/customer/consultation-cases/{id}/appointments',
+          { params: { path: { id: caseId } }, body: booking },
+        ),
+        'Booking the appointment',
+      ),
     onSuccess: reloadCases,
     onError: (error) => (isConflict(error) ? reloadCases() : undefined),
   })
@@ -206,23 +168,17 @@ export function useCancelConsultationAppointment(caseId: string) {
     mutationFn: async ({
       appointmentId,
       creditRefunded,
-    }: CancelAppointmentVariables) => {
-      const { data, error, response } = await client.POST(
-        '/api/customer/consultation-cases/{id}/appointments/{appointmentId}/cancel',
-        {
-          params: { path: { id: caseId, appointmentId } },
-          body: { creditRefunded },
-        },
-      )
-      if (data === undefined) {
-        throw new ApiError(
-          `Cancelling the appointment failed: ${response.status}`,
-          response.status,
-          problemOf(response.status, error),
-        )
-      }
-      return data
-    },
+    }: CancelAppointmentVariables) =>
+      dataOrThrow(
+        await client.POST(
+          '/api/customer/consultation-cases/{id}/appointments/{appointmentId}/cancel',
+          {
+            params: { path: { id: caseId, appointmentId } },
+            body: { creditRefunded },
+          },
+        ),
+        'Cancelling the appointment',
+      ),
     onSuccess: reloadCases,
     onError: (error) => (isConflict(error) ? reloadCases() : undefined),
   })
@@ -237,20 +193,14 @@ export function useCancelConsultationAppointment(caseId: string) {
 export function useCancelConsultationCase(caseId: string) {
   const reloadCases = useReloadCases()
   return useMutation({
-    mutationFn: async (refundEligible: boolean) => {
-      const { data, error, response } = await client.POST(
-        '/api/customer/consultation-cases/{id}/cancel',
-        { params: { path: { id: caseId } }, body: { refundEligible } },
-      )
-      if (data === undefined) {
-        throw new ApiError(
-          `Cancelling the case failed: ${response.status}`,
-          response.status,
-          problemOf(response.status, error),
-        )
-      }
-      return data
-    },
+    mutationFn: async (refundEligible: boolean) =>
+      dataOrThrow(
+        await client.POST('/api/customer/consultation-cases/{id}/cancel', {
+          params: { path: { id: caseId } },
+          body: { refundEligible },
+        }),
+        'Cancelling the case',
+      ),
     onSuccess: reloadCases,
     onError: (error) => (isConflict(error) ? reloadCases() : undefined),
   })

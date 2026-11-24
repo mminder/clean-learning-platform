@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/button'
-import { CaseGroups } from './CaseGroups'
+import { CaseGroups } from '@/features/consultation/CaseGroups'
 import { ConsultationCaseCard } from './ConsultationCaseCard'
 import { useCustomerConsultationCases } from './queries'
 

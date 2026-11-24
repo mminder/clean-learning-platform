@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
+import type { components } from '@/api/schema'
 import { formatDateTime } from '@/lib/date'
-import type { ExpertNote } from './expert-queries'
 
 /** What every reader of a note sees; the customer's notes have no visibility (spec 06, decision 6). */
 export type NoteContent = Pick<
-  ExpertNote,
+  components['schemas']['ExpertNoteResponse'],
   'title' | 'text' | 'writtenAt' | 'editedAt'
 >
 

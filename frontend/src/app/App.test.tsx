@@ -5,7 +5,8 @@ import { App } from './App'
 import { Providers } from './Providers'
 
 // openapi-fetch can't build a relative URL outside the browser, so the app gets a client that answers from here.
-vi.mock('@/api/client', () => ({
+vi.mock('@/api/client', async (importActual) => ({
+  ...(await importActual<typeof import('@/api/client')>()),
   client: {
     GET: vi.fn(async (path: string) =>
       path === '/api/me'

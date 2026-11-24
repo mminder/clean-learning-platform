@@ -15,11 +15,16 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { usePurchaseConsultationPackage } from '@/features/consultation/queries'
+import { usePurchaseConsultationPackage } from '@/features/consultation/customer/queries'
 import { formatMoney } from '@/lib/money'
 import { problemMessage } from '@/lib/problem'
 import { isOfferingGone, purchaseFailure } from './purchase-failure'
-import { fetchShopOffering, shopOfferingKey, useShopOffering } from './queries'
+import {
+  fetchShopOffering,
+  shopKey,
+  shopOfferingKey,
+  useShopOffering,
+} from './queries'
 
 type ConsultationPackage = components['schemas']['ConsultationPackageResponse']
 
@@ -56,7 +61,7 @@ export function BuyConsultationDialog({
           'error'
         if (!open && (shopStale.current || offeringGone)) {
           shopStale.current = false
-          void queryClient.invalidateQueries({ queryKey: ['shop'] })
+          void queryClient.invalidateQueries({ queryKey: shopKey })
         }
       }}
     >

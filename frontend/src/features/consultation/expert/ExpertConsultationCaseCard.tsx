@@ -6,8 +6,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { CaseCardState } from './CaseParts'
-import type { ExpertConsultationCaseSummary } from './expert-queries'
+import { CaseCardState } from '@/features/consultation/CaseParts'
+import type { ExpertConsultationCaseSummary } from './queries'
 
 /**
  * A case on My cases (UC-11 step 3): the customer's name, the offering, the next appointment in Zurich time, "Next"
