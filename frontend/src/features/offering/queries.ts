@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { client } from '@/api/client'
+import { client, dataOrThrow, okOrThrow } from '@/api/client'
 import type { components } from '@/api/schema'
-import { ApiError, isConflict } from '@/lib/api-error'
-import { problemOf } from '@/lib/problem'
+import { shopKey } from '@/features/shop/queries'
+import { isConflict } from '@/lib/api-error'
 
 export type ConsultationOfferingRequest =
   components['schemas']['ConsultationOfferingRequest']
@@ -42,58 +42,37 @@ const consultationOfferingsKey = ['admin', 'consultation-offerings']
 export function useConsultationOfferings() {
   return useQuery({
     queryKey: consultationOfferingsKey,
-    queryFn: async () => {
-      const { data, response } = await client.GET(
-        '/api/admin/consultation-offerings',
-      )
-      // not `error`: a 401 has an empty body, and openapi-fetch then returns `error: undefined`
-      if (data === undefined) {
-        throw new ApiError(
-          `Loading the consultation offerings failed: ${response.status}`,
-          response.status,
-        )
-      }
-      return data
-    },
+    queryFn: async () =>
+      dataOrThrow(
+        await client.GET('/api/admin/consultation-offerings'),
+        'Loading the consultation offerings',
+      ),
   })
 }
 
 export function useConsultationOffering(id: string) {
   return useQuery({
     queryKey: [...consultationOfferingsKey, id],
-    queryFn: async () => {
-      const { data, response } = await client.GET(
-        '/api/admin/consultation-offerings/{id}',
-        { params: { path: { id } } },
-      )
-      if (data === undefined) {
-        throw new ApiError(
-          `Loading the consultation offering failed: ${response.status}`,
-          response.status,
-        )
-      }
-      return data
-    },
+    queryFn: async () =>
+      dataOrThrow(
+        await client.GET('/api/admin/consultation-offerings/{id}', {
+          params: { path: { id } },
+        }),
+        'Loading the consultation offering',
+      ),
   })
 }
 
 export function useCreateConsultationOffering() {
   const invalidateOfferings = useInvalidateOfferings()
   return useMutation({
-    mutationFn: async (offering: ConsultationOfferingRequest) => {
-      const { data, error, response } = await client.POST(
-        '/api/admin/consultation-offerings',
-        { body: offering },
-      )
-      if (data === undefined) {
-        throw new ApiError(
-          `Creating the consultation offering failed: ${response.status}`,
-          response.status,
-          problemOf(response.status, error),
-        )
-      }
-      return data
-    },
+    mutationFn: async (offering: ConsultationOfferingRequest) =>
+      dataOrThrow(
+        await client.POST('/api/admin/consultation-offerings', {
+          body: offering,
+        }),
+        'Creating the consultation offering',
+      ),
     onSuccess: invalidateOfferings,
   })
 }
@@ -101,20 +80,14 @@ export function useCreateConsultationOffering() {
 export function useEditConsultationOffering(id: string) {
   const invalidateOfferings = useInvalidateOfferings()
   return useMutation({
-    mutationFn: async (offering: ConsultationOfferingRequest) => {
-      const { data, error, response } = await client.PUT(
-        '/api/admin/consultation-offerings/{id}',
-        { params: { path: { id } }, body: offering },
-      )
-      if (data === undefined) {
-        throw new ApiError(
-          `Saving the consultation offering failed: ${response.status}`,
-          response.status,
-          problemOf(response.status, error),
-        )
-      }
-      return data
-    },
+    mutationFn: async (offering: ConsultationOfferingRequest) =>
+      dataOrThrow(
+        await client.PUT('/api/admin/consultation-offerings/{id}', {
+          params: { path: { id } },
+          body: offering,
+        }),
+        'Saving the consultation offering',
+      ),
     onSuccess: invalidateOfferings,
     // A 409 comes from a stale page, such as an edit of an offering archived meanwhile: reload it.
     onError: (error) => (isConflict(error) ? invalidateOfferings() : undefined),
@@ -133,20 +106,13 @@ const statusChangePaths = {
 export function useChangeConsultationOfferingStatus(id: string) {
   const invalidateOfferings = useInvalidateOfferings()
   return useMutation({
-    mutationFn: async (change: StatusChange) => {
-      const { data, error, response } = await client.POST(
-        statusChangePaths[change],
-        { params: { path: { id } } },
-      )
-      if (data === undefined) {
-        throw new ApiError(
-          `Changing the consultation offering's status (${change}) failed: ${response.status}`,
-          response.status,
-          problemOf(response.status, error),
-        )
-      }
-      return data
-    },
+    mutationFn: async (change: StatusChange) =>
+      dataOrThrow(
+        await client.POST(statusChangePaths[change], {
+          params: { path: { id } },
+        }),
+        `Changing the consultation offering's status (${change})`,
+      ),
     onSuccess: invalidateOfferings,
     // A 409 means the page showed another status than the server has: reload the offering.
     onError: (error) => (isConflict(error) ? invalidateOfferings() : undefined),
@@ -163,24 +129,16 @@ export function useUploadConsultationOfferingImage(id: string) {
     mutationFn: async (file: File) => {
       const body = new FormData()
       body.append('file', file)
-      const { data, error, response } = await client.PUT(
-        '/api/admin/consultation-offerings/{id}/image',
-        {
+      return dataOrThrow(
+        await client.PUT('/api/admin/consultation-offerings/{id}/image', {
           params: { path: { id } },
           // The contract types the part as a string (format binary), but the browser sends a File in a FormData.
           // openapi-fetch passes a FormData on as it is and sets no JSON content type, so the browser sets the
           // multipart one with its boundary; the CSRF middleware adds its header as on any PUT.
           body: body as unknown as { file: string },
-        },
+        }),
+        "Uploading the offering's image",
       )
-      if (data === undefined) {
-        throw new ApiError(
-          `Uploading the offering's image failed: ${response.status}`,
-          response.status,
-          problemOf(response.status, error),
-        )
-      }
-      return data
     },
     onSuccess: invalidateOfferings,
     // A 409 means the offering was archived meanwhile: reload it.
@@ -192,20 +150,13 @@ export function useUploadConsultationOfferingImage(id: string) {
 export function useRemoveConsultationOfferingImage(id: string) {
   const invalidateOfferings = useInvalidateOfferings()
   return useMutation({
-    mutationFn: async () => {
-      const { data, error, response } = await client.DELETE(
-        '/api/admin/consultation-offerings/{id}/image',
-        { params: { path: { id } } },
-      )
-      if (data === undefined) {
-        throw new ApiError(
-          `Removing the offering's image failed: ${response.status}`,
-          response.status,
-          problemOf(response.status, error),
-        )
-      }
-      return data
-    },
+    mutationFn: async () =>
+      dataOrThrow(
+        await client.DELETE('/api/admin/consultation-offerings/{id}/image', {
+          params: { path: { id } },
+        }),
+        "Removing the offering's image",
+      ),
     onSuccess: invalidateOfferings,
     onError: (error) => (isConflict(error) ? invalidateOfferings() : undefined),
   })
@@ -219,19 +170,13 @@ export function useDeleteConsultationOffering(id: string) {
   const queryClient = useQueryClient()
   const invalidateOfferings = useInvalidateOfferings()
   return useMutation({
-    mutationFn: async () => {
-      const { error, response } = await client.DELETE(
-        '/api/admin/consultation-offerings/{id}',
-        { params: { path: { id } } },
-      )
-      if (!response.ok) {
-        throw new ApiError(
-          `Deleting the consultation offering failed: ${response.status}`,
-          response.status,
-          problemOf(response.status, error),
-        )
-      }
-    },
+    mutationFn: async () =>
+      okOrThrow(
+        await client.DELETE('/api/admin/consultation-offerings/{id}', {
+          params: { path: { id } },
+        }),
+        'Deleting the consultation offering',
+      ),
     onSuccess: () => {
       queryClient.removeQueries({
         queryKey: consultationOfferingsKey,
@@ -242,7 +187,7 @@ export function useDeleteConsultationOffering(id: string) {
           queryKey: consultationOfferingsKey,
           refetchType: 'none',
         }),
-        queryClient.invalidateQueries({ queryKey: ['shop'] }),
+        queryClient.invalidateQueries({ queryKey: shopKey }),
       ])
     },
     onError: (error) => (isConflict(error) ? invalidateOfferings() : undefined),
@@ -258,6 +203,6 @@ function useInvalidateOfferings() {
   return () =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: consultationOfferingsKey }),
-      queryClient.invalidateQueries({ queryKey: ['shop'] }),
+      queryClient.invalidateQueries({ queryKey: shopKey }),
     ])
 }

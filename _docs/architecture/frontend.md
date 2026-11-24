@@ -26,13 +26,15 @@ frontend/src
 └─ features/            mirrors the backend features
    ├─ shop/             UC-02, buy dialogs (UC-03, UC-04)
    ├─ consultation/     UC-05 (cases), UC-06, UC-07, UC-08, UC-11, UC-15, UC-18
+   │  ├─ customer/      the customer's pages, dialogs and hooks
+   │  └─ expert/        the expert's pages, dialogs and hooks
    ├─ training/         UC-05 (enrollments), UC-09, UC-12
    ├─ availability/     UC-13
    ├─ offering/         UC-16, UC-17 (admin)
    └─ user/             UC-01, UC-14, UC-19
 ```
 
-A feature folder contains its pages, components, query and mutation hooks, and its tests.
+A feature folder contains its pages, components, query and mutation hooks, and its tests. `consultation/` splits by audience: what only the customer or only the expert uses sits in `customer/` or `expert/`, each with its own `queries.ts`; what both share (`CaseParts`, `CaseGroups`, `JoinButton`, `NoteCard`, `appointment-times`, `case-keys`) stays at the top. A shared file imports neither subfolder (it takes API types from `@/api/schema`), and the two subfolders don't import each other.
 
 A shadcn/ui component is added when a page first uses it: run `npx shadcn@latest add <component>` in `frontend/`, then `npm run format`. The components import `cn` from shadcn's npm package `cn` (since 2026-11-08, through `npx shadcn@latest migrate cn`), and so does our own code; there's no `lib/utils.ts`. `components.json` still has the `utils` alias (`@/lib/utils`): the CLI's schema requires it, and the CLI rejects the config without it.
 
@@ -68,6 +70,7 @@ A shadcn/ui component is added when a page first uses it: run `npx shadcn@latest
 ## Data fetching
 
 - Every API call goes through the generated `openapi-fetch` client, wrapped in TanStack Query hooks per feature.
+- A hook turns an answer into data or an error with `dataOrThrow(await client.GET(…), 'Loading the case')`, or `okOrThrow` for an answer without a body (`api/client.ts`): both throw `ApiError("<action> failed: <status>")`.
 - After a mutation, the hook invalidates the affected queries (e.g. a booking invalidates the case detail and "my purchases"). There's no manual state syncing.
 - No global client state library. Server state lives in TanStack Query, UI state in components.
 

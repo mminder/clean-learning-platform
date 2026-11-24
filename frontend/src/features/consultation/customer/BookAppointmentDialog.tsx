@@ -15,10 +15,13 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import {
+  formatDateAndTimes,
+  formatTimes,
+} from '@/features/consultation/appointment-times'
 import { isConflict } from '@/lib/api-error'
 import { formatDateTime, fromCalendarDay, toCalendarDay } from '@/lib/date'
 import { problemMessage } from '@/lib/problem'
-import { formatDateAndTimes, formatTimes } from './appointment-times'
 import { slotsByDate } from './bookable-slots'
 import { bookingFailure } from './booking-failure'
 import {

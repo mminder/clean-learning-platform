@@ -1,6 +1,6 @@
+import { formatDateAndTimes } from '@/features/consultation/appointment-times'
 import { formatDateTime } from '@/lib/date'
 import { formatMoney } from '@/lib/money'
-import { formatDateAndTimes } from './appointment-times'
 import type {
   CancellationOutcome,
   CustomerConsultationCase,

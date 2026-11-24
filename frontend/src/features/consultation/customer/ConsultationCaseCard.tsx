@@ -7,8 +7,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { CaseCardState } from '@/features/consultation/CaseParts'
 import { formatDate } from '@/lib/date'
-import { CaseCardState } from './CaseParts'
 import type { CustomerConsultationCaseSummary } from './queries'
 
 /**

@@ -8,7 +8,8 @@ import type { CustomerConsultationCase } from './queries'
 // openapi-fetch can't build a relative URL outside the browser, so the page gets a client that answers from here:
 // each answer once, the last one from then on.
 const api = vi.hoisted(() => ({ answers: [] as unknown[] }))
-vi.mock('@/api/client', () => ({
+vi.mock('@/api/client', async (importActual) => ({
+  ...(await importActual<typeof import('@/api/client')>()),
   client: {
     GET: vi.fn(async () => ({
       data: api.answers.length > 1 ? api.answers.shift() : api.answers[0],

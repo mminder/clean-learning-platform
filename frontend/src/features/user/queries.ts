@@ -1,8 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { client } from '@/api/client'
+import { client, dataOrThrow, okOrThrow } from '@/api/client'
 import type { components } from '@/api/schema'
 import { ApiError } from '@/lib/api-error'
-import { problemOf } from '@/lib/problem'
 
 export type ExpertProfileRequest = components['schemas']['ExpertProfileRequest']
 
@@ -32,34 +31,21 @@ export function useMe() {
 export function usePocUsers() {
   return useQuery({
     queryKey: ['poc', 'users'],
-    queryFn: async () => {
-      const { data, response } = await client.GET('/api/poc/users')
-      if (data === undefined) {
-        throw new ApiError(
-          `Loading the users failed: ${response.status}`,
-          response.status,
-        )
-      }
-      return data
-    },
+    queryFn: async () =>
+      dataOrThrow(await client.GET('/api/poc/users'), 'Loading the users'),
   })
 }
 
 export function useLogin() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (userId: string) => {
-      const { data, response } = await client.POST('/api/poc/login', {
-        body: { userId },
-      })
-      if (data === undefined) {
-        throw new ApiError(
-          `Logging in failed: ${response.status}`,
-          response.status,
-        )
-      }
-      return data
-    },
+    mutationFn: async (userId: string) =>
+      dataOrThrow(
+        await client.POST('/api/poc/login', {
+          body: { userId },
+        }),
+        'Logging in',
+      ),
     // No data of the visitor or the previous user stays; what's on the screen loads again for the new user.
     onSuccess: () => queryClient.resetQueries(),
   })
@@ -72,15 +58,8 @@ export function useLogin() {
  */
 export function useLogout() {
   return useMutation({
-    mutationFn: async () => {
-      const { response } = await client.POST('/api/logout')
-      if (!response.ok) {
-        throw new ApiError(
-          `Logging out failed: ${response.status}`,
-          response.status,
-        )
-      }
-    },
+    mutationFn: async () =>
+      okOrThrow(await client.POST('/api/logout'), 'Logging out'),
     onSuccess: () => window.location.assign('/'),
   })
 }
@@ -89,16 +68,11 @@ export function useLogout() {
 export function useExperts() {
   return useQuery({
     queryKey: ['admin', 'experts'],
-    queryFn: async () => {
-      const { data, response } = await client.GET('/api/admin/experts')
-      if (data === undefined) {
-        throw new ApiError(
-          `Loading the experts failed: ${response.status}`,
-          response.status,
-        )
-      }
-      return data
-    },
+    queryFn: async () =>
+      dataOrThrow(
+        await client.GET('/api/admin/experts'),
+        'Loading the experts',
+      ),
   })
 }
 
@@ -106,17 +80,11 @@ export function useExperts() {
 export function useExpertProfile() {
   return useQuery({
     queryKey: ['expert', 'profile'],
-    queryFn: async () => {
-      const { data, response } = await client.GET('/api/expert/profile')
-      // not `error`: a 401 has an empty body, and openapi-fetch then returns `error: undefined`
-      if (data === undefined) {
-        throw new ApiError(
-          `Loading the profile failed: ${response.status}`,
-          response.status,
-        )
-      }
-      return data
-    },
+    queryFn: async () =>
+      dataOrThrow(
+        await client.GET('/api/expert/profile'),
+        'Loading the profile',
+      ),
   })
 }
 
@@ -128,20 +96,11 @@ export function useExpertProfile() {
 export function useSaveExpertProfile() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (profile: ExpertProfileRequest) => {
-      const { data, error, response } = await client.PUT(
-        '/api/expert/profile',
-        { body: profile },
-      )
-      if (data === undefined) {
-        throw new ApiError(
-          `Saving the profile failed: ${response.status}`,
-          response.status,
-          problemOf(response.status, error),
-        )
-      }
-      return data
-    },
+    mutationFn: async (profile: ExpertProfileRequest) =>
+      dataOrThrow(
+        await client.PUT('/api/expert/profile', { body: profile }),
+        'Saving the profile',
+      ),
     onSuccess: () => queryClient.invalidateQueries(),
   })
 }
@@ -157,20 +116,15 @@ export function useUploadExpertPhoto() {
     mutationFn: async (file: File) => {
       const body = new FormData()
       body.append('file', file)
-      const { data, error, response } = await client.PUT(
-        '/api/expert/profile/photo',
-        // The contract types the part as a string (format binary), but the browser sends a File in a FormData, as
-        // for the offering's image (useUploadConsultationOfferingImage).
-        { body: body as unknown as { file: string } },
+      return dataOrThrow(
+        await client.PUT(
+          '/api/expert/profile/photo',
+          // The contract types the part as a string (format binary), but the browser sends a File in a FormData, as
+          // for the offering's image (useUploadConsultationOfferingImage).
+          { body: body as unknown as { file: string } },
+        ),
+        'Uploading the photo',
       )
-      if (data === undefined) {
-        throw new ApiError(
-          `Uploading the photo failed: ${response.status}`,
-          response.status,
-          problemOf(response.status, error),
-        )
-      }
-      return data
     },
     onSuccess: () => queryClient.invalidateQueries(),
   })
@@ -180,18 +134,11 @@ export function useUploadExpertPhoto() {
 export function useRemoveExpertPhoto() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async () => {
-      const { data, response } = await client.DELETE(
-        '/api/expert/profile/photo',
-      )
-      if (data === undefined) {
-        throw new ApiError(
-          `Removing the photo failed: ${response.status}`,
-          response.status,
-        )
-      }
-      return data
-    },
+    mutationFn: async () =>
+      dataOrThrow(
+        await client.DELETE('/api/expert/profile/photo'),
+        'Removing the photo',
+      ),
     onSuccess: () => queryClient.invalidateQueries(),
   })
 }

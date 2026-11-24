@@ -9,8 +9,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { formatDateAndTimes } from '@/features/consultation/appointment-times'
 import { problemMessage } from '@/lib/problem'
-import { formatDateAndTimes } from './appointment-times'
 import { cancellationFailure } from './cancellation-failure'
 import {
   useCancelConsultationCase,

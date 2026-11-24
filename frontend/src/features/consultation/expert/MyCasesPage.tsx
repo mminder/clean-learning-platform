@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button'
-import { CaseGroups } from './CaseGroups'
+import { CaseGroups } from '@/features/consultation/CaseGroups'
 import { ExpertConsultationCaseCard } from './ExpertConsultationCaseCard'
-import { useExpertConsultationCases } from './expert-queries'
+import { useExpertConsultationCases } from './queries'
 
 /** UC-11's landing page for experts: the cases they're assigned to, in the groups of My purchases (`CaseGroups`). */
 export function MyCasesPage() {

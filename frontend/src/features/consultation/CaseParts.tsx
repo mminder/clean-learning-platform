@@ -1,7 +1,10 @@
 import type { ReactNode } from 'react'
 import { cn } from 'cn'
+import type { components } from '@/api/schema'
 import { formatDateAndTimes } from './appointment-times'
-import type { CustomerConsultationCaseSummary } from './queries'
+
+type CaseSummary =
+  components['schemas']['CustomerConsultationCaseSummaryResponse']
 
 /** The parts the customer's and the expert's case pages and cards share. */
 
@@ -72,7 +75,7 @@ export function CaseCardState({
   consultationCase,
 }: {
   consultationCase: Pick<
-    CustomerConsultationCaseSummary,
+    CaseSummary,
     'cancelledAt' | 'nextAppointment' | 'openCredits' | 'totalCredits'
   >
 }) {
