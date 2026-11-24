@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { client, dataOrThrow, okOrThrow } from '@/api/client'
 import type { components } from '@/api/schema'
-import { ApiError } from '@/lib/api-error'
 
 export type ExpertProfileRequest = components['schemas']['ExpertProfileRequest']
 
@@ -12,18 +11,11 @@ export function useMe() {
   return useQuery({
     queryKey: ['me'],
     queryFn: async () => {
-      const { data, response } = await client.GET('/api/me')
-      if (response.status === 401) {
+      const result = await client.GET('/api/me')
+      if (result.response.status === 401) {
         return null
       }
-      // not `error`: a 401 has an empty body, and openapi-fetch then returns `error: undefined`
-      if (data === undefined) {
-        throw new ApiError(
-          `Loading the current user failed: ${response.status}`,
-          response.status,
-        )
-      }
-      return data
+      return dataOrThrow(result, 'Loading the current user')
     },
   })
 }

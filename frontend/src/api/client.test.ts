@@ -117,6 +117,23 @@ describe('dataOrThrow and okOrThrow', () => {
     })
   })
 
+  it('dataOrThrow throws for a 401 with an empty body and no problem', async () => {
+    const result = await client.GET('/api/me', {
+      baseUrl,
+      fetch: async () =>
+        new Response(null, { status: 401, headers: { 'Content-Length': '0' } }),
+    })
+
+    const thrown = catchError(() => dataOrThrow(result, 'Loading the user'))
+
+    expect(thrown).toBeInstanceOf(ApiError)
+    expect(thrown).toMatchObject({
+      message: 'Loading the user failed: 401',
+      status: 401,
+      problem: undefined,
+    })
+  })
+
   it('dataOrThrow leaves the problem of a 500 undefined', async () => {
     const result = await answer(500, problem)
 
